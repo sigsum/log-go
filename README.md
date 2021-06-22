@@ -34,8 +34,8 @@ _rejected_ unless a corresponding signed checksum is publicly logged.
 
 ## Design considerations
 We had several design considerations in mind while developing siglog.  A short
-preview is listed below.  Please refer to our [design document](https://github.com/system-transparency/stfe/blob/main/doc/design.md)
-and [API specification](https://github.com/system-transparency/stfe/blob/main/doc/api.md)
+preview is listed below.  Please refer to our [design document](https://github.com/sigsum/sigsum/blob/main/doc/design.md)
+and [API specification](https://github.com/sigsum/sigsum/blob/main/doc/api.md)
 for additional details.  Feedback is welcomed and encouraged!
 - **Preserved data flows:** an end-user can enforce transparent logging without
 making additional outbound network connections.  Proofs of public logging should
