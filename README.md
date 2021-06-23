@@ -1,12 +1,13 @@
-# Signature Transparency Logging
-Signature Transparency Logging allows you to add signed checksums into an
-append-only and tamper-evident log.  What a checksum represents is up to the
-submitter.  For example, it could be a cryptographic hash of a Firefox update, a
-Debian package, or a document.  You can use Signature Transparency Logging to:
-1. Discover which signatures were produced by what secret signing keys.
-2. Be sure that everyone observes the same signed checksums.
+# sigsum-log-go
+_Sigsum_ logging brings transparency to **sig**ned check**sum**s.  What a
+checksum represents is up to you.  For example, it could be the cryptographic
+hash of a [provenance file](https://security.googleblog.com/2021/06/introducing-slsa-end-to-end-framework.html),
+a [Firefox binary](https://wiki.mozilla.org/Security/Binary_Transparency), or a
+text document.
 
-We abbreviate Signature Transparency Logging as _siglog_.
+Sigsum logging can be used to:
+1. Discover which checksum signatures were produced by what secret signing keys.
+2. Be sure that everyone observes the same signed checksums.
 
 ## How it works
 Suppose that you develop software and publish binaries.  You sign those binaries
@@ -15,10 +16,10 @@ You are committed to distribute the same signed binaries to every user.  That is
 an easy claim to make.  However, word is cheap and sometimes things go wrong.
 How would you even know if your signing infrastructure got compromised?  A few
 select users might already receive maliciously signed binaries that include a
-backdoor.  This is where siglog can help by adding transparency.
+backdoor.  This is where we can help by adding transparency.
 
 For each binary you can log a signed checksum that corresponds to that binary.
-If a signed checksum appears in the log that you did not expect: excellent, now
+If such a _sigsum_ appears in the log that you did not expect: excellent, now
 you know that your signing infrastructure was compromised at some point.
 Similarly, you can also detect if a binary from your website or package
 repository misses a corresponding log entry by inspecting the log.  The claim
@@ -28,13 +29,13 @@ Starting to apply the pattern of transparent logging is already an improvement
 without any end-user enforcement.  It becomes easier to detect honest mistakes
 and attacks against your website or package repository.
 
-To make the most out of siglog in the future, end-users should start to enforce
-public logging.  This means that a binary in the above example would be
-_rejected_ unless a corresponding signed checksum is publicly logged.
+To make the most out of a sigsum log, end-users should start to enforce public
+logging in the future.  This means that a binary in the above example would be
+_rejected_ unless a corresponding sigsum is publicly logged.
 
 ## Design considerations
-We had several design considerations in mind while developing siglog.  A short
-preview is listed below.  Please refer to our [design document](https://github.com/sigsum/sigsum/blob/main/doc/design.md)
+We had several design considerations in mind while developing sigsum logging.  A
+short preview is listed below.  Refer to our [design document](https://github.com/sigsum/sigsum/blob/main/doc/design.md)
 and [API specification](https://github.com/sigsum/sigsum/blob/main/doc/api.md)
 for additional details.  Feedback is welcomed and encouraged!
 - **Preserved data flows:** an end-user can enforce transparent logging without
@@ -58,18 +59,18 @@ The only supported hash function is SHA256.  Not having any cryptographic
 agility makes the protocol and the data formats simpler and more secure.
 - **Few and simple (de)serialization parsers:** complex (de)serialization
 parsers increase attack surfaces and make the system more difficult to use in
-constrained environments.  End-users need a small subset of Trunnel to work with
-signed and logged data.  The log's network clients also need to parse ASCII
-key-value pairs.
+constrained environments.  End-users need a small subset of [Trunnel](https://gitlab.torproject.org/tpo/core/trunnel/-/blob/main/doc/trunnel.md)
+to work with signed and logged data.  The log's network clients also need to
+parse ASCII key-value pairs.
 
 ## Public prototype
-We implemented siglog as a [Trillian](https://transparency.dev/#trillian)
+We implemented sigsum logging as a [Trillian](https://transparency.dev/#trillian)
 [personality](https://github.com/google/trillian/blob/master/docs/Personalities.md).
 A public prototype is up and running with zero promises of uptime, stability,
 etc.  The log's base URL is `http://tlog-poc.system-transparency.org:4780/st/v0`.
 The log's public verification key is `bc9308dab23781b8a13d59a9e67bc1b8c1585550e72956525a20e479b1f74404`.
 
-An [experimental witness](https://github.com/system-transparency/siglog-witness-py)
+An [experimental witness](https://github.com/sigsum/sigsum-witness-py)
 is also up and running with zero promises of uptime, stability, etc.  The
 public verification key is `777528f5fd96f95713b8c2bb48bce2c83628e39ad3bfbd95bc0045b143fe5c34`.
 
@@ -89,7 +90,6 @@ checksum=0000000000000000000000000000000000000000000000000000000000000000
 signature_over_message=0e0424c7288dc8ebec6b2ebd45e14e7d7f86dd7b0abc03861976a1c0ad8ca6120d4efd58aeab167e5e84fcffd0fab5861ceae85dec7f4e244e7465e41c5d5207
 key_hash=9d6c91319b27ff58043ff6e6e654438a4ca15ee11dd2780b63211058b274f1f6
 ```
-
 
 We are currently working on tooling that makes it easier to interact with the
 log.
