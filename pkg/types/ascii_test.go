@@ -176,8 +176,7 @@ func TestInclusionProofMarshalASCII(t *testing.T) {
 		},
 	}
 	wantBuf := bytes.NewBufferString(fmt.Sprintf(
-		"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s",
-		TreeSize, Delim, 321, EOL,
+		"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s",
 		LeafIndex, Delim, 123, EOL,
 		InclusionPath, Delim, testBuffer32[:], EOL,
 		InclusionPath, Delim, testBuffer32[:], EOL,
@@ -203,9 +202,7 @@ func TestConsistencyProofMarshalASCII(t *testing.T) {
 		},
 	}
 	wantBuf := bytes.NewBufferString(fmt.Sprintf(
-		"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s",
-		NewSize, Delim, 321, EOL,
-		OldSize, Delim, 123, EOL,
+		"%s%s%x%s"+"%s%s%x%s",
 		ConsistencyPath, Delim, testBuffer32[:], EOL,
 		ConsistencyPath, Delim, testBuffer32[:], EOL,
 	))

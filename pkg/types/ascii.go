@@ -238,12 +238,6 @@ func (si *SigIdent) MarshalASCII(w io.Writer) error {
 }
 
 func (p *ConsistencyProof) MarshalASCII(w io.Writer) error {
-	if err := writeASCII(w, NewSize, strconv.FormatUint(p.NewSize, 10)); err != nil {
-		return fmt.Errorf("writeASCII: %v", err)
-	}
-	if err := writeASCII(w, OldSize, strconv.FormatUint(p.OldSize, 10)); err != nil {
-		return fmt.Errorf("writeASCII: %v", err)
-	}
 	for _, hash := range p.Path {
 		if err := writeASCII(w, ConsistencyPath, hex.EncodeToString(hash[:])); err != nil {
 			return fmt.Errorf("writeASCII: %v", err)
@@ -253,9 +247,6 @@ func (p *ConsistencyProof) MarshalASCII(w io.Writer) error {
 }
 
 func (p *InclusionProof) MarshalASCII(w io.Writer) error {
-	if err := writeASCII(w, TreeSize, strconv.FormatUint(p.TreeSize, 10)); err != nil {
-		return fmt.Errorf("writeASCII: %v", err)
-	}
 	if err := writeASCII(w, LeafIndex, strconv.FormatUint(p.LeafIndex, 10)); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
