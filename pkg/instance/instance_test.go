@@ -17,7 +17,7 @@ func TestHandlers(t *testing.T) {
 		types.EndpointGetTreeHeadToSign:   false,
 		types.EndpointGetTreeHeadCosigned: false,
 		types.EndpointGetConsistencyProof: false,
-		types.EndpointGetProofByHash:      false,
+		types.EndpointGetInclusionProof:   false,
 		types.EndpointGetLeaves:           false,
 	}
 	i := &Instance{

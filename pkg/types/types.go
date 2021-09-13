@@ -18,7 +18,7 @@ const (
 	EndpointGetTreeHeadLatest   = Endpoint("get-tree-head-latest")
 	EndpointGetTreeHeadToSign   = Endpoint("get-tree-head-to-sign")
 	EndpointGetTreeHeadCosigned = Endpoint("get-tree-head-cosigned")
-	EndpointGetProofByHash      = Endpoint("get-proof-by-hash")
+	EndpointGetInclusionProof   = Endpoint("get-inclusion-proof")
 	EndpointGetConsistencyProof = Endpoint("get-consistency-proof")
 	EndpointGetLeaves           = Endpoint("get-leaves")
 )

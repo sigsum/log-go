@@ -35,8 +35,8 @@ func TestEndpointPath(t *testing.T) {
 			want:     "example.com/log/sigsum/v0/get-consistency-proof",
 		},
 		{
-			endpoint: EndpointGetProofByHash,
-			want:     "example.com/log/sigsum/v0/get-proof-by-hash",
+			endpoint: EndpointGetInclusionProof,
+			want:     "example.com/log/sigsum/v0/get-inclusion-proof",
 		},
 		{
 			endpoint: EndpointGetLeaves,

@@ -502,7 +502,7 @@ func TestGetInclusionProof(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetProofByHash.Path("http://example.com", i.Prefix)
+			url := types.EndpointGetInclusionProof.Path("http://example.com", i.Prefix)
 			req, err := http.NewRequest("POST", url, table.ascii)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -510,7 +510,7 @@ func TestGetInclusionProof(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandle(t, i, types.EndpointGetProofByHash).ServeHTTP(w, req)
+			mustHandle(t, i, types.EndpointGetInclusionProof).ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
