@@ -23,14 +23,21 @@ var (
 		Timestamp: 0,
 		TreeSize:  0,
 		RootHash:  types.Hash(nil),
+		KeyHash:   types.Hash(testPub[:]),
 	}
 	testSigIdent = &types.SigIdent{
 		Signature: testSig,
 		KeyHash:   types.Hash(testPub[:]),
 	}
 	testSTH = &types.SignedTreeHead{
-		TreeHead: *testTH,
-		SigIdent: []*types.SigIdent{testSigIdent},
+		TreeHead:  *testTH,
+		Signature: testSig,
+	}
+	testCTH = &types.CosignedTreeHead{
+		SignedTreeHead: *testSTH,
+		SigIdent: []*types.SigIdent{
+			testSigIdent,
+		},
 	}
 	testSignerOK  = &mocks.TestSigner{testPub, testSig, nil}
 	testSignerErr = &mocks.TestSigner{testPub, testSig, fmt.Errorf("something went wrong")}
@@ -72,14 +79,14 @@ func TestNewStateManagerSingle(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if got, want := &sm.cosigned, table.wantSth; !reflect.DeepEqual(got, want) {
+			if got, want := &sm.cosigned.SignedTreeHead, table.wantSth; !reflect.DeepEqual(got, want) {
 				t.Errorf("got cosigned tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 			}
 			if got, want := &sm.tosign, table.wantSth; !reflect.DeepEqual(got, want) {
 				t.Errorf("got tosign tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 			}
 			// we only have log signature on startup
-			if got, want := len(sm.cosignature), 1; got != want {
+			if got, want := len(sm.cosignature), 0; got != want {
 				t.Errorf("got %d cosignatures but wanted %d in test %q", got, want, table.description)
 			}
 		}()
@@ -157,15 +164,22 @@ func TestToSign(t *testing.T) {
 func TestCosigned(t *testing.T) {
 	description := "valid"
 	sm := StateManagerSingle{
-		cosigned: *testSTH,
+		cosigned: *testCTH,
 	}
-	sth, err := sm.Cosigned(context.Background())
+	cth, err := sm.Cosigned(context.Background())
 	if err != nil {
 		t.Errorf("Cosigned should not fail with error: %v", err)
 		return
 	}
-	if got, want := sth, testSTH; !reflect.DeepEqual(got, want) {
+	if got, want := cth, testCTH; !reflect.DeepEqual(got, want) {
 		t.Errorf("got signed tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, description)
+	}
+
+	sm.cosigned.SigIdent = make([]*types.SigIdent, 0)
+	cth, err = sm.Cosigned(context.Background())
+	if err == nil {
+		t.Errorf("Cosigned should fail without witness cosignatures")
+		return
 	}
 }
 
@@ -202,15 +216,15 @@ func TestAddCosignature(t *testing.T) {
 		},
 	} {
 		sth, _ := table.th.Sign(testSignerOK)
-		logKeyHash := sth.SigIdent[0].KeyHash
-		logSigIdent := sth.SigIdent[0]
+		cth := &types.CosignedTreeHead{
+			SignedTreeHead: *sth,
+			SigIdent:       []*types.SigIdent{},
+		}
 		sm := &StateManagerSingle{
-			signer:   testSignerOK,
-			cosigned: *sth,
-			tosign:   *sth,
-			cosignature: map[[types.HashSize]byte]*types.SigIdent{
-				*logKeyHash: logSigIdent,
-			},
+			signer:      testSignerOK,
+			cosigned:    *cth,
+			tosign:      *sth,
+			cosignature: map[[types.HashSize]byte]*types.SigIdent{},
 		}
 
 		// Prepare witness signature
@@ -218,11 +232,13 @@ func TestAddCosignature(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Sign: %v", err)
 		}
-		witnessKeyHash := sth.SigIdent[0].KeyHash
-		witnessSigIdent := sth.SigIdent[0]
+		si := &types.SigIdent{
+			KeyHash:   types.Hash(table.signer.Public().(ed25519.PublicKey)[:]),
+			Signature: sth.Signature,
+		}
 
 		// Add witness signature
-		err = sm.AddCosignature(context.Background(), table.vk, witnessSigIdent.Signature)
+		err = sm.AddCosignature(context.Background(), table.vk, si.Signature)
 		if got, want := err != nil, table.wantErr; got != want {
 			t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 		}
@@ -230,33 +246,24 @@ func TestAddCosignature(t *testing.T) {
 			continue
 		}
 
-		// We should have two signatures (log + witness)
-		if got, want := len(sm.cosignature), 2; got != want {
+		// We should have one witness signature
+		if got, want := len(sm.cosignature), 1; got != want {
 			t.Errorf("got %d cosignatures but wanted %v in test %q", got, want, table.description)
 			continue
 		}
-		// check that log signature is there
-		sigident, ok := sm.cosignature[*logKeyHash]
-		if !ok {
-			t.Errorf("log signature is missing")
-			continue
-		}
-		if got, want := sigident, logSigIdent; !reflect.DeepEqual(got, want) {
-			t.Errorf("got log sigident\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
-		}
 		// check that witness signature is there
-		sigident, ok = sm.cosignature[*witnessKeyHash]
+		sigident, ok := sm.cosignature[*si.KeyHash]
 		if !ok {
 			t.Errorf("witness signature is missing")
 			continue
 		}
-		if got, want := sigident, witnessSigIdent; !reflect.DeepEqual(got, want) {
+		if got, want := si, sigident; !reflect.DeepEqual(got, want) {
 			t.Errorf("got witness sigident\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 			continue
 		}
 
 		// Adding a duplicate signature should give an error
-		if err := sm.AddCosignature(context.Background(), table.vk, witnessSigIdent.Signature); err == nil {
+		if err := sm.AddCosignature(context.Background(), table.vk, si.Signature); err == nil {
 			t.Errorf("duplicate witness signature accepted as valid")
 		}
 	}
@@ -292,81 +299,86 @@ func TestRotate(t *testing.T) {
 		{
 			description: "tosign tree head repated, but got one new witnes signature",
 			before: &StateManagerSingle{
-				cosigned: types.SignedTreeHead{
-					TreeHead: *th0,
-					SigIdent: []*types.SigIdent{log, wit1},
+				cosigned: types.CosignedTreeHead{
+					SignedTreeHead: types.SignedTreeHead{
+						TreeHead:  *th0,
+						Signature: log.Signature,
+					},
+					SigIdent: []*types.SigIdent{wit1},
 				},
 				tosign: types.SignedTreeHead{
-					TreeHead: *th0,
-					SigIdent: []*types.SigIdent{log},
+					TreeHead:  *th0,
+					Signature: log.Signature,
 				},
 				cosignature: map[[types.HashSize]byte]*types.SigIdent{
-					*log.KeyHash:  log,
 					*wit2.KeyHash: wit2, // the new witness signature
 				},
 			},
 			next: &types.SignedTreeHead{
-				TreeHead: *th1,
-				SigIdent: []*types.SigIdent{log},
+				TreeHead:  *th1,
+				Signature: log.Signature,
 			},
 			after: &StateManagerSingle{
-				cosigned: types.SignedTreeHead{
-					TreeHead: *th0,
-					SigIdent: []*types.SigIdent{log, wit1, wit2},
+				cosigned: types.CosignedTreeHead{
+					SignedTreeHead: types.SignedTreeHead{
+						TreeHead:  *th0,
+						Signature: log.Signature,
+					},
+					SigIdent: []*types.SigIdent{wit1, wit2},
 				},
 				tosign: types.SignedTreeHead{
-					TreeHead: *th1,
-					SigIdent: []*types.SigIdent{log},
+					TreeHead:  *th1,
+					Signature: log.Signature,
 				},
-				cosignature: map[[types.HashSize]byte]*types.SigIdent{
-					*log.KeyHash: log, // after rotate we always have log sig
-				},
+				cosignature: map[[types.HashSize]byte]*types.SigIdent{},
 			},
 		},
 		{
 			description: "tosign tree head did not repeat, it got one witness signature",
 			before: &StateManagerSingle{
-				cosigned: types.SignedTreeHead{
-					TreeHead: *th0,
-					SigIdent: []*types.SigIdent{log, wit1},
+				cosigned: types.CosignedTreeHead{
+					SignedTreeHead: types.SignedTreeHead{
+						TreeHead:  *th0,
+						Signature: log.Signature,
+					},
+					SigIdent: []*types.SigIdent{wit1},
 				},
 				tosign: types.SignedTreeHead{
-					TreeHead: *th1,
-					SigIdent: []*types.SigIdent{log},
+					TreeHead:  *th1,
+					Signature: log.Signature,
 				},
 				cosignature: map[[types.HashSize]byte]*types.SigIdent{
-					*log.KeyHash:  log,
-					*wit2.KeyHash: wit2, // the only witness that signed tosign
+					*log.KeyHash: wit2,
 				},
 			},
 			next: &types.SignedTreeHead{
-				TreeHead: *th2,
-				SigIdent: []*types.SigIdent{log},
+				TreeHead:  *th2,
+				Signature: log.Signature,
 			},
 			after: &StateManagerSingle{
-				cosigned: types.SignedTreeHead{
-					TreeHead: *th1,
-					SigIdent: []*types.SigIdent{log, wit2},
+				cosigned: types.CosignedTreeHead{
+					SignedTreeHead: types.SignedTreeHead{
+						TreeHead:  *th1,
+						Signature: log.Signature,
+					},
+					SigIdent: []*types.SigIdent{wit2},
 				},
 				tosign: types.SignedTreeHead{
-					TreeHead: *th2,
-					SigIdent: []*types.SigIdent{log},
+					TreeHead:  *th2,
+					Signature: log.Signature,
 				},
-				cosignature: map[[types.HashSize]byte]*types.SigIdent{
-					*log.KeyHash: log, // after rotate we always have log sig
-				},
+				cosignature: map[[types.HashSize]byte]*types.SigIdent{},
 			},
 		},
 	} {
 		table.before.rotate(table.next)
-		if got, want := table.before.cosigned.TreeHead, table.after.cosigned.TreeHead; !reflect.DeepEqual(got, want) {
+		if got, want := table.before.cosigned.SignedTreeHead, table.after.cosigned.SignedTreeHead; !reflect.DeepEqual(got, want) {
 			t.Errorf("got cosigned tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 		}
 		checkWitnessList(t, table.description, table.before.cosigned.SigIdent, table.after.cosigned.SigIdent)
-		if got, want := table.before.tosign.TreeHead, table.after.tosign.TreeHead; !reflect.DeepEqual(got, want) {
+		if got, want := table.before.tosign, table.after.tosign; !reflect.DeepEqual(got, want) {
 			t.Errorf("got tosign tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 		}
-		checkWitnessList(t, table.description, table.before.tosign.SigIdent, table.after.tosign.SigIdent)
 		if got, want := table.before.cosignature, table.after.cosignature; !reflect.DeepEqual(got, want) {
 			t.Errorf("got cosignature map\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 		}

@@ -48,15 +48,17 @@ func TestMarshalLeaf(t *testing.T) {
 }
 
 func TestMarshalTreeHead(t *testing.T) {
-	description := "valid: timestamp 16909060, tree size 72623859790382856, root hash 0x00,0x01,..."
+	description := "valid: timestamp 16909060, tree size 72623859790382856, root hash & key hash 0x00,0x01,..."
 	th := &TreeHead{
 		Timestamp: 16909060,
 		TreeSize:  72623859790382856,
 		RootHash:  testBuffer32,
+		KeyHash:   testBuffer32,
 	}
 	want := bytes.Join([][]byte{
 		[]byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04},
 		[]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08},
+		testBuffer32[:],
 		testBuffer32[:],
 	}, nil)
 	if got := th.Marshal(); !bytes.Equal(got, want) {

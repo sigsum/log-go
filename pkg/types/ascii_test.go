@@ -134,26 +134,14 @@ func TestSignedTreeHeadMarshalASCII(t *testing.T) {
 			TreeSize:  456,
 			RootHash:  testBuffer32,
 		},
-		SigIdent: []*SigIdent{
-			&SigIdent{
-				Signature: testBuffer64,
-				KeyHash:   testBuffer32,
-			},
-			&SigIdent{
-				Signature: testBuffer64,
-				KeyHash:   testBuffer32,
-			},
-		},
+		Signature: testBuffer64,
 	}
 	wantBuf := bytes.NewBufferString(fmt.Sprintf(
-		"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s",
+		"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s",
 		Timestamp, Delim, 123, EOL,
 		TreeSize, Delim, 456, EOL,
 		RootHash, Delim, testBuffer32[:], EOL,
 		Signature, Delim, testBuffer64[:], EOL,
-		KeyHash, Delim, testBuffer32[:], EOL,
-		Signature, Delim, testBuffer64[:], EOL,
-		KeyHash, Delim, testBuffer32[:], EOL,
 	))
 	buf := bytes.NewBuffer(nil)
 	if err := sth.MarshalASCII(buf); err != nil {
@@ -236,14 +224,11 @@ func TestSignedTreeHeadUnmarshalASCII(t *testing.T) {
 		{
 			description: "valid",
 			buf: bytes.NewBufferString(fmt.Sprintf(
-				"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s",
+				"%s%s%d%s"+"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s",
 				Timestamp, Delim, 123, EOL,
 				TreeSize, Delim, 456, EOL,
 				RootHash, Delim, testBuffer32[:], EOL,
 				Signature, Delim, testBuffer64[:], EOL,
-				KeyHash, Delim, testBuffer32[:], EOL,
-				Signature, Delim, testBuffer64[:], EOL,
-				KeyHash, Delim, testBuffer32[:], EOL,
 			)),
 			wantSth: &SignedTreeHead{
 				TreeHead: TreeHead{
@@ -251,16 +236,7 @@ func TestSignedTreeHeadUnmarshalASCII(t *testing.T) {
 					TreeSize:  456,
 					RootHash:  testBuffer32,
 				},
-				SigIdent: []*SigIdent{
-					&SigIdent{
-						Signature: testBuffer64,
-						KeyHash:   testBuffer32,
-					},
-					&SigIdent{
-						Signature: testBuffer64,
-						KeyHash:   testBuffer32,
-					},
-				},
+				Signature: testBuffer64,
 			},
 		},
 	} {
@@ -436,7 +412,7 @@ func TestCosignatureRequestUnmarshalASCII(t *testing.T) {
 			description: "valid",
 			buf: bytes.NewBufferString(fmt.Sprintf(
 				"%s%s%x%s"+"%s%s%x%s",
-				Signature, Delim, testBuffer64[:], EOL,
+				Cosignature, Delim, testBuffer64[:], EOL,
 				KeyHash, Delim, testBuffer32[:], EOL,
 			)),
 			wantReq: &CosignatureRequest{

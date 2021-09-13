@@ -10,6 +10,8 @@ const (
 	MessageSize = 8 + HashSize
 	// LeafSize is the number of bytes in a Trunnel-encoded leaf
 	LeafSize = MessageSize + SignatureSize + HashSize
+	// TreeHeadSize is the number of bytes in a Trunnel-encoded tree head
+	TreeHeadSize = 8 + 8 + HashSize + HashSize
 )
 
 // Marshal returns a Trunnel-encoded message
@@ -30,10 +32,11 @@ func (l *Leaf) Marshal() []byte {
 
 // Marshal returns a Trunnel-encoded tree head
 func (th *TreeHead) Marshal() []byte {
-	buf := make([]byte, 8+8+HashSize)
+	buf := make([]byte, TreeHeadSize)
 	binary.BigEndian.PutUint64(buf[0:8], th.Timestamp)
 	binary.BigEndian.PutUint64(buf[8:16], th.TreeSize)
-	copy(buf[16:], th.RootHash[:])
+	copy(buf[16:16+HashSize], th.RootHash[:])
+	copy(buf[16+HashSize:], th.KeyHash[:])
 	return buf
 }
 

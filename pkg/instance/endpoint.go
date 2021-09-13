@@ -58,11 +58,11 @@ func getTreeHeadToSign(ctx context.Context, i *Instance, w http.ResponseWriter, 
 
 func getTreeHeadCosigned(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
 	glog.V(3).Info("handling get-tree-head-cosigned request")
-	sth, err := i.Stateman.Cosigned(ctx)
+	cth, err := i.Stateman.Cosigned(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	if err := sth.MarshalASCII(w); err != nil {
+	if err := cth.MarshalASCII(w); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil

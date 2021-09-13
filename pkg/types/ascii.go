@@ -18,7 +18,7 @@ const (
 
 	// NumField* is the number of unique keys in an incoming ASCII message
 	NumFieldLeaf                    = 4
-	NumFieldSignedTreeHead          = 5
+	NumFieldSignedTreeHead          = 4
 	NumFieldConsistencyProof        = 3
 	NumFieldInclusionProof          = 3
 	NumFieldLeavesRequest           = 2
@@ -28,11 +28,11 @@ const (
 	NumFieldCosignatureRequest      = 2
 
 	// New leaf keys
-	ShardHint            = "shard_hint"
-	Checksum             = "checksum"
-	Signature            = "signature"
-	VerificationKey      = "verification_key"
-	DomainHint           = "domain_hint"
+	ShardHint       = "shard_hint"
+	Checksum        = "checksum"
+	Signature       = "signature"
+	VerificationKey = "verification_key"
+	DomainHint      = "domain_hint"
 
 	// Inclusion proof keys
 	LeafHash      = "leaf_hash"
@@ -53,8 +53,9 @@ const (
 	TreeSize  = "tree_size"
 	RootHash  = "root_hash"
 
-	// Signature and signer-identity keys
-	KeyHash   = "key_hash"
+	// Witness signature-identity keys
+	KeyHash     = "key_hash"
+	Cosignature = "cosignature"
 )
 
 // MessageASCI is a wrapper that manages ASCII key-value pairs
@@ -219,19 +220,29 @@ func (sth *SignedTreeHead) MarshalASCII(w io.Writer) error {
 	if err := writeASCII(w, RootHash, hex.EncodeToString(sth.RootHash[:])); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
-	for _, sigident := range sth.SigIdent {
-		if err := sigident.MarshalASCII(w); err != nil {
-			return fmt.Errorf("MarshalASCII: %v", err)
+	if err := writeASCII(w, Signature, hex.EncodeToString(sth.Signature[:])); err != nil {
+		return fmt.Errorf("writeASCII: %v", err)
+	}
+	return nil
+}
+
+func (cth *CosignedTreeHead) MarshalASCII(w io.Writer) error {
+	if err := cth.SignedTreeHead.MarshalASCII(w); err != nil {
+		return fmt.Errorf("writeASCII: %v", err)
+	}
+	for _, si := range cth.SigIdent {
+		if err := si.MarshalASCII(w); err != nil {
+			return fmt.Errorf("writeASCII: %v", err)
 		}
 	}
 	return nil
 }
 
 func (si *SigIdent) MarshalASCII(w io.Writer) error {
-	if err := writeASCII(w, Signature, hex.EncodeToString(si.Signature[:])); err != nil {
+	if err := writeASCII(w, KeyHash, hex.EncodeToString(si.KeyHash[:])); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
-	if err := writeASCII(w, KeyHash, hex.EncodeToString(si.KeyHash[:])); err != nil {
+	if err := writeASCII(w, Cosignature, hex.EncodeToString(si.Signature[:])); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
 	return nil
@@ -280,7 +291,6 @@ func (sth *SignedTreeHead) UnmarshalASCII(r io.Reader) error {
 		return fmt.Errorf("NewMessageASCII: %v", err)
 	}
 
-	// TreeHead
 	if sth.Timestamp, err = msg.GetUint64(Timestamp); err != nil {
 		return fmt.Errorf("GetUint64(Timestamp): %v", err)
 	}
@@ -290,30 +300,8 @@ func (sth *SignedTreeHead) UnmarshalASCII(r io.Reader) error {
 	if sth.RootHash, err = msg.GetHash(RootHash); err != nil {
 		return fmt.Errorf("GetHash(RootHash): %v", err)
 	}
-
-	// SigIdent
-	signatures := msg.GetStrings(Signature)
-	if len(signatures) == 0 {
-		return fmt.Errorf("no signer")
-	}
-	keyHashes := msg.GetStrings(KeyHash)
-	if len(signatures) != len(keyHashes) {
-		return fmt.Errorf("mismatched signature-signer count")
-	}
-	sth.SigIdent = make([]*SigIdent, 0, len(signatures))
-	for i, n := 0, len(signatures); i < n; i++ {
-		var signature [SignatureSize]byte
-		if err := decodeHex(signatures[i], signature[:]); err != nil {
-			return fmt.Errorf("decodeHex: %v", err)
-		}
-		var hash [HashSize]byte
-		if err := decodeHex(keyHashes[i], hash[:]); err != nil {
-			return fmt.Errorf("decodeHex: %v", err)
-		}
-		sth.SigIdent = append(sth.SigIdent, &SigIdent{
-			Signature: &signature,
-			KeyHash:   &hash,
-		})
+	if sth.Signature, err = msg.GetSignature(Signature); err != nil {
+		return fmt.Errorf("GetHash(RootHash): %v", err)
 	}
 	return nil
 }
@@ -401,7 +389,7 @@ func (req *CosignatureRequest) UnmarshalASCII(r io.Reader) error {
 		return fmt.Errorf("NewMessageASCII: %v", err)
 	}
 
-	if req.Signature, err = msg.GetSignature(Signature); err != nil {
+	if req.Signature, err = msg.GetSignature(Cosignature); err != nil {
 		return fmt.Errorf("GetSignature: %v", err)
 	}
 	if req.KeyHash, err = msg.GetHash(KeyHash); err != nil {

@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"crypto"
+	"crypto/ed25519"
 	"fmt"
 	"reflect"
 	"sync"
@@ -18,7 +19,7 @@ import (
 type StateManager interface {
 	Latest(context.Context) (*types.SignedTreeHead, error)
 	ToSign(context.Context) (*types.SignedTreeHead, error)
-	Cosigned(context.Context) (*types.SignedTreeHead, error)
+	Cosigned(context.Context) (*types.CosignedTreeHead, error)
 	AddCosignature(context.Context, *[types.VerificationKeySize]byte, *[types.SignatureSize]byte) error
 	Run(context.Context)
 }
@@ -33,7 +34,7 @@ type StateManagerSingle struct {
 	sync.RWMutex
 
 	// cosigned is the current cosigned tree head that is being served
-	cosigned types.SignedTreeHead
+	cosigned types.CosignedTreeHead
 
 	// tosign is the current tree head that is being cosigned by witnesses
 	tosign types.SignedTreeHead
@@ -56,18 +57,19 @@ func NewStateManagerSingle(client trillian.Client, signer crypto.Signer, interva
 		return nil, fmt.Errorf("Latest: %v", err)
 	}
 
-	sm.cosigned = *sth
-	sm.tosign = *sth
-	sm.cosignature = map[[types.HashSize]byte]*types.SigIdent{
-		*sth.SigIdent[0].KeyHash: sth.SigIdent[0], // log signature
+	sm.cosigned = types.CosignedTreeHead{
+		SignedTreeHead: *sth,
+		SigIdent:       []*types.SigIdent{},
 	}
+	sm.tosign = *sth
+	sm.cosignature = map[[types.HashSize]byte]*types.SigIdent{}
 	return sm, nil
 }
 
 func (sm *StateManagerSingle) Run(ctx context.Context) {
 	schedule.Every(ctx, sm.interval, func(ctx context.Context) {
 		ictx, _ := context.WithTimeout(ctx, sm.deadline)
-		nextTreeHead, err := sm.Latest(ictx)
+		nextSTH, err := sm.Latest(ictx)
 		if err != nil {
 			glog.Warningf("rotate failed: Latest: %v", err)
 			return
@@ -75,7 +77,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 
 		sm.Lock()
 		defer sm.Unlock()
-		sm.rotate(nextTreeHead)
+		sm.rotate(nextSTH)
 	})
 }
 
@@ -84,6 +86,7 @@ func (sm *StateManagerSingle) Latest(ctx context.Context) (*types.SignedTreeHead
 	if err != nil {
 		return nil, fmt.Errorf("LatestTreeHead: %v", err)
 	}
+	th.KeyHash = types.Hash(sm.signer.Public().(ed25519.PublicKey)[:])
 	sth, err := th.Sign(sm.signer)
 	if err != nil {
 		return nil, fmt.Errorf("sign: %v", err)
@@ -97,9 +100,12 @@ func (sm *StateManagerSingle) ToSign(_ context.Context) (*types.SignedTreeHead, 
 	return &sm.tosign, nil
 }
 
-func (sm *StateManagerSingle) Cosigned(_ context.Context) (*types.SignedTreeHead, error) {
+func (sm *StateManagerSingle) Cosigned(_ context.Context) (*types.CosignedTreeHead, error) {
 	sm.RLock()
 	defer sm.RUnlock()
+	if len(sm.cosigned.SigIdent) == 0 {
+		return nil, fmt.Errorf("no witness cosignatures available")
+	}
 	return &sm.cosigned, nil
 }
 
@@ -126,7 +132,7 @@ func (sm *StateManagerSingle) AddCosignature(_ context.Context, vk *[types.Verif
 // rotate rotates the log's cosigned and stable STH.  The caller must aquire the
 // source's read-write lock if there are concurrent reads and/or writes.
 func (sm *StateManagerSingle) rotate(next *types.SignedTreeHead) {
-	if reflect.DeepEqual(sm.cosigned.TreeHead, sm.tosign.TreeHead) {
+	if reflect.DeepEqual(sm.cosigned.SignedTreeHead, sm.tosign) {
 		// cosigned and tosign are the same.  So, we need to merge all
 		// cosignatures that we already had with the new collected ones.
 		for _, sigident := range sm.cosigned.SigIdent {
@@ -142,13 +148,11 @@ func (sm *StateManagerSingle) rotate(next *types.SignedTreeHead) {
 	}
 
 	// Update cosigned tree head
-	sm.cosigned.TreeHead = sm.tosign.TreeHead
+	sm.cosigned.SignedTreeHead = sm.tosign
 	sm.cosigned.SigIdent = cosignatures
 
 	// Update to-sign tree head
 	sm.tosign = *next
-	sm.cosignature = map[[types.HashSize]byte]*types.SigIdent{
-		*next.SigIdent[0].KeyHash: next.SigIdent[0], // log signature
-	}
+	sm.cosignature = map[[types.HashSize]byte]*types.SigIdent{} // TODO: on repeat we might want to not zero this
 	glog.V(3).Infof("rotated tree heads")
 }

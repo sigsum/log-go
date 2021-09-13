@@ -34,10 +34,14 @@ var (
 			TreeSize:  0,
 			RootHash:  types.Hash(nil),
 		},
+		Signature: &[types.SignatureSize]byte{},
+	}
+	testCTH = &types.CosignedTreeHead{
+		SignedTreeHead: *testSTH,
 		SigIdent: []*types.SigIdent{
 			&types.SigIdent{
-				Signature: &[types.SignatureSize]byte{},
 				KeyHash:   &[types.HashSize]byte{},
+				Signature: &[types.SignatureSize]byte{},
 			},
 		},
 	}
@@ -137,7 +141,7 @@ func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
 		return bytes.NewBufferString(fmt.Sprintf(
 			"%s%s%x%s"+"%s%s%x%s",
-			types.Signature, types.Delim, make([]byte, types.SignatureSize), types.EOL,
+			types.Cosignature, types.Delim, make([]byte, types.SignatureSize), types.EOL,
 			types.KeyHash, types.Delim, *types.Hash(testWitVK[:]), types.EOL,
 		))
 	}
@@ -311,10 +315,10 @@ func TestGetTreeToSign(t *testing.T) {
 func TestGetTreeCosigned(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool                  // set if a mock answer is expected
-		rsp         *types.SignedTreeHead // signed tree head from Trillian client
-		err         error                 // error from Trillian client
-		wantCode    int                   // HTTP status ok
+		expect      bool                    // set if a mock answer is expected
+		rsp         *types.CosignedTreeHead // cosigned tree head from Trillian client
+		err         error                   // error from Trillian client
+		wantCode    int                     // HTTP status ok
 	}{
 		{
 			description: "invalid: backend failure",
@@ -325,7 +329,7 @@ func TestGetTreeCosigned(t *testing.T) {
 		{
 			description: "valid",
 			expect:      true,
-			rsp:         testSTH,
+			rsp:         testCTH,
 			wantCode:    http.StatusOK,
 		},
 	} {

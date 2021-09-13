@@ -13,11 +13,17 @@ import (
 )
 
 var (
-	url = flag.String("url", "http://localhost:6965/sigsum/v0", "base url")
-	sk  = flag.String("sk", "e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b", "hex key")
+	url    = flag.String("url", "http://localhost:6965/sigsum/v0", "base url")
+	sk     = flag.String("sk", "e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b", "witness secret key (hex)")
+	log_vk = flag.String("log_vk", "cc0e7294a9d002c33aaa828efba6622ab1ce8ebdb8a795902555c2813133cfe8", "log public key (hex)")
 )
 
 func main() {
+	log_vk, err := hex.DecodeString(*log_vk)
+	if err != nil {
+		log.Fatalf("DecodeString: %v", err)
+	}
+
 	priv, err := hex.DecodeString(*sk)
 	if err != nil {
 		log.Fatalf("DecodeString: %v", err)
@@ -34,7 +40,8 @@ func main() {
 	if err := sth.UnmarshalASCII(rsp.Body); err != nil {
 		log.Fatalf("UnmarshalASCII: %v", err)
 	}
-	fmt.Printf("%+v\n", sth)
+	sth.TreeHead.KeyHash = types.Hash(log_vk)
+	fmt.Printf("%+v\n\n", sth)
 
 	msg := sth.TreeHead.Marshal()
 	sig := ed25519.Sign(sk, msg)

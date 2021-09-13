@@ -50,10 +50,10 @@ func (mr *MockStateManagerMockRecorder) AddCosignature(arg0, arg1, arg2 interfac
 }
 
 // Cosigned mocks base method.
-func (m *MockStateManager) Cosigned(arg0 context.Context) (*types.SignedTreeHead, error) {
+func (m *MockStateManager) Cosigned(arg0 context.Context) (*types.CosignedTreeHead, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Cosigned", arg0)
-	ret0, _ := ret[0].(*types.SignedTreeHead)
+	ret0, _ := ret[0].(*types.CosignedTreeHead)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
