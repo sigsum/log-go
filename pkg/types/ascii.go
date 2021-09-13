@@ -30,7 +30,7 @@ const (
 	// New leaf keys
 	ShardHint            = "shard_hint"
 	Checksum             = "checksum"
-	SignatureOverMessage = "signature_over_message"
+	Signature            = "signature"
 	VerificationKey      = "verification_key"
 	DomainHint           = "domain_hint"
 
@@ -54,7 +54,6 @@ const (
 	RootHash  = "root_hash"
 
 	// Signature and signer-identity keys
-	Signature = "signature"
 	KeyHash   = "key_hash"
 )
 
@@ -201,7 +200,7 @@ func (l *Leaf) MarshalASCII(w io.Writer) error {
 	if err := writeASCII(w, Checksum, hex.EncodeToString(l.Checksum[:])); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
-	if err := writeASCII(w, SignatureOverMessage, hex.EncodeToString(l.Signature[:])); err != nil {
+	if err := writeASCII(w, Signature, hex.EncodeToString(l.Signature[:])); err != nil {
 		return fmt.Errorf("writeASCII: %v", err)
 	}
 	if err := writeASCII(w, KeyHash, hex.EncodeToString(l.KeyHash[:])); err != nil {
@@ -393,7 +392,7 @@ func (req *LeafRequest) UnmarshalASCII(r io.Reader) error {
 	if req.Checksum, err = msg.GetHash(Checksum); err != nil {
 		return fmt.Errorf("GetHash(Checksum): %v", err)
 	}
-	if req.Signature, err = msg.GetSignature(SignatureOverMessage); err != nil {
+	if req.Signature, err = msg.GetSignature(Signature); err != nil {
 		return fmt.Errorf("GetSignature: %v", err)
 	}
 	if req.VerificationKey, err = msg.GetVerificationKey(VerificationKey); err != nil {

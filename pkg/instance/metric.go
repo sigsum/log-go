@@ -1,4 +1,4 @@
-package stfe
+package instance
 
 import (
 	"github.com/google/trillian/monitoring"

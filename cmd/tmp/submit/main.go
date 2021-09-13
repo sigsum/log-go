@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 func main() {
@@ -25,5 +25,5 @@ func main() {
 	sig := ed25519.Sign(sk, msg.Marshal())
 	//fmt.Printf("sk: %x\nvk: %x\n", sk[:], vk[:])
 
-	fmt.Printf("echo \"shard_hint=%d\nchecksum=%x\nsignature_over_message=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- localhost:6965/st/v0/add-leaf\n", msg.ShardHint, msg.Checksum[:], sig, vk[:], "example.com")
+	fmt.Printf("echo \"shard_hint=%d\nchecksum=%x\nsignature=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- localhost:6965/sigsum/v0/add-leaf\n", msg.ShardHint, msg.Checksum[:], sig, vk[:], "example.com")
 }

@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/system-transparency/stfe/pkg/mocks"
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/mocks"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (

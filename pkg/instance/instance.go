@@ -1,4 +1,4 @@
-package stfe
+package instance
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/system-transparency/stfe/pkg/state"
-	"github.com/system-transparency/stfe/pkg/trillian"
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/state"
+	"golang.sigsum.org/sigsum-log-go/pkg/trillian"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // Config is a collection of log parameters
@@ -36,7 +36,7 @@ type Instance struct {
 }
 
 // Handler implements the http.Handler interface, and contains a reference
-// to an STFE server instance as well as a function that uses it.
+// to a sigsum server instance as well as a function that uses it.
 type Handler struct {
 	Instance *Instance
 	Endpoint types.Endpoint
@@ -44,7 +44,7 @@ type Handler struct {
 	Handler  func(context.Context, *Instance, http.ResponseWriter, *http.Request) (int, error)
 }
 
-// Handlers returns a list of STFE handlers
+// Handlers returns a list of sigsum handlers
 func (i *Instance) Handlers() []Handler {
 	return []Handler{
 		Handler{Instance: i, Handler: addLeaf, Endpoint: types.EndpointAddLeaf, Method: http.MethodPost},
@@ -60,7 +60,7 @@ func (i *Instance) Handlers() []Handler {
 
 // Path returns a path that should be configured for this handler
 func (h Handler) Path() string {
-	return h.Endpoint.Path(h.Instance.Prefix, "st", "v0")
+	return h.Endpoint.Path(h.Instance.Prefix, "sigsum", "v0")
 }
 
 // ServeHTTP is part of the http.Handler interface

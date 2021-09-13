@@ -106,12 +106,12 @@ func TestLeafMarshalASCII(t *testing.T) {
 		// Leaf 1
 		ShardHint, Delim, 123, EOL,
 		Checksum, Delim, testBuffer32[:], EOL,
-		SignatureOverMessage, Delim, testBuffer64[:], EOL,
+		Signature, Delim, testBuffer64[:], EOL,
 		KeyHash, Delim, testBuffer32[:], EOL,
 		// Leaf 2
 		ShardHint, Delim, 456, EOL,
 		Checksum, Delim, testBuffer32[:], EOL,
-		SignatureOverMessage, Delim, testBuffer64[:], EOL,
+		Signature, Delim, testBuffer64[:], EOL,
 		KeyHash, Delim, testBuffer32[:], EOL,
 	))
 	buf := bytes.NewBuffer(nil)
@@ -399,7 +399,7 @@ func TestLeafRequestUnmarshalASCII(t *testing.T) {
 				"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%s%s",
 				ShardHint, Delim, 123, EOL,
 				Checksum, Delim, testBuffer32[:], EOL,
-				SignatureOverMessage, Delim, testBuffer64[:], EOL,
+				Signature, Delim, testBuffer64[:], EOL,
 				VerificationKey, Delim, testBuffer32[:], EOL,
 				DomainHint, Delim, "example.com", EOL,
 			)),

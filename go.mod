@@ -1,4 +1,4 @@
-module github.com/system-transparency/stfe
+module golang.sigsum.org/sigsum-log-go
 
 go 1.14
 

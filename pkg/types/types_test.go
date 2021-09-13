@@ -5,42 +5,42 @@ import (
 )
 
 func TestEndpointPath(t *testing.T) {
-	base, prefix, proto := "example.com", "log", "st/v0"
+	base, prefix, proto := "example.com", "log", "sigsum/v0"
 	for _, table := range []struct {
 		endpoint Endpoint
 		want     string
 	}{
 		{
 			endpoint: EndpointAddLeaf,
-			want:     "example.com/log/st/v0/add-leaf",
+			want:     "example.com/log/sigsum/v0/add-leaf",
 		},
 		{
 			endpoint: EndpointAddCosignature,
-			want:     "example.com/log/st/v0/add-cosignature",
+			want:     "example.com/log/sigsum/v0/add-cosignature",
 		},
 		{
 			endpoint: EndpointGetTreeHeadLatest,
-			want:     "example.com/log/st/v0/get-tree-head-latest",
+			want:     "example.com/log/sigsum/v0/get-tree-head-latest",
 		},
 		{
 			endpoint: EndpointGetTreeHeadToSign,
-			want:     "example.com/log/st/v0/get-tree-head-to-sign",
+			want:     "example.com/log/sigsum/v0/get-tree-head-to-sign",
 		},
 		{
 			endpoint: EndpointGetTreeHeadCosigned,
-			want:     "example.com/log/st/v0/get-tree-head-cosigned",
+			want:     "example.com/log/sigsum/v0/get-tree-head-cosigned",
 		},
 		{
 			endpoint: EndpointGetConsistencyProof,
-			want:     "example.com/log/st/v0/get-consistency-proof",
+			want:     "example.com/log/sigsum/v0/get-consistency-proof",
 		},
 		{
 			endpoint: EndpointGetProofByHash,
-			want:     "example.com/log/st/v0/get-proof-by-hash",
+			want:     "example.com/log/sigsum/v0/get-proof-by-hash",
 		},
 		{
 			endpoint: EndpointGetLeaves,
-			want:     "example.com/log/st/v0/get-leaves",
+			want:     "example.com/log/sigsum/v0/get-leaves",
 		},
 	} {
 		if got, want := table.endpoint.Path(base+"/"+prefix+"/"+proto), table.want; got != want {

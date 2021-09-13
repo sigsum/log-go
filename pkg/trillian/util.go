@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	trillian "github.com/google/trillian/types"
-	siglog "github.com/system-transparency/stfe/pkg/types"
+	sigsum "golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
-func treeHeadFromLogRoot(lr *trillian.LogRootV1) *siglog.TreeHead {
-	var hash [siglog.HashSize]byte
-	th := siglog.TreeHead{
+func treeHeadFromLogRoot(lr *trillian.LogRootV1) *sigsum.TreeHead {
+	var hash [sigsum.HashSize]byte
+	th := sigsum.TreeHead{
 		Timestamp: uint64(lr.TimestampNanos / 1000 / 1000 / 1000),
 		TreeSize:  uint64(lr.TreeSize),
 		RootHash:  &hash,
@@ -18,14 +18,14 @@ func treeHeadFromLogRoot(lr *trillian.LogRootV1) *siglog.TreeHead {
 	return &th
 }
 
-func nodePathFromHashes(hashes [][]byte) ([]*[siglog.HashSize]byte, error) {
-	var path []*[siglog.HashSize]byte
+func nodePathFromHashes(hashes [][]byte) ([]*[sigsum.HashSize]byte, error) {
+	var path []*[sigsum.HashSize]byte
 	for _, hash := range hashes {
-		if len(hash) != siglog.HashSize {
+		if len(hash) != sigsum.HashSize {
 			return nil, fmt.Errorf("unexpected hash length: %v", len(hash))
 		}
 
-		var h [siglog.HashSize]byte
+		var h [sigsum.HashSize]byte
 		copy(h[:], hash)
 		path = append(path, &h)
 	}

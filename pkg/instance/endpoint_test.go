@@ -1,4 +1,4 @@
-package stfe
+package instance
 
 import (
 	//"reflect"
@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/system-transparency/stfe/pkg/mocks"
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/mocks"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (
@@ -60,7 +60,7 @@ func TestAddLeaf(t *testing.T) {
 			"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
 			types.ShardHint, types.Delim, "0", types.EOL,
 			types.Checksum, types.Delim, "0000000000000000000000000000000000000000000000000000000000000000", types.EOL,
-			types.SignatureOverMessage, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
+			types.Signature, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
 			types.VerificationKey, types.Delim, "f2b7a00b625469d32502e06e8b7fad1ef258d4ad0c6cd87b846142ab681957d5", types.EOL,
 			types.DomainHint, types.Delim, "example.com", types.EOL,
 		))
@@ -83,7 +83,7 @@ func TestAddLeaf(t *testing.T) {
 				"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
 				types.ShardHint, types.Delim, "1", types.EOL,
 				types.Checksum, types.Delim, "1111111111111111111111111111111111111111111111111111111111111111", types.EOL,
-				types.SignatureOverMessage, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
+				types.Signature, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
 				types.VerificationKey, types.Delim, "f2b7a00b625469d32502e06e8b7fad1ef258d4ad0c6cd87b846142ab681957d5", types.EOL,
 				types.DomainHint, types.Delim, "example.com", types.EOL,
 			)),

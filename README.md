@@ -77,6 +77,7 @@ public verification key is `777528f5fd96f95713b8c2bb48bce2c83628e39ad3bfbd95bc00
 You can talk to the log by passing ASCII key-value pairs.  For example,
 fetch a tree head and a log entry:
 ```
+$ echo "TODO: update to sigsum links"
 $ curl http://tlog-poc.system-transparency.org:4780/st/v0/get-tree-head-latest
 timestamp=1623053394
 tree_size=1

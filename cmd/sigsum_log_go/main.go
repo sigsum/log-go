@@ -1,4 +1,4 @@
-// Package main provides an STFE server binary
+// Package main provides a sigsum-log-go binary
 package main
 
 import (
@@ -19,17 +19,18 @@ import (
 	"github.com/golang/glog"
 	"github.com/google/trillian"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	stfe "github.com/system-transparency/stfe/pkg/instance"
-	"github.com/system-transparency/stfe/pkg/state"
-	trillianWrapper "github.com/system-transparency/stfe/pkg/trillian"
-	"github.com/system-transparency/stfe/pkg/types"
 	"google.golang.org/grpc"
+
+	sigsum "golang.sigsum.org/sigsum-log-go/pkg/instance"
+	"golang.sigsum.org/sigsum-log-go/pkg/state"
+	trillianWrapper "golang.sigsum.org/sigsum-log-go/pkg/trillian"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (
-	httpEndpoint = flag.String("http_endpoint", "localhost:6965", "host:port specification of where stfe serves clients")
+	httpEndpoint = flag.String("http_endpoint", "localhost:6965", "host:port specification of where sigsum-log-go serves clients")
 	rpcBackend   = flag.String("log_rpc_server", "localhost:6962", "host:port specification of where Trillian serves clients")
-	prefix       = flag.String("prefix", "", "a prefix that proceeds /st/v0/<endpoint>")
+	prefix       = flag.String("prefix", "", "a prefix that proceeds /sigsum/v0/<endpoint>")
 	trillianID   = flag.Int64("trillian_id", 0, "log identifier in the Trillian database")
 	deadline     = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
 	key          = flag.String("key", "", "hex-encoded Ed25519 signing key")
@@ -48,7 +49,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	glog.V(3).Infof("configuring stfe instance...")
+	glog.V(3).Infof("configuring sigsum-log-go instance...")
 	instance, err := setupInstanceFromFlags()
 	if err != nil {
 		glog.Errorf("setupInstance: %v", err)
@@ -83,9 +84,9 @@ func main() {
 	}
 }
 
-// SetupInstance sets up a new STFE instance from flags
-func setupInstanceFromFlags() (*stfe.Instance, error) {
-	var i stfe.Instance
+// SetupInstance sets up a new sigsum-log-go instance from flags
+func setupInstanceFromFlags() (*sigsum.Instance, error) {
+	var i sigsum.Instance
 	var err error
 
 	// Setup log configuration

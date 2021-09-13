@@ -1,11 +1,11 @@
-# Run Trillian + STFE locally
+# Run Trillian + sigsum-log-go locally
 Trillian uses a database.  So, we will need to set that up.  It is documented
 [here](https://github.com/google/trillian#mysql-setup), and how to check that it
 is setup properly
 [here](https://github.com/google/certificate-transparency-go/blob/master/trillian/docs/ManualDeployment.md#data-storage).
 
-Other than the database we need the Trillian log signer, Trillian log server,
-and STFE server.
+Other than the database we need Trillian log signer, Trillian log server, and
+sigsum-log-go.
 ```
 $ go install github.com/google/trillian/cmd/trillian_log_signer
 $ go install github.com/google/trillian/cmd/trillian_log_server
@@ -31,30 +31,27 @@ $ createtree --admin_server localhost:6962
 <tree id>
 ```
 
-Hang on to `<tree id>`.  Our STFE server will use it when talking to the
-Trillian log server to specify which Merkle tree we are working against.
+Hang on to `<tree id>`.  Our sigsum-log-go instance will use it when talking to
+the Trillian log server to specify which Merkle tree we are working against.
 
 (If you take a look in the `Trees` table you will see that the tree has been
 provisioned.)
 
-We will also need a public key-pair and log identifier for the STFE server.
+We will also need a public key-pair for sigsum-log-go.
 ```
-$ go install github.com/system-transparency/stfe/types/cmd/new-namespace
+$ go install golang.sigsum.org/sigsum-log-go/cmd/tmp/keygen
+$ ./keygen
 sk: <sk>
 vk: <vk>
-ed25519_v1: <namespace>
 ```
 
-The log's identifier is `<namespace>` and contains the public verification key
-`<vk>`.  The log's corresponding secret signing key is `<sk>`.
-
-Start STFE server:
+Start sigsum-log-go:
 ```
-$ ./server --logtostderr -v 9 --http_endpoint localhost:6965 --log_rpc_server localhost:6962 --trillian_id <tree id> --key <sk>
+$ tree_id=<tree_id>
+$ sk=<sk>
+$ sigsum_log_go --logtostderr -v 9 --http_endpoint localhost:6965 --log_rpc_server localhost:6962 --trillian_id $tree_id --key $sk
 ```
 
-If the log is responsive on, e.g., `GET http://localhost:6965/st/v1/get-latest-sth` you
-may want to try running
-`github.com/system-transparency/stfe/client/cmd/example.sh`.  You need to
-configure the log's id though for verification to work (flag `log_id`, which
-should be set to the `<namespace>` output above).
+Quick test:
+- curl http://localhost:6965/sigsum/v0/get-tree-head-latest
+- try `submit` and `cosign` commands in `cmd/tmp`

@@ -1,11 +1,11 @@
-package stfe
+package instance
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // TestHandlers check that the expected handlers are configured
@@ -74,7 +74,7 @@ func TestPath(t *testing.T) {
 		Endpoint: types.EndpointAddLeaf,
 		Method:   http.MethodPost,
 	}
-	if got, want := handler.Path(), "testonly/st/v0/add-leaf"; got != want {
+	if got, want := handler.Path(), "testonly/sigsum/v0/add-leaf"; got != want {
 		t.Errorf("got path %v but wanted %v", got, want)
 	}
 }

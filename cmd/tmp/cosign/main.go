@@ -9,11 +9,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/system-transparency/stfe/pkg/types"
+	"golang.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (
-	url = flag.String("url", "http://localhost:6965/st/v0", "base url")
+	url = flag.String("url", "http://localhost:6965/sigsum/v0", "base url")
 	sk  = flag.String("sk", "e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b", "hex key")
 )
 
@@ -48,7 +48,7 @@ func main() {
 	if err := sigident.MarshalASCII(buf); err != nil {
 		log.Fatalf("MarshalASCII: %v", err)
 	}
-	rsp, err = http.Post(*url+"/add-cosignature", "type/stfe", buf)
+	rsp, err = http.Post(*url+"/add-cosignature", "type/sigsum", buf)
 	if err != nil {
 		log.Fatalf("Post: %v", err)
 	}
