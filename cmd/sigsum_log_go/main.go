@@ -37,11 +37,14 @@ var (
 	witnesses    = flag.String("witnesses", "", "comma-separated list of trusted witness verification keys in hex")
 	maxRange     = flag.Int64("max_range", 10, "maximum number of entries that can be retrived in a single request")
 	interval     = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
+
+	gitCommit = "unknown"
 )
 
 func main() {
 	flag.Parse()
 	defer glog.Flush()
+	glog.Infof("sigsum-log-go git-commit %s", gitCommit)
 
 	// wait for clean-up before exit
 	var wg sync.WaitGroup
