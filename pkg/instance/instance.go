@@ -16,12 +16,14 @@ import (
 
 // Config is a collection of log parameters
 type Config struct {
-	LogID    string        // H(public key), then hex-encoded
-	TreeID   int64         // Merkle tree identifier used by Trillian
-	Prefix   string        // The portion between base URL and st/v0 (may be "")
-	MaxRange int64         // Maximum number of leaves per get-leaves request
-	Deadline time.Duration // Deadline used for gRPC requests
-	Interval time.Duration // Cosigning frequency
+	LogID      string        // H(public key), then hex-encoded
+	TreeID     int64         // Merkle tree identifier used by Trillian
+	Prefix     string        // The portion between base URL and st/v0 (may be "")
+	MaxRange   int64         // Maximum number of leaves per get-leaves request
+	Deadline   time.Duration // Deadline used for gRPC requests
+	Interval   time.Duration // Cosigning frequency
+	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
+	ShardEnd   uint64        // Shard interval end (num seconds since UNIX epoch)
 
 	// Witnesses map trusted witness identifiers to public verification keys
 	Witnesses map[[types.HashSize]byte][types.VerificationKeySize]byte
@@ -102,7 +104,12 @@ func (i *Instance) leafRequestFromHTTP(r *http.Request) (*types.LeafRequest, err
 	if !ed25519.Verify(vk, msg, sig) {
 		return nil, fmt.Errorf("invalid signature")
 	}
-	// TODO: check shard hint
+	if req.ShardHint < i.ShardStart {
+		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, i.ShardEnd)
+	}
+	if req.ShardHint > i.ShardEnd {
+		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, i.ShardEnd)
+	}
 	// TODO: check domain hint
 	return &req, nil
 }

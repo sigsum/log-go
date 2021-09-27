@@ -18,12 +18,14 @@ import (
 var (
 	testWitVK  = [types.VerificationKeySize]byte{}
 	testConfig = Config{
-		LogID:    hex.EncodeToString(types.Hash([]byte("logid"))[:]),
-		TreeID:   0,
-		Prefix:   "testonly",
-		MaxRange: 3,
-		Deadline: 10,
-		Interval: 10,
+		LogID:      hex.EncodeToString(types.Hash([]byte("logid"))[:]),
+		TreeID:     0,
+		Prefix:     "testonly",
+		MaxRange:   3,
+		Deadline:   10,
+		Interval:   10,
+		ShardStart: 10,
+		ShardEnd:   20,
 		Witnesses: map[[types.HashSize]byte][types.VerificationKeySize]byte{
 			*types.Hash(testWitVK[:]): testWitVK,
 		},
@@ -58,14 +60,14 @@ func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
 }
 
 func TestAddLeaf(t *testing.T) {
-	buf := func() io.Reader {
+	buf := func(shard uint64, sum, sig, vf string) io.Reader {
 		// A valid leaf request that was created manually
 		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
-			types.ShardHint, types.Delim, "0", types.EOL,
-			types.Checksum, types.Delim, "0000000000000000000000000000000000000000000000000000000000000000", types.EOL,
-			types.Signature, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
-			types.VerificationKey, types.Delim, "f2b7a00b625469d32502e06e8b7fad1ef258d4ad0c6cd87b846142ab681957d5", types.EOL,
+			"%s%s%d%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
+			types.ShardHint, types.Delim, shard, types.EOL,
+			types.Checksum, types.Delim, sum, types.EOL,
+			types.Signature, types.Delim, sig, types.EOL,
+			types.VerificationKey, types.Delim, vf, types.EOL,
 			types.DomainHint, types.Delim, "example.com", types.EOL,
 		))
 	}
@@ -76,6 +78,7 @@ func TestAddLeaf(t *testing.T) {
 		err         error     // error from Trillian client
 		wantCode    int       // HTTP status ok
 	}{
+		// XXX introduce helper so that test params are not hardcoded
 		{
 			description: "invalid: bad request (parser error)",
 			ascii:       bytes.NewBufferString("key=value\n"),
@@ -83,28 +86,51 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii: bytes.NewBufferString(fmt.Sprintf(
-				"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
-				types.ShardHint, types.Delim, "1", types.EOL,
-				types.Checksum, types.Delim, "1111111111111111111111111111111111111111111111111111111111111111", types.EOL,
-				types.Signature, types.Delim, "4cb410a4d48f52f761a7c01abcc28fd71811b84ded5403caed5e21b374f6aac9637cecd36828f17529fd503413d30ab66d7bb37a31dbf09a90d23b9241c45009", types.EOL,
-				types.VerificationKey, types.Delim, "f2b7a00b625469d32502e06e8b7fad1ef258d4ad0c6cd87b846142ab681957d5", types.EOL,
-				types.DomainHint, types.Delim, "example.com", types.EOL,
-			)),
+			ascii: buf(10,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
+			),
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			description: "invalid: bad request (shard hint is before shard start)",
+			ascii: buf(9,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"20876ac8bf2c32d0c7f9b51b57f2de2f454c82c6b189ee30d5275361b657299b3e4e4d677646ec2586927a5a015ad349ae1ca4440e1bf6efbec875144d3a4009",
+				"a70f95f1739834190ec9a2a2fcee8ba8e70eddeb825c9856edfb2d8c5dfda595",
+			),
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			description: "invalid: bad request (shard hint is before shard start)",
+			ascii: buf(21,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"79c14f0ad9ab24ab98fe9d5ff59c3b91348789758aa092c6bfab2ac8890b41fb1d44d985e723184f9de42edb82b5ada14f494a96e361914d5366dd92379a1d04",
+				"91347ef525e149765225d1341ae2e07ce0f2256a44ae20f04f143f11285c8031",
+			),
 			wantCode: http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       buf(),
-			expect:      true,
-			err:         fmt.Errorf("something went wrong"),
-			wantCode:    http.StatusInternalServerError,
+			ascii: buf(10,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
+				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
+			),
+			expect:   true,
+			err:      fmt.Errorf("something went wrong"),
+			wantCode: http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
-			ascii:       buf(),
-			expect:      true,
-			wantCode:    http.StatusOK,
+			ascii: buf(10,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
+				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
+			),
+			expect:   true,
+			wantCode: http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
