@@ -11,8 +11,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/google/certificate-transparency-go/schedule"
-	"golang.sigsum.org/sigsum-log-go/pkg/trillian"
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/trillian"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // StateManager coordinates access to the log's tree heads and (co)signatures

@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (

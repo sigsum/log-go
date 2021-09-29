@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // TestHandlers check that the expected handlers are configured

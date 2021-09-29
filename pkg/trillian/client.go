@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 	"google.golang.org/grpc/codes"
 )
 

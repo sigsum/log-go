@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"golang.sigsum.org/sigsum-log-go/pkg/state"
-	"golang.sigsum.org/sigsum-log-go/pkg/trillian"
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/state"
+	"git.sigsum.org/sigsum-log-go/pkg/trillian"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // Config is a collection of log parameters

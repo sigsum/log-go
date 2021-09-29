@@ -1,4 +1,4 @@
-module golang.sigsum.org/sigsum-log-go
+module git.sigsum.org/sigsum-log-go
 
 go 1.14
 

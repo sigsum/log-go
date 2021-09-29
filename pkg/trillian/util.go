@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	trillian "github.com/google/trillian/types"
-	sigsum "golang.sigsum.org/sigsum-log-go/pkg/types"
+	sigsum "git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 func treeHeadFromLogRoot(lr *trillian.LogRootV1) *sigsum.TreeHead {

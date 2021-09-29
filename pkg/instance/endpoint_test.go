@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.sigsum.org/sigsum-log-go/pkg/mocks"
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/mocks"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (

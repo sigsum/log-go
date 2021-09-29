@@ -21,10 +21,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
-	sigsum "golang.sigsum.org/sigsum-log-go/pkg/instance"
-	"golang.sigsum.org/sigsum-log-go/pkg/state"
-	trillianWrapper "golang.sigsum.org/sigsum-log-go/pkg/trillian"
-	"golang.sigsum.org/sigsum-log-go/pkg/types"
+	sigsum "git.sigsum.org/sigsum-log-go/pkg/instance"
+	"git.sigsum.org/sigsum-log-go/pkg/state"
+	trillianWrapper "git.sigsum.org/sigsum-log-go/pkg/trillian"
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (
