@@ -9,7 +9,7 @@ import (
 
 func addLeaf(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
 	glog.V(3).Info("handling add-entry request")
-	req, err := i.leafRequestFromHTTP(r)
+	req, err := i.leafRequestFromHTTP(ctx, r)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}

@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
+	"git.sigsum.org/sigsum-log-go/pkg/dns"
 	"git.sigsum.org/sigsum-log-go/pkg/state"
 	"git.sigsum.org/sigsum-log-go/pkg/trillian"
 	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"github.com/golang/glog"
 )
 
 // Config is a collection of log parameters
@@ -35,6 +36,7 @@ type Instance struct {
 	Client   trillian.Client    // provides access to the Trillian backend
 	Signer   crypto.Signer      // provides access to Ed25519 private key
 	Stateman state.StateManager // coordinates access to (co)signed tree heads
+	DNS      dns.Verifier       // checks if domain name knows a public key
 }
 
 // Handler implements the http.Handler interface, and contains a reference
@@ -92,7 +94,7 @@ func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (i *Instance) leafRequestFromHTTP(r *http.Request) (*types.LeafRequest, error) {
+func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*types.LeafRequest, error) {
 	var req types.LeafRequest
 	if err := req.UnmarshalASCII(r.Body); err != nil {
 		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
@@ -110,7 +112,9 @@ func (i *Instance) leafRequestFromHTTP(r *http.Request) (*types.LeafRequest, err
 	if req.ShardHint > i.ShardEnd {
 		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, i.ShardEnd)
 	}
-	// TODO: check domain hint
+	if err := i.DNS.Verify(ctx, req.DomainHint, req.VerificationKey); err != nil {
+		return nil, fmt.Errorf("invalid domain hint: %v", err)
+	}
 	return &req, nil
 }
 

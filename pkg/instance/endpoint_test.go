@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"git.sigsum.org/sigsum-log-go/pkg/mocks"
 	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"github.com/golang/mock/gomock"
 )
 
 var (
@@ -72,11 +72,13 @@ func TestAddLeaf(t *testing.T) {
 		))
 	}
 	for _, table := range []struct {
-		description string
-		ascii       io.Reader // buffer used to populate HTTP request
-		expect      bool      // set if a mock answer is expected
-		err         error     // error from Trillian client
-		wantCode    int       // HTTP status ok
+		description    string
+		ascii          io.Reader // buffer used to populate HTTP request
+		expectTrillian bool      // expect Trillian client code path
+		errTrillian    error     // error from Trillian client
+		expectDNS      bool      // expect DNS verifier code path
+		errDNS         error     // error from DNS verifier
+		wantCode       int       // HTTP status ok
 	}{
 		// XXX introduce helper so that test params are not hardcoded
 		{
@@ -103,7 +105,7 @@ func TestAddLeaf(t *testing.T) {
 			wantCode: http.StatusBadRequest,
 		},
 		{
-			description: "invalid: bad request (shard hint is before shard start)",
+			description: "invalid: bad request (shard hint is after shard end)",
 			ascii: buf(21,
 				"0000000000000000000000000000000000000000000000000000000000000000",
 				"79c14f0ad9ab24ab98fe9d5ff59c3b91348789758aa092c6bfab2ac8890b41fb1d44d985e723184f9de42edb82b5ada14f494a96e361914d5366dd92379a1d04",
@@ -112,15 +114,27 @@ func TestAddLeaf(t *testing.T) {
 			wantCode: http.StatusBadRequest,
 		},
 		{
+			description: "invalid: failed verifying domain hint",
+			ascii: buf(10,
+				"0000000000000000000000000000000000000000000000000000000000000000",
+				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
+				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
+			),
+			expectDNS: true,
+			errDNS:    fmt.Errorf("something went wrong"),
+			wantCode:  http.StatusBadRequest,
+		},
+		{
 			description: "invalid: backend failure",
 			ascii: buf(10,
 				"0000000000000000000000000000000000000000000000000000000000000000",
 				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
 				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
 			),
-			expect:   true,
-			err:      fmt.Errorf("something went wrong"),
-			wantCode: http.StatusInternalServerError,
+			expectDNS:      true,
+			expectTrillian: true,
+			errTrillian:    fmt.Errorf("something went wrong"),
+			wantCode:       http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
@@ -129,21 +143,27 @@ func TestAddLeaf(t *testing.T) {
 				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
 				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
 			),
-			expect:   true,
-			wantCode: http.StatusOK,
+			expectDNS:      true,
+			expectTrillian: true,
+			wantCode:       http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
+			dns := mocks.NewMockVerifier(ctrl)
+			if table.expectDNS {
+				dns.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.errDNS)
+			}
 			client := mocks.NewMockClient(ctrl)
-			if table.expect {
-				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any()).Return(table.err)
+			if table.expectTrillian {
+				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any()).Return(table.errTrillian)
 			}
 			i := Instance{
 				Config: testConfig,
 				Client: client,
+				DNS:    dns,
 			}
 
 			// Create HTTP request

@@ -25,6 +25,7 @@ import (
 	"git.sigsum.org/sigsum-log-go/pkg/state"
 	trillianWrapper "git.sigsum.org/sigsum-log-go/pkg/trillian"
 	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/dns"
 )
 
 var (
@@ -133,6 +134,9 @@ func setupInstanceFromFlags() (*sigsum.Instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManager: %v", err)
 	}
+
+	// Setup DNS verifier
+	i.DNS = dns.NewDefaultResolver()
 
 	// Register HTTP endpoints
 	mux := http.NewServeMux()
