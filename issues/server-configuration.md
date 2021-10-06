@@ -17,3 +17,8 @@ alternative.
 Implementing a "control port", typically a TCP endpoint, where an administrator
 can "program" the log instance is another alternative. Such an interface can
 also be used for diagnostics.
+
+We also need to add better documentation on how to run and configure
+sigsum-log-go.  There is a rough start in cmd/sigsum-log-go/README.md.  It
+assumes a little bit too much of the reader, and does not document everything
+that is relevant.  For example, configuration of sharding is not documented.
