@@ -10,12 +10,14 @@ and
 ## Public prototype
 There is a public prototype that is up and running with zero promises of uptime,
 stability, etc.  Relevant log information:
+
 - Base URL: https://poc.sigsum.org
 - Public key: `bc9308dab23781b8a13d59a9e67bc1b8c1585550e72956525a20e479b1f74404`
 - Shard interval: [X, Y]
 
 A [witness](https://github.com/sigsum/sigsum-witness-py) is also up and running
 with zero-promises of uptime, stability, etc.  Relevant witness information:
+
 - Public key: `777528f5fd96f95713b8c2bb48bce2c83628e39ad3bfbd95bc0045b143fe5c34`.
 
 As described in our design and API documentation, you can talk to the log by
