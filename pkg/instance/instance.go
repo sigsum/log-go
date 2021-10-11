@@ -64,7 +64,10 @@ func (i *Instance) Handlers() []Handler {
 
 // Path returns a path that should be configured for this handler
 func (h Handler) Path() string {
-	return h.Endpoint.Path(h.Instance.Prefix, "sigsum", "v0")
+	if len(h.Instance.Prefix) == 0 {
+		return h.Endpoint.Path("", "sigsum", "v0")
+	}
+	return h.Endpoint.Path("", h.Instance.Prefix, "sigsum", "v0")
 }
 
 // ServeHTTP is part of the http.Handler interface

@@ -62,19 +62,36 @@ func TestServeHTTP(t *testing.T) {
 	}
 }
 
+// TestPath checks that Path works for an endpoint (add-leaf)
 func TestPath(t *testing.T) {
-	instance := &Instance{
-		Config: Config{
-			Prefix: "testonly",
+	for _, table := range []struct {
+		description string
+		prefix      string
+		want        string
+	}{
+		{
+			description: "no prefix",
+			want:        "/sigsum/v0/add-leaf",
 		},
-	}
-	handler := Handler{
-		Instance: instance,
-		Handler:  addLeaf,
-		Endpoint: types.EndpointAddLeaf,
-		Method:   http.MethodPost,
-	}
-	if got, want := handler.Path(), "testonly/sigsum/v0/add-leaf"; got != want {
-		t.Errorf("got path %v but wanted %v", got, want)
+		{
+			description: "a prefix",
+			prefix:      "test-prefix",
+			want:        "/test-prefix/sigsum/v0/add-leaf",
+		},
+	} {
+		instance := &Instance{
+			Config: Config{
+				Prefix: table.prefix,
+			},
+		}
+		handler := Handler{
+			Instance: instance,
+			Handler:  addLeaf,
+			Endpoint: types.EndpointAddLeaf,
+			Method:   http.MethodPost,
+		}
+		if got, want := handler.Path(), table.want; got != want {
+			t.Errorf("got path %v but wanted %v", got, want)
+		}
 	}
 }
