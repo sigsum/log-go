@@ -11,32 +11,32 @@ and
 There is a public prototype that is up and running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
-- Base URL: https://poc.sigsum.org
-- Public key: `bc9308dab23781b8a13d59a9e67bc1b8c1585550e72956525a20e479b1f74404`
-- Shard interval: [X, Y]
+- Base URL: https://poc.sigsum.org/ghost-shrimp/
+- Public key: `90b4db54ca093f4ccf68e8ae12a3c250bc4fbc396c96d42c42a613a62bffe279`
+- Shard interval: [1632441600, 1636329599], i.e., 24th September--7th November, 2021.
 
 A [witness](https://github.com/sigsum/sigsum-witness-py) is also up and running
 with zero-promises of uptime, stability, etc.  Relevant witness information:
 
-- Public key: `777528f5fd96f95713b8c2bb48bce2c83628e39ad3bfbd95bc0045b143fe5c34`.
+- Public key: `812dbef0156b079e2d048747b2189cbfa64f96e2204a17cb23cb528080871503`.
 
 As described in our design and API documentation, you can talk to the log by
 passing ASCII key-value pairs.  For example, fetch a cosigned tree head and a
 log entry:
 ```
-$ curl https://poc.sigsum.org/sigsum/v0/get-tree-head-cosigned
-timestamp=1633888287
-tree_size=17
-root_hash=51ce7e8e7fa98d48ab84750ae9dcbabda268fbcca74ab907836a35a513396f9d
-signature=9c1c5ffab45e6bc6120c060b47520688659e7ad581b7db1f591442b9498fbaff7bd6a34d874a2809c71fb0996c7b71998a092f80ebd2dd5c9d3e21c5cf2f880d
-key_hash=35c1364f52d2de9e8b002e6b1c0b376da5ccef65442654eb51d76e7aa2d22d74
-cosignature=2e058af6b6c26b470d1921e848b3479b1893417eed8215aa1eeb2dc089487fd38dd5d38d18297d61bd263826888a43c28d76c73d991a38f4d93e8731aa83200f
+$ curl https://poc.sigsum.org/ghost-shrimp/sigsum/v0/get-tree-head-cosigned
+timestamp=1634033236
+tree_size=2
+root_hash=1c4632f71d0f77f386231de4fa8df532961588a38333a30351eafc9e8b488b47
+signature=dbe338a3d9eb0e8d1fc3b80ffb17dfeac9c8fc6d33a87506469ac80b2d397fa3f2fc9803d3a4b24913914cf7fdda9a281f060cf9aeb9aa2855f7d8872fa5ca03
+key_hash=15e203ad786ad5e36c053ba883d09ad7dc6b2011bb9c111330f79c8f1d6b8e69
+cosignature=f2f6e7b58b11f65e232bb1a3a24a2af9566749039e22fe253f49957cb5da7e15b3dd2ca8e748c665af7b79ccca43f3a9a3a9f7da1892c2ff5baee671ecc8bd0c
 $
-$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/sigsum/v0/get-leaves
-shard_hint=0
-checksum=0000000000000000000000000000000000000000000000000000000000000000
-signature=0e0424c7288dc8ebec6b2ebd45e14e7d7f86dd7b0abc03861976a1c0ad8ca6120d4efd58aeab167e5e84fcffd0fab5861ceae85dec7f4e244e7465e41c5d5207
-key_hash=9d6c91319b27ff58043ff6e6e654438a4ca15ee11dd2780b63211058b274f1f6
+$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/ghost-shrimp/sigsum/v0/get-leaves
+shard_hint=1636329599
+checksum=59aca44e7dc5d5cf49908cc8305216bf9625aa08cbd3c3ed544e6b6169cf0779
+signature=1549532a06bca6eec832558d0e853375a95b87f585eeee2f320185efc37a33a447c4be8a9a37e0f89e7cb2525272eb09ea2c6a045e732421cf52fd3c294cf50c
+key_hash=9a95dd85f3f92ecf5aabd9a13a12363a16e3d5711445d1939b18409346381682
 ```
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
