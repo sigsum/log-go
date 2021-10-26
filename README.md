@@ -11,9 +11,9 @@ and
 There is a public prototype that is up and running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
-- Base URL: https://poc.sigsum.org/ghost-shrimp/
-- Public key: `90b4db54ca093f4ccf68e8ae12a3c250bc4fbc396c96d42c42a613a62bffe279`
-- Shard interval: [1632441600, 1636329599], i.e., 24th September--7th November, 2021.
+- Base URL: https://poc.sigsum.org/barreleye-fish/
+- Public key: `f38f0f0f2c50e2166e8b9522694672e0d7bc016c62d7927cb38e815dc373c824`
+- Shard interval: [1635120000, 1638921599], i.e., 25 October--8 December, 2021.
 
 A [witness](https://github.com/sigsum/sigsum-witness-py) is also up and running
 with zero-promises of uptime, stability, etc.  Relevant witness information:
@@ -24,18 +24,18 @@ As described in our design and API documentation, you can talk to the log by
 passing ASCII key-value pairs.  For example, fetch a cosigned tree head and a
 log entry:
 ```
-$ curl https://poc.sigsum.org/ghost-shrimp/sigsum/v0/get-tree-head-cosigned
-timestamp=1634033236
-tree_size=2
-root_hash=1c4632f71d0f77f386231de4fa8df532961588a38333a30351eafc9e8b488b47
-signature=dbe338a3d9eb0e8d1fc3b80ffb17dfeac9c8fc6d33a87506469ac80b2d397fa3f2fc9803d3a4b24913914cf7fdda9a281f060cf9aeb9aa2855f7d8872fa5ca03
+$ curl https://poc.sigsum.org/barreleye-fish/sigsum/v0/get-tree-head-cosigned
+timestamp=1635267692
+tree_size=5
+root_hash=ea62a8332e068d14605d8c84a6e98b53a8ce98725866c3196f4dd47dd39ba067
+signature=2a347032481e09472f83886570ca4654d0e7d79f15d5d234cc5e65e4bdb5e9f9fb5f8487434314a2c6ebc98ceb4cd4430e322e3a5f3564db4d52496e99b67f02
 key_hash=15e203ad786ad5e36c053ba883d09ad7dc6b2011bb9c111330f79c8f1d6b8e69
-cosignature=f2f6e7b58b11f65e232bb1a3a24a2af9566749039e22fe253f49957cb5da7e15b3dd2ca8e748c665af7b79ccca43f3a9a3a9f7da1892c2ff5baee671ecc8bd0c
+cosignature=1a1e10e23156f2dd84a0684edd472e07fa8c1509700ebcfc18bd7142a66f898f42a0a8bf906859a1f87aeca1e98b4204af298e2a26f77e1385a23f71d89a7908
 $
-$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/ghost-shrimp/sigsum/v0/get-leaves
-shard_hint=1636329599
-checksum=59aca44e7dc5d5cf49908cc8305216bf9625aa08cbd3c3ed544e6b6169cf0779
-signature=1549532a06bca6eec832558d0e853375a95b87f585eeee2f320185efc37a33a447c4be8a9a37e0f89e7cb2525272eb09ea2c6a045e732421cf52fd3c294cf50c
+$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/barreleye-fish/sigsum/v0/get-leaves
+shard_hint=1638921599
+checksum=febf79a761074dbc2d2f70652d8756af566044875bd5ab08602085efd147313f
+signature=cec25c767ed0ce25ff26883ec9de0fce5d0b474e9f27b5f2b34225ace111836d5bdae1ed2c53f77d8c89155db96302ef782943f69a8e4f29569527ed1e0ee00d
 key_hash=9a95dd85f3f92ecf5aabd9a13a12363a16e3d5711445d1939b18409346381682
 ```
 
