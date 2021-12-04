@@ -1,14 +1,16 @@
 package instance
 
 import (
-	//"reflect"
 	"bytes"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"git.sigsum.org/sigsum-log-go/pkg/mocks"
 	"git.sigsum.org/sigsum-log-go/pkg/types"
@@ -25,7 +27,6 @@ var (
 		Deadline:   10,
 		Interval:   10,
 		ShardStart: 10,
-		ShardEnd:   20,
 		Witnesses: map[[types.HashSize]byte][types.VerificationKeySize]byte{
 			*types.Hash(testWitVK[:]): testWitVK,
 		},
@@ -60,17 +61,6 @@ func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
 }
 
 func TestAddLeaf(t *testing.T) {
-	buf := func(shard uint64, sum, sig, vf string) io.Reader {
-		// A valid leaf request that was created manually
-		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%d%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s"+"%s%s%s%s",
-			types.ShardHint, types.Delim, shard, types.EOL,
-			types.Checksum, types.Delim, sum, types.EOL,
-			types.Signature, types.Delim, sig, types.EOL,
-			types.VerificationKey, types.Delim, vf, types.EOL,
-			types.DomainHint, types.Delim, "example.com", types.EOL,
-		))
-	}
 	for _, table := range []struct {
 		description    string
 		ascii          io.Reader // buffer used to populate HTTP request
@@ -80,7 +70,6 @@ func TestAddLeaf(t *testing.T) {
 		errDNS         error     // error from DNS verifier
 		wantCode       int       // HTTP status ok
 	}{
-		// XXX introduce helper so that test params are not hardcoded
 		{
 			description: "invalid: bad request (parser error)",
 			ascii:       bytes.NewBufferString("key=value\n"),
@@ -88,61 +77,37 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii: buf(10,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
-				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
-			),
-			wantCode: http.StatusBadRequest,
+			ascii:       mustLeafBuffer(t, 10, &[types.HashSize]byte{}, false),
+			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is before shard start)",
-			ascii: buf(9,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"20876ac8bf2c32d0c7f9b51b57f2de2f454c82c6b189ee30d5275361b657299b3e4e4d677646ec2586927a5a015ad349ae1ca4440e1bf6efbec875144d3a4009",
-				"a70f95f1739834190ec9a2a2fcee8ba8e70eddeb825c9856edfb2d8c5dfda595",
-			),
-			wantCode: http.StatusBadRequest,
+			ascii:       mustLeafBuffer(t, 9, &[types.HashSize]byte{}, true),
+			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is after shard end)",
-			ascii: buf(21,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"79c14f0ad9ab24ab98fe9d5ff59c3b91348789758aa092c6bfab2ac8890b41fb1d44d985e723184f9de42edb82b5ada14f494a96e361914d5366dd92379a1d04",
-				"91347ef525e149765225d1341ae2e07ce0f2256a44ae20f04f143f11285c8031",
-			),
-			wantCode: http.StatusBadRequest,
+			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, &[types.HashSize]byte{}, true),
+			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: failed verifying domain hint",
-			ascii: buf(10,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
-				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
-			),
-			expectDNS: true,
-			errDNS:    fmt.Errorf("something went wrong"),
-			wantCode:  http.StatusBadRequest,
+			ascii:       mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
+			expectDNS:   true,
+			errDNS:      fmt.Errorf("something went wrong"),
+			wantCode:    http.StatusBadRequest,
 		},
 		{
-			description: "invalid: backend failure",
-			ascii: buf(10,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
-				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
-			),
+			description:    "invalid: backend failure",
+			ascii:          mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			errTrillian:    fmt.Errorf("something went wrong"),
 			wantCode:       http.StatusInternalServerError,
 		},
 		{
-			description: "valid",
-			ascii: buf(10,
-				"0000000000000000000000000000000000000000000000000000000000000000",
-				"7df253d2578c6c20b90832245ad6f981077454667796b3d507336a89ee878a2eae6b96e6d8de84fe8c1acf4b3aaffd482b657b65d94ed5e6be6320492147f90c",
-				"f6eef8e94ddf1396682871257e670a1d9b627cf460daade7c36d218b2866befb",
-			),
+			description:    "valid",
+			ascii:          mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			wantCode:       http.StatusOK,
@@ -668,4 +633,29 @@ func TestGetLeaves(t *testing.T) {
 			//}
 		}()
 	}
+}
+
+func mustLeafBuffer(t *testing.T, shardHint uint64, checksum *[types.HashSize]byte, wantSig bool) io.Reader {
+	t.Helper()
+
+	vk, sk, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("must generate ed25519 keys: %v", err)
+	}
+	msg := types.Message{
+		ShardHint: shardHint,
+		Checksum:  checksum,
+	}
+	sig := ed25519.Sign(sk, msg.Marshal())
+	if !wantSig {
+		sig[0] += 1
+	}
+	return bytes.NewBufferString(fmt.Sprintf(
+		"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%s%s",
+		types.ShardHint, types.Delim, shardHint, types.EOL,
+		types.Checksum, types.Delim, checksum[:], types.EOL,
+		types.Signature, types.Delim, sig, types.EOL,
+		types.VerificationKey, types.Delim, vk, types.EOL,
+		types.DomainHint, types.Delim, "example.com", types.EOL,
+	))
 }

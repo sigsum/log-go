@@ -24,7 +24,6 @@ type Config struct {
 	Deadline   time.Duration // Deadline used for gRPC requests
 	Interval   time.Duration // Cosigning frequency
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
-	ShardEnd   uint64        // Shard interval end (num seconds since UNIX epoch)
 
 	// Witnesses map trusted witness identifiers to public verification keys
 	Witnesses map[[types.HashSize]byte][types.VerificationKeySize]byte
@@ -109,11 +108,12 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*t
 	if !ed25519.Verify(vk, msg, sig) {
 		return nil, fmt.Errorf("invalid signature")
 	}
+	shardEnd := uint64(time.Now().Unix())
 	if req.ShardHint < i.ShardStart {
-		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, i.ShardEnd)
+		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, shardEnd)
 	}
-	if req.ShardHint > i.ShardEnd {
-		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, i.ShardEnd)
+	if req.ShardHint > shardEnd {
+		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, shardEnd)
 	}
 	if err := i.DNS.Verify(ctx, req.DomainHint, req.VerificationKey); err != nil {
 		return nil, fmt.Errorf("invalid domain hint: %v", err)

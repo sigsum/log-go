@@ -39,7 +39,6 @@ var (
 	maxRange     = flag.Int64("max_range", 10, "maximum number of entries that can be retrived in a single request")
 	interval     = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
 	shardStart   = flag.Int64("shard_interval_start", 0, "start of shard interval since the UNIX epoch in seconds")
-	shardEnd     = flag.Int64("shard_interval_end", 0, "end of shard interval since the UNIX epoch in seconds")
 
 	gitCommit = "unknown"
 )
@@ -108,10 +107,6 @@ func setupInstanceFromFlags() (*sigsum.Instance, error) {
 	i.ShardStart = uint64(*shardStart)
 	if *shardStart < 0 {
 		return nil, fmt.Errorf("shard start must be larger than zero")
-	}
-	i.ShardEnd = uint64(*shardEnd)
-	if *shardEnd < *shardStart {
-		return nil, fmt.Errorf("shard end must be larger than shard start")
 	}
 	i.Witnesses, err = newWitnessMap(*witnesses)
 	if err != nil {
