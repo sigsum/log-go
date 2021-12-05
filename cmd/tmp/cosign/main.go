@@ -19,6 +19,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	log_vk, err := hex.DecodeString(*log_vk)
 	if err != nil {
 		log.Fatalf("DecodeString: %v", err)
