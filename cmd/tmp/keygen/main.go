@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+
+	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 func main() {
@@ -14,4 +16,5 @@ func main() {
 	}
 	fmt.Printf("sk: %x\n", sk[:])
 	fmt.Printf("vk: %x\n", vk[:])
+	fmt.Printf("kh: %x\n", types.Hash(vk[:])[:])
 }
