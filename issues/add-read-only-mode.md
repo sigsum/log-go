@@ -1,14 +1,16 @@
-# Add read-only mode
-Reported by: rgdd
+**Title:** Add read-only mode </br>
+**Date:** 2021-12-09 </br>
 
-The process of shutting down a log will likely consist of at least two steps:
-1. Stop accepting new logging requests. Serve the final (co)signed tree heads
-for a while.
-2. Take the log offline.
+# Summary
+A read-only mode is needed to facilitate maintenance and shutdowns of production
+logs.  For example, after an operator has decided to cease their operations the
+log in question should be kept around for some time to allow final monitoring.
 
-The first step requires some form of read-only mode. For example:
-- Disable all write endpoints (`add-leaf` and `add-cosignature`)
-- Implement a `StateManager` that serves fixed (co)signed tree heads.
+# Description
+This issue requires design considerations.  For inspiration, you may refer to 
+	[CTFE](https://github.com/google/certificate-transparency-go/tree/master/trillian/ctfe).
 
-For inspiration we could look at certificate transparency:
-- https://github.com/google/certificate-transparency-go/tree/master/trillian/ctfe
+At minimum it should be possible to (i) disable all write endpoints, and (ii)
+serve a cosigned tree head for all add-leaf requests that were already merged.
+
+It would be good to consider if we need a mirror-mode before getting started.
