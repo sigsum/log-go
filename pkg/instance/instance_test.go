@@ -19,6 +19,7 @@ func TestHandlers(t *testing.T) {
 		types.EndpointGetConsistencyProof: false,
 		types.EndpointGetInclusionProof:   false,
 		types.EndpointGetLeaves:           false,
+		types.Endpoint("get-checkpoint"):  false,
 	}
 	i := &Instance{
 		Config: testConfig,
