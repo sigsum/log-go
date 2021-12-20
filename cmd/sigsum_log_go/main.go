@@ -21,11 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
-	sigsum "git.sigsum.org/sigsum-log-go/pkg/instance"
-	"git.sigsum.org/sigsum-log-go/pkg/state"
-	trillianWrapper "git.sigsum.org/sigsum-log-go/pkg/trillian"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/db"
 	"git.sigsum.org/sigsum-log-go/pkg/dns"
+	"git.sigsum.org/sigsum-log-go/pkg/instance"
+	"git.sigsum.org/sigsum-log-go/pkg/state"
 )
 
 var (
@@ -90,8 +90,8 @@ func main() {
 }
 
 // SetupInstance sets up a new sigsum-log-go instance from flags
-func setupInstanceFromFlags() (*sigsum.Instance, error) {
-	var i sigsum.Instance
+func setupInstanceFromFlags() (*instance.Instance, error) {
+	var i instance.Instance
 	var err error
 
 	// Setup log configuration
@@ -119,7 +119,7 @@ func setupInstanceFromFlags() (*sigsum.Instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %v", err)
 	}
-	i.Client = &trillianWrapper.TrillianClient{
+	i.Client = &db.TrillianClient{
 		TreeID: i.TreeID,
 		GRPC:   trillian.NewTrillianLogClient(conn),
 	}
@@ -157,8 +157,8 @@ func newLogIdentity(key string) (crypto.Signer, string, error) {
 }
 
 // newWitnessMap creates a new map of trusted witnesses
-func newWitnessMap(witnesses string) (map[[types.HashSize]byte][types.VerificationKeySize]byte, error) {
-	w := make(map[[types.HashSize]byte][types.VerificationKeySize]byte)
+func newWitnessMap(witnesses string) (map[types.Hash]types.PublicKey, error) {
+	w := make(map[types.Hash]types.PublicKey)
 	if len(witnesses) > 0 {
 		for _, witness := range strings.Split(witnesses, ",") {
 			b, err := hex.DecodeString(witness)
@@ -166,11 +166,11 @@ func newWitnessMap(witnesses string) (map[[types.HashSize]byte][types.Verificati
 				return nil, fmt.Errorf("DecodeString: %v", err)
 			}
 
-			var vk [types.VerificationKeySize]byte
-			if n := copy(vk[:], b); n != types.VerificationKeySize {
+			var vk types.PublicKey
+			if n := copy(vk[:], b); n != types.PublicKeySize {
 				return nil, fmt.Errorf("Invalid verification key size: %v", n)
 			}
-			w[*types.Hash(vk[:])] = vk
+			w[*types.HashFn(vk[:])] = vk
 		}
 	}
 	return w, nil

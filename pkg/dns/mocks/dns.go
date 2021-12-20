@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	types "git.sigsum.org/sigsum-lib-go/pkg/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,7 +36,7 @@ func (m *MockVerifier) EXPECT() *MockVerifierMockRecorder {
 }
 
 // Verify mocks base method.
-func (m *MockVerifier) Verify(arg0 context.Context, arg1 string, arg2 *[32]byte) error {
+func (m *MockVerifier) Verify(arg0 context.Context, arg1 string, arg2 *types.PublicKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Verify", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

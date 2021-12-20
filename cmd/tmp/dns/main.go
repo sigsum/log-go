@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 
+	"git.sigsum.org/sigsum-lib-go/pkg/hex"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
 	"git.sigsum.org/sigsum-log-go/pkg/dns"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 func main() {
 	flag.Parse()
 
-	var key [types.VerificationKeySize]byte
+	var key types.PublicKey
 	mustDecodeHex(*vk, key[:])
 
 	vf := dns.NewDefaultResolver()
@@ -31,7 +31,7 @@ func main() {
 }
 
 func mustDecodeHex(s string, buf []byte) {
-	b, err := hex.DecodeString(s)
+	b, err := hex.Deserialize(s)
 	if err != nil {
 		log.Fatal(err)
 	}

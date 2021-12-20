@@ -1,4 +1,4 @@
-package trillian
+package db
 
 import (
 	"context"
@@ -6,28 +6,29 @@ import (
 	"reflect"
 	"testing"
 
+	"git.sigsum.org/sigsum-lib-go/pkg/requests"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/db/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"
-	"git.sigsum.org/sigsum-log-go/pkg/mocks"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestAddLeaf(t *testing.T) {
-	req := &types.LeafRequest{
-		Message: types.Message{
+	req := &requests.Leaf{
+		Statement: types.Statement{
 			ShardHint: 0,
-			Checksum:  &[types.HashSize]byte{},
+			Checksum:  types.Hash{},
 		},
-		Signature:       &[types.SignatureSize]byte{},
-		VerificationKey: &[types.VerificationKeySize]byte{},
+		Signature:       types.Signature{},
+		VerificationKey: types.PublicKey{},
 		DomainHint:      "example.com",
 	}
 	for _, table := range []struct {
 		description string
-		req         *types.LeafRequest
+		req         *requests.Leaf
 		rsp         *trillian.QueueLeafResponse
 		err         error
 		wantErr     bool
@@ -55,7 +56,7 @@ func TestAddLeaf(t *testing.T) {
 			rsp: &trillian.QueueLeafResponse{
 				QueuedLeaf: &trillian.QueuedLogLeaf{
 					Leaf: &trillian.LogLeaf{
-						LeafValue: req.Message.Marshal(),
+						LeafValue: []byte{0}, // does not matter for test
 					},
 					Status: status.New(codes.AlreadyExists, "duplicate").Proto(),
 				},
@@ -68,7 +69,7 @@ func TestAddLeaf(t *testing.T) {
 			rsp: &trillian.QueueLeafResponse{
 				QueuedLeaf: &trillian.QueuedLogLeaf{
 					Leaf: &trillian.LogLeaf{
-						LeafValue: req.Message.Marshal(),
+						LeafValue: []byte{0}, // does not matter for test
 					},
 					Status: status.New(codes.OK, "ok").Proto(),
 				},
@@ -165,7 +166,7 @@ func TestGetTreeHead(t *testing.T) {
 			wantTh: &types.TreeHead{
 				Timestamp: 1622585623,
 				TreeSize:  0,
-				RootHash:  &[types.HashSize]byte{},
+				RootHash:  types.Hash{},
 			},
 		},
 	} {
@@ -192,13 +193,13 @@ func TestGetTreeHead(t *testing.T) {
 }
 
 func TestGetConsistencyProof(t *testing.T) {
-	req := &types.ConsistencyProofRequest{
+	req := &requests.ConsistencyProof{
 		OldSize: 1,
 		NewSize: 3,
 	}
 	for _, table := range []struct {
 		description string
-		req         *types.ConsistencyProofRequest
+		req         *requests.ConsistencyProof
 		rsp         *trillian.GetConsistencyProofResponse
 		err         error
 		wantErr     bool
@@ -258,9 +259,9 @@ func TestGetConsistencyProof(t *testing.T) {
 			wantProof: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 3,
-				Path: []*[types.HashSize]byte{
-					&[types.HashSize]byte{},
-					&[types.HashSize]byte{},
+				Path: []types.Hash{
+					types.Hash{},
+					types.Hash{},
 				},
 			},
 		},
@@ -288,13 +289,13 @@ func TestGetConsistencyProof(t *testing.T) {
 }
 
 func TestGetInclusionProof(t *testing.T) {
-	req := &types.InclusionProofRequest{
+	req := &requests.InclusionProof{
 		TreeSize: 4,
-		LeafHash: &[types.HashSize]byte{},
+		LeafHash: types.Hash{},
 	}
 	for _, table := range []struct {
 		description string
-		req         *types.InclusionProofRequest
+		req         *requests.InclusionProof
 		rsp         *trillian.GetInclusionProofByHashResponse
 		err         error
 		wantErr     bool
@@ -368,9 +369,9 @@ func TestGetInclusionProof(t *testing.T) {
 			wantProof: &types.InclusionProof{
 				TreeSize:  4,
 				LeafIndex: 1,
-				Path: []*[types.HashSize]byte{
-					&[types.HashSize]byte{},
-					&[types.HashSize]byte{},
+				Path: []types.Hash{
+					types.Hash{},
+					types.Hash{},
 				},
 			},
 		},
@@ -398,38 +399,34 @@ func TestGetInclusionProof(t *testing.T) {
 }
 
 func TestGetLeaves(t *testing.T) {
-	req := &types.LeavesRequest{
+	req := &requests.Leaves{
 		StartSize: 1,
 		EndSize:   2,
 	}
 	firstLeaf := &types.Leaf{
-		Message: types.Message{
+		Statement: types.Statement{
 			ShardHint: 0,
-			Checksum:  &[types.HashSize]byte{},
+			Checksum:  types.Hash{},
 		},
-		SigIdent: types.SigIdent{
-			Signature: &[types.SignatureSize]byte{},
-			KeyHash:   &[types.HashSize]byte{},
-		},
+		Signature: types.Signature{},
+		KeyHash:   types.Hash{},
 	}
 	secondLeaf := &types.Leaf{
-		Message: types.Message{
+		Statement: types.Statement{
 			ShardHint: 0,
-			Checksum:  &[types.HashSize]byte{},
+			Checksum:  types.Hash{},
 		},
-		SigIdent: types.SigIdent{
-			Signature: &[types.SignatureSize]byte{},
-			KeyHash:   &[types.HashSize]byte{},
-		},
+		Signature: types.Signature{},
+		KeyHash:   types.Hash{},
 	}
 
 	for _, table := range []struct {
 		description string
-		req         *types.LeavesRequest
+		req         *requests.Leaves
 		rsp         *trillian.GetLeavesByRangeResponse
 		err         error
 		wantErr     bool
-		wantLeaves  *types.LeafList
+		wantLeaves  *types.Leaves
 	}{
 		{
 			description: "invalid: backend failure",
@@ -448,7 +445,7 @@ func TestGetLeaves(t *testing.T) {
 			rsp: &trillian.GetLeavesByRangeResponse{
 				Leaves: []*trillian.LogLeaf{
 					&trillian.LogLeaf{
-						LeafValue: firstLeaf.Marshal(),
+						LeafValue: firstLeaf.ToBinary(),
 						LeafIndex: 1,
 					},
 				},
@@ -461,11 +458,11 @@ func TestGetLeaves(t *testing.T) {
 			rsp: &trillian.GetLeavesByRangeResponse{
 				Leaves: []*trillian.LogLeaf{
 					&trillian.LogLeaf{
-						LeafValue: firstLeaf.Marshal(),
+						LeafValue: firstLeaf.ToBinary(),
 						LeafIndex: 1,
 					},
 					&trillian.LogLeaf{
-						LeafValue: secondLeaf.Marshal(),
+						LeafValue: secondLeaf.ToBinary(),
 						LeafIndex: 3,
 					},
 				},
@@ -478,11 +475,11 @@ func TestGetLeaves(t *testing.T) {
 			rsp: &trillian.GetLeavesByRangeResponse{
 				Leaves: []*trillian.LogLeaf{
 					&trillian.LogLeaf{
-						LeafValue: firstLeaf.Marshal(),
+						LeafValue: firstLeaf.ToBinary(),
 						LeafIndex: 1,
 					},
 					&trillian.LogLeaf{
-						LeafValue: secondLeaf.Marshal()[1:],
+						LeafValue: secondLeaf.ToBinary()[1:],
 						LeafIndex: 2,
 					},
 				},
@@ -495,18 +492,18 @@ func TestGetLeaves(t *testing.T) {
 			rsp: &trillian.GetLeavesByRangeResponse{
 				Leaves: []*trillian.LogLeaf{
 					&trillian.LogLeaf{
-						LeafValue: firstLeaf.Marshal(),
+						LeafValue: firstLeaf.ToBinary(),
 						LeafIndex: 1,
 					},
 					&trillian.LogLeaf{
-						LeafValue: secondLeaf.Marshal(),
+						LeafValue: secondLeaf.ToBinary(),
 						LeafIndex: 2,
 					},
 				},
 			},
-			wantLeaves: &types.LeafList{
-				firstLeaf,
-				secondLeaf,
+			wantLeaves: &types.Leaves{
+				*firstLeaf,
+				*secondLeaf,
 			},
 		},
 	} {

@@ -3,16 +3,15 @@ package instance
 import (
 	"context"
 	"crypto"
-	"crypto/ed25519"
 	"fmt"
 	"net/http"
 	"time"
 
+	"git.sigsum.org/sigsum-lib-go/pkg/requests"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-log-go/pkg/db"
 	"git.sigsum.org/sigsum-log-go/pkg/dns"
 	"git.sigsum.org/sigsum-log-go/pkg/state"
-	"git.sigsum.org/sigsum-log-go/pkg/trillian"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
-	"github.com/golang/glog"
 )
 
 // Config is a collection of log parameters
@@ -26,25 +25,16 @@ type Config struct {
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
 
 	// Witnesses map trusted witness identifiers to public verification keys
-	Witnesses map[[types.HashSize]byte][types.VerificationKeySize]byte
+	Witnesses map[types.Hash]types.PublicKey
 }
 
 // Instance is an instance of the log's front-end
 type Instance struct {
 	Config                      // configuration parameters
-	Client   trillian.Client    // provides access to the Trillian backend
+	Client   db.Client          // provides access to the Trillian backend
 	Signer   crypto.Signer      // provides access to Ed25519 private key
 	Stateman state.StateManager // coordinates access to (co)signed tree heads
 	DNS      dns.Verifier       // checks if domain name knows a public key
-}
-
-// Handler implements the http.Handler interface, and contains a reference
-// to a sigsum server instance as well as a function that uses it.
-type Handler struct {
-	Instance *Instance
-	Endpoint types.Endpoint
-	Method   string
-	Handler  func(context.Context, *Instance, http.ResponseWriter, *http.Request) (int, error)
 }
 
 // Handlers returns a list of sigsum handlers
@@ -62,51 +52,13 @@ func (i *Instance) Handlers() []Handler {
 	}
 }
 
-// Path returns a path that should be configured for this handler
-func (h Handler) Path() string {
-	if len(h.Instance.Prefix) == 0 {
-		return h.Endpoint.Path("", "sigsum", "v0")
-	}
-	return h.Endpoint.Path("", h.Instance.Prefix, "sigsum", "v0")
-}
-
-// ServeHTTP is part of the http.Handler interface
-func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// export prometheus metrics
-	var now time.Time = time.Now()
-	var statusCode int
-	defer func() {
-		rspcnt.Inc(a.Instance.LogID, string(a.Endpoint), fmt.Sprintf("%d", statusCode))
-		latency.Observe(time.Now().Sub(now).Seconds(), a.Instance.LogID, string(a.Endpoint), fmt.Sprintf("%d", statusCode))
-	}()
-	reqcnt.Inc(a.Instance.LogID, string(a.Endpoint))
-
-	ctx, cancel := context.WithDeadline(r.Context(), now.Add(a.Instance.Deadline))
-	defer cancel()
-
-	if r.Method != a.Method {
-		glog.Warningf("%s/%s: got HTTP %s, wanted HTTP %s", a.Instance.Prefix, string(a.Endpoint), r.Method, a.Method)
-		http.Error(w, "", http.StatusMethodNotAllowed)
-		return
+func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*requests.Leaf, error) {
+	var req requests.Leaf
+	if err := req.FromASCII(r.Body); err != nil {
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 
-	statusCode, err := a.Handler(ctx, a.Instance, w, r)
-	if err != nil {
-		glog.Warningf("handler error %s/%s: %v", a.Instance.Prefix, a.Endpoint, err)
-		http.Error(w, fmt.Sprintf("%s%s%s%s", "Error", types.Delim, err.Error(), types.EOL), statusCode)
-	}
-}
-
-func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*types.LeafRequest, error) {
-	var req types.LeafRequest
-	if err := req.UnmarshalASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
-	}
-
-	vk := ed25519.PublicKey(req.VerificationKey[:])
-	msg := req.Message.Marshal()
-	sig := req.Signature[:]
-	if !ed25519.Verify(vk, msg, sig) {
+	if !req.Statement.Verify(&req.VerificationKey, &req.Signature) {
 		return nil, fmt.Errorf("invalid signature")
 	}
 	shardEnd := uint64(time.Now().Unix())
@@ -116,27 +68,27 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*t
 	if req.ShardHint > shardEnd {
 		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, shardEnd)
 	}
-	if err := i.DNS.Verify(ctx, req.DomainHint, req.VerificationKey); err != nil {
+	if err := i.DNS.Verify(ctx, req.DomainHint, &req.VerificationKey); err != nil {
 		return nil, fmt.Errorf("invalid domain hint: %v", err)
 	}
 	return &req, nil
 }
 
-func (i *Instance) cosignatureRequestFromHTTP(r *http.Request) (*types.CosignatureRequest, error) {
-	var req types.CosignatureRequest
-	if err := req.UnmarshalASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
+func (i *Instance) cosignatureRequestFromHTTP(r *http.Request) (*requests.Cosignature, error) {
+	var req requests.Cosignature
+	if err := req.FromASCII(r.Body); err != nil {
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
-	if _, ok := i.Witnesses[*req.KeyHash]; !ok {
+	if _, ok := i.Witnesses[req.KeyHash]; !ok {
 		return nil, fmt.Errorf("Unknown witness: %x", req.KeyHash)
 	}
 	return &req, nil
 }
 
-func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*types.ConsistencyProofRequest, error) {
-	var req types.ConsistencyProofRequest
-	if err := req.UnmarshalASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
+func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*requests.ConsistencyProof, error) {
+	var req requests.ConsistencyProof
+	if err := req.FromASCII(r.Body); err != nil {
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 	if req.OldSize < 1 {
 		return nil, fmt.Errorf("OldSize(%d) must be larger than zero", req.OldSize)
@@ -147,10 +99,10 @@ func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*types.Cons
 	return &req, nil
 }
 
-func (i *Instance) inclusionProofRequestFromHTTP(r *http.Request) (*types.InclusionProofRequest, error) {
-	var req types.InclusionProofRequest
-	if err := req.UnmarshalASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
+func (i *Instance) inclusionProofRequestFromHTTP(r *http.Request) (*requests.InclusionProof, error) {
+	var req requests.InclusionProof
+	if err := req.FromASCII(r.Body); err != nil {
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 	if req.TreeSize < 2 {
 		// TreeSize:0 => not possible to prove inclusion of anything
@@ -160,10 +112,10 @@ func (i *Instance) inclusionProofRequestFromHTTP(r *http.Request) (*types.Inclus
 	return &req, nil
 }
 
-func (i *Instance) leavesRequestFromHTTP(r *http.Request) (*types.LeavesRequest, error) {
-	var req types.LeavesRequest
-	if err := req.UnmarshalASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("UnmarshalASCII: %v", err)
+func (i *Instance) leavesRequestFromHTTP(r *http.Request) (*requests.Leaves, error) {
+	var req requests.Leaves
+	if err := req.FromASCII(r.Body); err != nil {
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 
 	if req.StartSize > req.EndSize {

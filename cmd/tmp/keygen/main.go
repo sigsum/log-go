@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
 )
 
 func main() {
@@ -16,5 +16,5 @@ func main() {
 	}
 	fmt.Printf("sk: %x\n", sk[:])
 	fmt.Printf("vk: %x\n", vk[:])
-	fmt.Printf("kh: %x\n", types.Hash(vk[:])[:])
+	fmt.Printf("kh: %x\n", types.HashFn(vk[:])[:])
 }

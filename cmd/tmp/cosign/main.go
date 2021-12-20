@@ -3,17 +3,18 @@ package main
 import (
 	"bytes"
 	"crypto/ed25519"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-lib-go/pkg/hex"
+	"git.sigsum.org/sigsum-lib-go/pkg/requests"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
 )
 
 var (
-	url    = flag.String("url", "http://localhost:6965/sigsum/v0", "base url")
+	url    = flag.String("url", "http://localhost:6965/testonly/sigsum/v0", "base url")
 	sk     = flag.String("sk", "e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b", "witness secret key (hex)")
 	log_vk = flag.String("log_vk", "cc0e7294a9d002c33aaa828efba6622ab1ce8ebdb8a795902555c2813133cfe8", "log public key (hex)")
 )
@@ -21,14 +22,14 @@ var (
 func main() {
 	flag.Parse()
 
-	log_vk, err := hex.DecodeString(*log_vk)
+	log_vk, err := hex.Deserialize(*log_vk)
 	if err != nil {
-		log.Fatalf("DecodeString: %v", err)
+		log.Fatalf("Deserialize: %v", err)
 	}
 
-	priv, err := hex.DecodeString(*sk)
+	priv, err := hex.Deserialize(*sk)
 	if err != nil {
-		log.Fatalf("DecodeString: %v", err)
+		log.Fatal(err)
 	}
 	sk := ed25519.PrivateKey(priv)
 	vk := sk.Public().(ed25519.PublicKey)
@@ -36,30 +37,32 @@ func main() {
 
 	rsp, err := http.Get(*url + "/get-tree-head-to-sign")
 	if err != nil {
-		log.Fatalf("Get: %v", err)
+		log.Fatal(err)
 	}
 	var sth types.SignedTreeHead
-	if err := sth.UnmarshalASCII(rsp.Body); err != nil {
-		log.Fatalf("UnmarshalASCII: %v", err)
+	if err := sth.FromASCII(rsp.Body); err != nil {
+		log.Fatal(err)
 	}
-	sth.TreeHead.KeyHash = types.Hash(log_vk)
 	fmt.Printf("%+v\n\n", sth)
 
-	msg := sth.TreeHead.Marshal()
-	sig := ed25519.Sign(sk, msg)
-	sigident := &types.SigIdent{
-		KeyHash:   types.Hash(vk[:]),
-		Signature: &[types.SignatureSize]byte{},
+	namespace := types.HashFn(log_vk)
+	witSTH, err := sth.TreeHead.Sign(sk, namespace)
+	if err != nil {
+		log.Fatal(err)
 	}
-	copy(sigident.Signature[:], sig)
 
-	buf := bytes.NewBuffer(nil)
-	if err := sigident.MarshalASCII(buf); err != nil {
-		log.Fatalf("MarshalASCII: %v", err)
+	req := requests.Cosignature{
+		KeyHash:     *types.HashFn(vk[:]),
+		Cosignature: witSTH.Signature,
 	}
+	buf := bytes.NewBuffer(nil)
+	if err := req.ToASCII(buf); err != nil {
+		log.Fatal(err)
+	}
+
 	rsp, err = http.Post(*url+"/add-cosignature", "type/sigsum", buf)
 	if err != nil {
-		log.Fatalf("Post: %v", err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Status: %v\n", rsp.StatusCode)
 }

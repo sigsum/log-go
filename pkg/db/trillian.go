@@ -1,25 +1,18 @@
-package trillian
+package db
 
 import (
 	"context"
 	"fmt"
 
+	"git.sigsum.org/sigsum-lib-go/pkg/requests"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
 	"github.com/golang/glog"
 	"github.com/google/trillian"
-	ttypes "github.com/google/trillian/types"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	trillianTypes "github.com/google/trillian/types"
 	"google.golang.org/grpc/codes"
 )
 
-type Client interface {
-	AddLeaf(context.Context, *types.LeafRequest) error
-	GetConsistencyProof(context.Context, *types.ConsistencyProofRequest) (*types.ConsistencyProof, error)
-	GetTreeHead(context.Context) (*types.TreeHead, error)
-	GetInclusionProof(context.Context, *types.InclusionProofRequest) (*types.InclusionProof, error)
-	GetLeaves(context.Context, *types.LeavesRequest) (*types.LeafList, error)
-}
-
-// TrillianClient is a wrapper around the Trillian gRPC client.
+// TrillianClient implements the Client interface for Trillian's gRPC backend
 type TrillianClient struct {
 	// TreeID is a Merkle tree identifier that Trillian uses
 	TreeID int64
@@ -28,17 +21,18 @@ type TrillianClient struct {
 	GRPC trillian.TrillianLogClient
 }
 
-func (c *TrillianClient) AddLeaf(ctx context.Context, req *types.LeafRequest) error {
+func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf) error {
 	leaf := types.Leaf{
-		Message: req.Message,
-		SigIdent: types.SigIdent{
-			Signature: req.Signature,
-			KeyHash:   types.Hash(req.VerificationKey[:]),
+		Statement: types.Statement{
+			ShardHint: req.ShardHint,
+			Checksum:  req.Checksum,
 		},
+		Signature: req.Signature,
+		KeyHash:   *types.HashFn(req.VerificationKey[:]),
 	}
-	serialized := leaf.Marshal()
+	serialized := leaf.ToBinary()
 
-	glog.V(3).Infof("queueing leaf request: %x", types.HashLeaf(serialized))
+	glog.V(3).Infof("queueing leaf request: %x", types.LeafHash(serialized))
 	rsp, err := c.GRPC.QueueLeaf(ctx, &trillian.QueueLeafRequest{
 		LogId: c.TreeID,
 		Leaf: &trillian.LogLeaf{
@@ -76,7 +70,7 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (*types.TreeHead, erro
 	if rsp.SignedLogRoot.LogRoot == nil {
 		return nil, fmt.Errorf("no log root")
 	}
-	var r ttypes.LogRootV1
+	var r trillianTypes.LogRootV1
 	if err := r.UnmarshalBinary(rsp.SignedLogRoot.LogRoot); err != nil {
 		return nil, fmt.Errorf("no log root: unmarshal failed: %v", err)
 	}
@@ -86,7 +80,7 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (*types.TreeHead, erro
 	return treeHeadFromLogRoot(&r), nil
 }
 
-func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *types.ConsistencyProofRequest) (*types.ConsistencyProof, error) {
+func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.ConsistencyProof) (*types.ConsistencyProof, error) {
 	rsp, err := c.GRPC.GetConsistencyProof(ctx, &trillian.GetConsistencyProofRequest{
 		LogId:          c.TreeID,
 		FirstTreeSize:  int64(req.OldSize),
@@ -115,7 +109,7 @@ func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *types.Con
 	}, nil
 }
 
-func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *types.InclusionProofRequest) (*types.InclusionProof, error) {
+func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.InclusionProof) (*types.InclusionProof, error) {
 	rsp, err := c.GRPC.GetInclusionProofByHash(ctx, &trillian.GetInclusionProofByHashRequest{
 		LogId:           c.TreeID,
 		LeafHash:        req.LeafHash[:],
@@ -146,7 +140,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *types.Inclu
 	}, nil
 }
 
-func (c *TrillianClient) GetLeaves(ctx context.Context, req *types.LeavesRequest) (*types.LeafList, error) {
+func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*types.Leaves, error) {
 	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
 		LogId:      c.TreeID,
 		StartIndex: int64(req.StartSize),
@@ -161,7 +155,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *types.LeavesRequest
 	if got, want := len(rsp.Leaves), int(req.EndSize-req.StartSize+1); got != want {
 		return nil, fmt.Errorf("unexpected number of leaves: %d", got)
 	}
-	var list types.LeafList
+	var list types.Leaves = make([]types.Leaf, 0, len(rsp.Leaves))
 	for i, leaf := range rsp.Leaves {
 		leafIndex := int64(req.StartSize + uint64(i))
 		if leafIndex != leaf.LeafIndex {
@@ -169,10 +163,31 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *types.LeavesRequest
 		}
 
 		var l types.Leaf
-		if err := l.Unmarshal(leaf.LeafValue); err != nil {
+		if err := l.FromBinary(leaf.LeafValue); err != nil {
 			return nil, fmt.Errorf("unexpected leaf(%d): %v", leafIndex, err)
 		}
-		list = append(list[:], &l)
+		list = append(list[:], l)
 	}
 	return &list, nil
+}
+
+func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) *types.TreeHead {
+	th := types.TreeHead{
+		Timestamp: uint64(lr.TimestampNanos / 1000 / 1000 / 1000),
+		TreeSize:  uint64(lr.TreeSize),
+	}
+	copy(th.RootHash[:], lr.RootHash)
+	return &th
+}
+
+func nodePathFromHashes(hashes [][]byte) ([]types.Hash, error) {
+	path := make([]types.Hash, len(hashes))
+	for i := 0; i < len(hashes); i++ {
+		if len(hashes[i]) != types.HashSize {
+			return nil, fmt.Errorf("unexpected hash length: %v", len(hashes[i]))
+		}
+
+		copy(path[i][:], hashes[i])
+	}
+	return path, nil
 }

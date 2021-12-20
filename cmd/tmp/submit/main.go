@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"log"
 
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 	checksum   = flag.String("checksum", "", "checksum (hex)")
 	sk         = flag.String("sk", "", "secret key (hex)")
 	domainHint = flag.String("domain_hint", "example.com", "domain hint (string)")
-	base_url   = flag.String("base_url", "localhost:6965", "base url (string)")
+	base_url   = flag.String("base_url", "localhost:6965/testonly", "base url (string)")
 )
 
 func main() {
@@ -28,18 +28,18 @@ func main() {
 	var priv ed25519.PrivateKey = ed25519.PrivateKey(privBuf[:])
 	mustDecodeHex(*sk, priv[:])
 
-	var c [types.HashSize]byte
+	var c types.Hash
 	if *checksum != "" {
 		mustDecodeHex(*checksum, c[:])
 	} else {
 		mustPutRandom(c[:])
 	}
 
-	msg := types.Message{
+	msg := types.Statement{
 		ShardHint: *shardHint,
-		Checksum:  &c,
+		Checksum:  c,
 	}
-	sig := ed25519.Sign(priv, msg.Marshal())
+	sig := ed25519.Sign(priv, msg.ToBinary())
 
 	fmt.Printf("echo \"shard_hint=%d\nchecksum=%x\nsignature=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- %s/sigsum/v0/add-leaf\n",
 		msg.ShardHint,

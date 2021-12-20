@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
+	types "git.sigsum.org/sigsum-lib-go/pkg/types"
 	gomock "github.com/golang/mock/gomock"
-	types "git.sigsum.org/sigsum-log-go/pkg/types"
 )
 
 // MockStateManager is a mock of StateManager interface.
@@ -36,7 +36,7 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 }
 
 // AddCosignature mocks base method.
-func (m *MockStateManager) AddCosignature(arg0 context.Context, arg1 *[32]byte, arg2 *[64]byte) error {
+func (m *MockStateManager) AddCosignature(arg0 context.Context, arg1 *types.PublicKey, arg2 *types.Signature) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

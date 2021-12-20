@@ -9,8 +9,8 @@ import (
 // TestSign implements the signer interface.  It can be used to mock an Ed25519
 // signer that always return the same public key, signature, and error.
 type TestSigner struct {
-	PublicKey *[ed25519.PublicKeySize]byte
-	Signature *[ed25519.SignatureSize]byte
+	PublicKey [ed25519.PublicKeySize]byte
+	Signature [ed25519.SignatureSize]byte
 	Error     error
 }
 

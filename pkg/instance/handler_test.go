@@ -4,60 +4,137 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
-	"git.sigsum.org/sigsum-log-go/pkg/mocks"
-	"git.sigsum.org/sigsum-log-go/pkg/types"
+	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	mocksDB "git.sigsum.org/sigsum-log-go/pkg/db/mocks"
+	mocksDNS "git.sigsum.org/sigsum-log-go/pkg/dns/mocks"
+	mocksState "git.sigsum.org/sigsum-log-go/pkg/state/mocks"
 	"github.com/golang/mock/gomock"
 )
 
 var (
-	testWitVK  = [types.VerificationKeySize]byte{}
+	testWitVK  = types.PublicKey{}
 	testConfig = Config{
-		LogID:      hex.EncodeToString(types.Hash([]byte("logid"))[:]),
+		LogID:      fmt.Sprintf("%x", types.HashFn([]byte("logid"))[:]),
 		TreeID:     0,
 		Prefix:     "testonly",
 		MaxRange:   3,
 		Deadline:   10,
 		Interval:   10,
 		ShardStart: 10,
-		Witnesses: map[[types.HashSize]byte][types.VerificationKeySize]byte{
-			*types.Hash(testWitVK[:]): testWitVK,
+		Witnesses: map[types.Hash]types.PublicKey{
+			*types.HashFn(testWitVK[:]): testWitVK,
 		},
 	}
 	testSTH = &types.SignedTreeHead{
 		TreeHead: types.TreeHead{
 			Timestamp: 0,
 			TreeSize:  0,
-			RootHash:  types.Hash(nil),
+			RootHash:  *types.HashFn([]byte("root hash")),
 		},
-		Signature: &[types.SignatureSize]byte{},
+		Signature: types.Signature{},
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
-		SigIdent: []*types.SigIdent{
-			&types.SigIdent{
-				KeyHash:   &[types.HashSize]byte{},
-				Signature: &[types.SignatureSize]byte{},
-			},
-		},
+		Cosignature:    []types.Signature{types.Signature{}},
+		KeyHash:        []types.Hash{types.Hash{}},
 	}
 )
 
-func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
+// TestHandlers check that the expected handlers are configured
+func TestHandlers(t *testing.T) {
+	endpoints := map[types.Endpoint]bool{
+		types.EndpointAddLeaf:             false,
+		types.EndpointAddCosignature:      false,
+		types.EndpointGetTreeHeadLatest:   false,
+		types.EndpointGetTreeHeadToSign:   false,
+		types.EndpointGetTreeHeadCosigned: false,
+		types.EndpointGetConsistencyProof: false,
+		types.EndpointGetInclusionProof:   false,
+		types.EndpointGetLeaves:           false,
+		types.Endpoint("get-checkpoint"):  false,
+	}
+	i := &Instance{
+		Config: testConfig,
+	}
 	for _, handler := range i.Handlers() {
-		if handler.Endpoint == e {
-			return handler
+		if _, ok := endpoints[handler.Endpoint]; !ok {
+			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
+		}
+		endpoints[handler.Endpoint] = true
+	}
+	for endpoint, ok := range endpoints {
+		if !ok {
+			t.Errorf("endpoint %s is not configured", endpoint)
 		}
 	}
-	t.Fatalf("must handle endpoint: %v", e)
-	return Handler{}
+}
+
+// TestServeHTTP checks that invalid HTTP methods are rejected
+func TestServeHTTP(t *testing.T) {
+	i := &Instance{
+		Config: testConfig,
+	}
+	for _, handler := range i.Handlers() {
+		// Prepare invalid HTTP request
+		method := http.MethodPost
+		if method == handler.Method {
+			method = http.MethodGet
+		}
+		url := handler.Endpoint.Path("http://example.com", i.Prefix)
+		req, err := http.NewRequest(method, url, nil)
+		if err != nil {
+			t.Fatalf("must create HTTP request: %v", err)
+		}
+		w := httptest.NewRecorder()
+
+		// Check that it is rejected
+		handler.ServeHTTP(w, req)
+		if got, want := w.Code, http.StatusMethodNotAllowed; got != want {
+			t.Errorf("got HTTP code %v but wanted %v for endpoint %q", got, want, handler.Endpoint)
+		}
+	}
+}
+
+// TestPath checks that Path works for an endpoint (add-leaf)
+func TestPath(t *testing.T) {
+	for _, table := range []struct {
+		description string
+		prefix      string
+		want        string
+	}{
+		{
+			description: "no prefix",
+			want:        "/sigsum/v0/add-leaf",
+		},
+		{
+			description: "a prefix",
+			prefix:      "test-prefix",
+			want:        "/test-prefix/sigsum/v0/add-leaf",
+		},
+	} {
+		instance := &Instance{
+			Config: Config{
+				Prefix: table.prefix,
+			},
+		}
+		handler := Handler{
+			Instance: instance,
+			Handler:  addLeaf,
+			Endpoint: types.EndpointAddLeaf,
+			Method:   http.MethodPost,
+		}
+		if got, want := handler.Path(), table.want; got != want {
+			t.Errorf("got path %v but wanted %v", got, want)
+		}
+	}
 }
 
 func TestAddLeaf(t *testing.T) {
@@ -77,29 +154,29 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafBuffer(t, 10, &[types.HashSize]byte{}, false),
+			ascii:       mustLeafBuffer(t, 10, types.Hash{}, false),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is before shard start)",
-			ascii:       mustLeafBuffer(t, 9, &[types.HashSize]byte{}, true),
+			ascii:       mustLeafBuffer(t, 9, types.Hash{}, true),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is after shard end)",
-			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, &[types.HashSize]byte{}, true),
+			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, types.Hash{}, true),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: failed verifying domain hint",
-			ascii:       mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
+			ascii:       mustLeafBuffer(t, 10, types.Hash{}, true),
 			expectDNS:   true,
 			errDNS:      fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description:    "invalid: backend failure",
-			ascii:          mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
+			ascii:          mustLeafBuffer(t, 10, types.Hash{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			errTrillian:    fmt.Errorf("something went wrong"),
@@ -107,7 +184,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid",
-			ascii:          mustLeafBuffer(t, 10, &[types.HashSize]byte{}, true),
+			ascii:          mustLeafBuffer(t, 10, types.Hash{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			wantCode:       http.StatusOK,
@@ -117,11 +194,11 @@ func TestAddLeaf(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			dns := mocks.NewMockVerifier(ctrl)
+			dns := mocksDNS.NewMockVerifier(ctrl)
 			if table.expectDNS {
 				dns.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.errDNS)
 			}
-			client := mocks.NewMockClient(ctrl)
+			client := mocksDB.NewMockClient(ctrl)
 			if table.expectTrillian {
 				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any()).Return(table.errTrillian)
 			}
@@ -150,10 +227,9 @@ func TestAddLeaf(t *testing.T) {
 
 func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%x%s"+"%s%s%x%s",
-			types.Cosignature, types.Delim, make([]byte, types.SignatureSize), types.EOL,
-			types.KeyHash, types.Delim, *types.Hash(testWitVK[:]), types.EOL,
+		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
+			"cosignature", types.Signature{},
+			"key_hash", *types.HashFn(testWitVK[:]),
 		))
 	}
 	for _, table := range []struct {
@@ -170,10 +246,9 @@ func TestAddCosignature(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (unknown witness)",
-			ascii: bytes.NewBufferString(fmt.Sprintf(
-				"%s%s%x%s"+"%s%s%x%s",
-				types.Signature, types.Delim, make([]byte, types.SignatureSize), types.EOL,
-				types.KeyHash, types.Delim, *types.Hash(testWitVK[1:]), types.EOL,
+			ascii: bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
+				"cosignature", types.Signature{},
+				"key_hash", *types.HashFn(testWitVK[1:]),
 			)),
 			wantCode: http.StatusBadRequest,
 		},
@@ -195,7 +270,7 @@ func TestAddCosignature(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stateman := mocks.NewMockStateManager(ctrl)
+			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
 				stateman.EXPECT().AddCosignature(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.err)
 			}
@@ -246,7 +321,7 @@ func TestGetTreeHeadLatest(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stateman := mocks.NewMockStateManager(ctrl)
+			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
 				stateman.EXPECT().Latest(gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -297,7 +372,7 @@ func TestGetTreeToSign(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stateman := mocks.NewMockStateManager(ctrl)
+			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
 				stateman.EXPECT().ToSign(gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -348,7 +423,7 @@ func TestGetTreeCosigned(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			stateman := mocks.NewMockStateManager(ctrl)
+			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
 				stateman.EXPECT().Cosigned(gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -376,10 +451,9 @@ func TestGetTreeCosigned(t *testing.T) {
 
 func TestGetConsistencyProof(t *testing.T) {
 	buf := func(oldSize, newSize int) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%d%s"+"%s%s%d%s",
-			types.OldSize, types.Delim, oldSize, types.EOL,
-			types.NewSize, types.Delim, newSize, types.EOL,
+		return bytes.NewBufferString(fmt.Sprintf("%s=%d\n%s=%d\n",
+			"old_size", oldSize,
+			"new_size", newSize,
 		))
 	}
 	for _, table := range []struct {
@@ -419,8 +493,8 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 2,
-				Path: []*[types.HashSize]byte{
-					types.Hash(nil),
+				Path: []types.Hash{
+					*types.HashFn([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -430,7 +504,7 @@ func TestGetConsistencyProof(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			client := mocks.NewMockClient(ctrl)
+			client := mocksDB.NewMockClient(ctrl)
 			if table.expect {
 				client.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -457,11 +531,10 @@ func TestGetConsistencyProof(t *testing.T) {
 }
 
 func TestGetInclusionProof(t *testing.T) {
-	buf := func(hash *[types.HashSize]byte, treeSize int) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%x%s"+"%s%s%d%s",
-			types.LeafHash, types.Delim, hash[:], types.EOL,
-			types.TreeSize, types.Delim, treeSize, types.EOL,
+	buf := func(hash *types.Hash, treeSize int) io.Reader {
+		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%d\n",
+			"leaf_hash", hash[:],
+			"tree_size", treeSize,
 		))
 	}
 	for _, table := range []struct {
@@ -479,25 +552,25 @@ func TestGetInclusionProof(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (no proof for tree size)",
-			ascii:       buf(types.Hash(nil), 1),
+			ascii:       buf(types.HashFn([]byte{}), 1),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       buf(types.Hash(nil), 2),
+			ascii:       buf(types.HashFn([]byte{}), 2),
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
-			ascii:       buf(types.Hash(nil), 2),
+			ascii:       buf(types.HashFn([]byte{}), 2),
 			expect:      true,
 			rsp: &types.InclusionProof{
 				TreeSize:  2,
 				LeafIndex: 0,
-				Path: []*[types.HashSize]byte{
-					types.Hash(nil),
+				Path: []types.Hash{
+					*types.HashFn([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -507,7 +580,7 @@ func TestGetInclusionProof(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			client := mocks.NewMockClient(ctrl)
+			client := mocksDB.NewMockClient(ctrl)
 			if table.expect {
 				client.EXPECT().GetInclusionProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -535,19 +608,18 @@ func TestGetInclusionProof(t *testing.T) {
 
 func TestGetLeaves(t *testing.T) {
 	buf := func(startSize, endSize int64) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf(
-			"%s%s%d%s"+"%s%s%d%s",
-			types.StartSize, types.Delim, startSize, types.EOL,
-			types.EndSize, types.Delim, endSize, types.EOL,
+		return bytes.NewBufferString(fmt.Sprintf("%s=%d\n%s=%d\n",
+			"start_size", startSize,
+			"end_size", endSize,
 		))
 	}
 	for _, table := range []struct {
 		description string
-		ascii       io.Reader       // buffer used to populate HTTP request
-		expect      bool            // set if a mock answer is expected
-		rsp         *types.LeafList // list of leaves from Trillian client
-		err         error           // error from Trillian client
-		wantCode    int             // HTTP status ok
+		ascii       io.Reader     // buffer used to populate HTTP request
+		expect      bool          // set if a mock answer is expected
+		rsp         *types.Leaves // list of leaves from Trillian client
+		err         error         // error from Trillian client
+		wantCode    int           // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -570,18 +642,16 @@ func TestGetLeaves(t *testing.T) {
 			description: "valid: one more entry than the configured MaxRange",
 			ascii:       buf(0, testConfig.MaxRange), // query will be pruned
 			expect:      true,
-			rsp: func() *types.LeafList {
-				var list types.LeafList
+			rsp: func() *types.Leaves {
+				var list types.Leaves
 				for i := int64(0); i < testConfig.MaxRange; i++ {
-					list = append(list[:], &types.Leaf{
-						Message: types.Message{
+					list = append(list[:], types.Leaf{
+						Statement: types.Statement{
 							ShardHint: 0,
-							Checksum:  types.Hash(nil),
+							Checksum:  types.Hash{},
 						},
-						SigIdent: types.SigIdent{
-							Signature: &[types.SignatureSize]byte{},
-							KeyHash:   types.Hash(nil),
-						},
+						Signature: types.Signature{},
+						KeyHash:   types.Hash{},
 					})
 				}
 				return &list
@@ -593,7 +663,7 @@ func TestGetLeaves(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			client := mocks.NewMockClient(ctrl)
+			client := mocksDB.NewMockClient(ctrl)
 			if table.expect {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
@@ -619,43 +689,48 @@ func TestGetLeaves(t *testing.T) {
 				return
 			}
 
-			// TODO: check that we got the right leaves back.  It is especially
-			// important that we check that we got the right number of leaves.
-			//
-			// Pseuducode for when we have types.LeafList.UnmarshalASCII()
-			//
-			//list := &types.LeafList{}
-			//if err := list.UnmarshalASCII(w.Body); err != nil {
-			//	t.Fatalf("must unmarshal leaf list: %v", err)
-			//}
-			//if got, want := list, table.rsp; !reflect.DeepEqual(got, want) {
-			//	t.Errorf("got leaf list\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
-			//}
+			list := types.Leaves{}
+			if err := list.FromASCII(w.Body); err != nil {
+				t.Fatalf("must unmarshal leaf list: %v", err)
+			}
+			if got, want := &list, table.rsp; !reflect.DeepEqual(got, want) {
+				t.Errorf("got leaf list\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
+			}
 		}()
 	}
 }
 
-func mustLeafBuffer(t *testing.T, shardHint uint64, checksum *[types.HashSize]byte, wantSig bool) io.Reader {
+func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
+	for _, handler := range i.Handlers() {
+		if handler.Endpoint == e {
+			return handler
+		}
+	}
+	t.Fatalf("must handle endpoint: %v", e)
+	return Handler{}
+}
+
+func mustLeafBuffer(t *testing.T, shardHint uint64, checksum types.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatalf("must generate ed25519 keys: %v", err)
 	}
-	msg := types.Message{
+	msg := types.Statement{
 		ShardHint: shardHint,
 		Checksum:  checksum,
 	}
-	sig := ed25519.Sign(sk, msg.Marshal())
+	sig := ed25519.Sign(sk, msg.ToBinary())
 	if !wantSig {
 		sig[0] += 1
 	}
 	return bytes.NewBufferString(fmt.Sprintf(
-		"%s%s%d%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%x%s"+"%s%s%s%s",
-		types.ShardHint, types.Delim, shardHint, types.EOL,
-		types.Checksum, types.Delim, checksum[:], types.EOL,
-		types.Signature, types.Delim, sig, types.EOL,
-		types.VerificationKey, types.Delim, vk, types.EOL,
-		types.DomainHint, types.Delim, "example.com", types.EOL,
+		"%s=%d\n"+"%s=%x\n"+"%s=%x\n"+"%s=%x\n"+"%s=%s\n",
+		"shard_hint", shardHint,
+		"checksum", checksum[:],
+		"signature", sig,
+		"verification_key", vk,
+		"domain_hint", "example.com",
 	))
 }
