@@ -1,10 +1,12 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"git.sigsum.org/sigsum-lib-go/pkg/requests"
 	"git.sigsum.org/sigsum-lib-go/pkg/types"
@@ -185,8 +187,18 @@ func TestGetTreeHead(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if got, want := th, table.wantTh; !reflect.DeepEqual(got, want) {
-				t.Errorf("got tree head\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
+
+			// we would need a clock that can be mocked to make a nicer test
+			now := uint64(time.Now().Unix())
+			if got, wantLow, wantHigh := th.Timestamp, now-5, now+5; got < wantLow || got > wantHigh {
+				t.Errorf("got tree head with timestamp %d but wanted between [%d, %d] in test %q",
+					got, wantLow, wantHigh, table.description)
+			}
+			if got, want := th.TreeSize, table.wantTh.TreeSize; got != want {
+				t.Errorf("got tree head with tree size %d but wanted %d in test %q", got, want, table.description)
+			}
+			if got, want := th.RootHash[:], table.wantTh.RootHash[:]; !bytes.Equal(got, want) {
+				t.Errorf("got root hash %x but wanted %x in test %q", got, want, table.description)
 			}
 		}()
 	}

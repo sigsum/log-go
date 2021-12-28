@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"git.sigsum.org/sigsum-lib-go/pkg/requests"
 	"git.sigsum.org/sigsum-lib-go/pkg/types"
@@ -173,7 +174,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*
 
 func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) *types.TreeHead {
 	th := types.TreeHead{
-		Timestamp: uint64(lr.TimestampNanos / 1000 / 1000 / 1000),
+		Timestamp: uint64(time.Now().Unix()),
 		TreeSize:  uint64(lr.TreeSize),
 	}
 	copy(th.RootHash[:], lr.RootHash)
