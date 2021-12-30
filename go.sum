@@ -35,6 +35,8 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.4/go.mod h1:aXENhDJ1Y4lIg4EU
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.sigsum.org/sigsum-lib-go v0.0.1 h1:Rn+rMPAxVPf3Pqbd82htSjbBBXPT65A8COpgIrsCo2s=
 git.sigsum.org/sigsum-lib-go v0.0.1/go.mod h1:hioRNUsIcepuwtEeXSQcw1JIQ4t0+u4egbh6VgSQeS4=
+git.sigsum.org/sigsum-lib-go v0.0.2 h1:1FwdnraPaasw1D1Lb+flRMJRGLTuZrp17AZ6tx+iT/0=
+git.sigsum.org/sigsum-lib-go v0.0.2/go.mod h1:DVmlcf0MBHy4IZdnZ5DcbsKkGEd0EkOAoLINhLgcndY=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=

@@ -1,9 +1,9 @@
 module git.sigsum.org/sigsum-log-go
 
-go 1.14
+go 1.15
 
 require (
-	git.sigsum.org/sigsum-lib-go v0.0.1
+	git.sigsum.org/sigsum-lib-go v0.0.2
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/mock v1.4.4
 	github.com/google/certificate-transparency-go v1.1.1
