@@ -11,9 +11,9 @@ and
 There is a public prototype that is up and running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
-- Base URL: https://poc.sigsum.org/glass-frog/
-- Public key: `16589cb2dfb3e7f374bf307d33e4751bc0dfd2f5612e1609e7aeb479fa23a0c5`
-- Shard start: 1638780441 (Mon Dec 6 08:47:21 AM UTC 2021)
+- Base URL: https://poc.sigsum.org/glasswing-butterfly/
+- Public key: `4ab3d2b51e47dc9de4cce4bdeba9e08622e93a2f7f89b4cb77197fc6b0044de7`
+- Shard start: 1639579652 (Wed 15 Dec 2021 02:47:32 PM UTC)
 
 A [witness](https://github.com/sigsum/sigsum-witness-py) is also up and running
 with zero-promises of uptime, stability, etc.  Relevant witness information:
@@ -24,19 +24,19 @@ As described in our design and API documentation, you can talk to the log by
 passing ASCII key-value pairs.  For example, fetch a cosigned tree head and a
 log entry:
 ```
-$ curl https://poc.sigsum.org/glass-frog/sigsum/v0/get-tree-head-cosigned
-timestamp=1638833163
-tree_size=28
-root_hash=794349f5b8a9967ba7e6b4bc4737f0ef3ffea08ab5ed2ab6a78bb4ddbdf0f91d
-signature=1cdccd80b5b07922dadcaa6dd7ab1ee9054df0e0d52897901149bd15cab979ba1c17a111a85cfc7c77130492ecb166605227fd23ff7a5396f9ef72d64232ad00
+$ curl https://poc.sigsum.org/glasswing-butterfly/sigsum/v0/get-tree-head-cosigned
+timestamp=1640879637
+tree_size=8
+root_hash=a2e1944b7a49c74e96919d0655209b201a0a50e3172c595e1115d09b5aec675c
+signature=5ae00b5a0e9d579e70e1dc9800b5f1c84746b40f039bc2879622cb5bba0c2a5314f69c7819a55de1737ff85f5dac8371530eef54376ab8fc7034af8e08164909
+cosignature=5b0c80e701b65bf1cf895f14a4c60691d067cf65a869f8da9368d83ac9add5d29b764a40401072b328dafdc29950f4e4835e1c2d268c86b2d8c59b75ce24220f
 key_hash=15e203ad786ad5e36c053ba883d09ad7dc6b2011bb9c111330f79c8f1d6b8e69
-cosignature=70e93519bdb609c37caa821a738ab41a02613b6441e8c6a0201af05c08a332fea292f8454d3a600897802275982ad09f3fa91ac8d434aca5cca763c757dffa0b
 $
-$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/glass-frog/sigsum/v0/get-leaves
-shard_hint=1638780441
-checksum=1d3337e06d2dfbd652a1b575880cabb65b3d35c6dda7078ebffdaaea5a450494
-signature=2da5ff9ce3def370b1139ce34ccf064e0fe5d8a46df1e832ba47a536e9a098fdfedc00a4d1e99832043883ff2e91472f8998320243b071eccbee093bf04c9002
-key_hash=33041122596cafbd785679498967695f6b68113cac6e969aa2574302057bb5ec
+$ printf "start_size=0\nend_size=0\n" | curl --data-binary @- https://poc.sigsum.org/glasswing-butterfly/sigsum/v0/get-leaves
+shard_hint=1640878226
+checksum=7971968263fc030a12e33d49713c7def60a0ca6a90af03944e644f9349ac3476
+signature=01ffc2105507dd703de0e4e2fc03f9364a1b1a36cf0fa09a609bf6cc037d4bc3fe48b234aa48213c4c2646389c220bc171b7936d16bbfcece6610a8648a77807
+key_hash=9a95dd85f3f92ecf5aabd9a13a12363a16e3d5711445d1939b18409346381682
 ```
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
