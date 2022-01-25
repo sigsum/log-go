@@ -5,152 +5,161 @@ import (
 	"crypto"
 	"crypto/ed25519"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
 	"git.sigsum.org/sigsum-lib-go/pkg/types"
 	"git.sigsum.org/sigsum-log-go/pkg/db"
 	"github.com/golang/glog"
-	"github.com/google/certificate-transparency-go/schedule"
 )
 
-// StateManagerSingle implements a single-instance StateManager.  In other
-// words, there's no other state that needs to be synced on any remote machine.
+// StateManagerSingle implements a single-instance StateManager
 type StateManagerSingle struct {
-	client   db.Client
-	signer   crypto.Signer
-	interval time.Duration
-	deadline time.Duration
+	client    db.Client
+	signer    crypto.Signer
+	namespace types.Hash
+	interval  time.Duration
+	deadline  time.Duration
+
+	// Lock-protected access to pointers.  A write lock is only obtained once
+	// per interval when doing pointer rotation.  All endpoints are readers.
 	sync.RWMutex
+	signedTreeHead   *types.SignedTreeHead
+	cosignedTreeHead *types.CosignedTreeHead
 
-	// cosigned is the current cosigned tree head that is being served
-	cosigned types.CosignedTreeHead
-
-	// toSign is the current tree head that is being cosigned by witnesses
-	toSign types.SignedTreeHead
-
-	// cosignatures keep track of all cosignatures for the toSign tree head
+	// Syncronized and deduplicated witness cosignatures for signedTreeHead
+	events       chan *event
 	cosignatures map[types.Hash]*types.Signature
 }
 
 func NewStateManagerSingle(client db.Client, signer crypto.Signer, interval, deadline time.Duration) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
-		client:   client,
-		signer:   signer,
-		interval: interval,
-		deadline: deadline,
+		client:    client,
+		signer:    signer,
+		namespace: *types.HashFn(signer.Public().(ed25519.PublicKey)),
+		interval:  interval,
+		deadline:  deadline,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), sm.deadline)
-	defer cancel()
-
-	sth, err := sm.Latest(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("Latest: %v", err)
-	}
-	sm.toSign = *sth
-	sm.cosignatures = make(map[types.Hash]*types.Signature)
-	sm.cosigned = types.CosignedTreeHead{
-		SignedTreeHead: *sth,
-		Cosignature:    make([]types.Signature, 0),
-		KeyHash:        make([]types.Hash, 0),
-	}
-	return sm, nil
+	sth, err := sm.latestSTH(context.Background())
+	sm.setCosignedTreeHead()
+	sm.setToCosignTreeHead(sth)
+	return sm, err
 }
 
 func (sm *StateManagerSingle) Run(ctx context.Context) {
-	schedule.Every(ctx, sm.interval, func(ctx context.Context) {
-		ictx, cancel := context.WithTimeout(ctx, sm.deadline)
-		defer cancel()
-
-		nextSTH, err := sm.Latest(ictx)
+	rotation := func() {
+		nextSTH, err := sm.latestSTH(ctx)
 		if err != nil {
-			glog.Warningf("rotate failed: Latest: %v", err)
+			glog.Warningf("cannot rotate without tree head: %v", err)
 			return
 		}
-
-		sm.Lock()
-		defer sm.Unlock()
 		sm.rotate(nextSTH)
-	})
-}
-
-func (sm *StateManagerSingle) Latest(ctx context.Context) (*types.SignedTreeHead, error) {
-	th, err := sm.client.GetTreeHead(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("LatestTreeHead: %v", err)
 	}
+	sm.events = make(chan *event, 4096)
+	defer close(sm.events)
+	ticker := time.NewTicker(sm.interval)
+	defer ticker.Stop()
 
-	namespace := types.HashFn(sm.signer.Public().(ed25519.PublicKey))
-	return th.Sign(sm.signer, namespace)
+	rotation()
+	for {
+		select {
+		case <-ticker.C:
+			rotation()
+		case ev := <-sm.events:
+			sm.handleEvent(ev)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
-func (sm *StateManagerSingle) ToSign(_ context.Context) (*types.SignedTreeHead, error) {
+func (sm *StateManagerSingle) ToCosignTreeHead(_ context.Context) (*types.SignedTreeHead, error) {
 	sm.RLock()
 	defer sm.RUnlock()
-	return &sm.toSign, nil
+	return sm.signedTreeHead, nil
 }
 
-func (sm *StateManagerSingle) Cosigned(_ context.Context) (*types.CosignedTreeHead, error) {
+func (sm *StateManagerSingle) CosignedTreeHead(_ context.Context) (*types.CosignedTreeHead, error) {
 	sm.RLock()
 	defer sm.RUnlock()
-	if len(sm.cosigned.Cosignature) == 0 {
-		return nil, fmt.Errorf("no witness cosignatures available")
+	if sm.cosignedTreeHead == nil {
+		return nil, fmt.Errorf("no cosignatures available")
 	}
-	return &sm.cosigned, nil
+	return sm.cosignedTreeHead, nil
 }
 
-func (sm *StateManagerSingle) AddCosignature(_ context.Context, vk *types.PublicKey, sig *types.Signature) error {
+func (sm *StateManagerSingle) AddCosignature(ctx context.Context, pub *types.PublicKey, sig *types.Signature) error {
+	sm.RLock()
+	defer sm.RUnlock()
+
+	msg := sm.signedTreeHead.TreeHead.ToBinary(&sm.namespace)
+	if !ed25519.Verify(ed25519.PublicKey(pub[:]), msg, sig[:]) {
+		return fmt.Errorf("invalid cosignature")
+	}
+	select {
+	case sm.events <- &event{types.HashFn(pub[:]), sig}:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("request timeout")
+	}
+}
+
+func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 	sm.Lock()
 	defer sm.Unlock()
 
-	namespace := types.HashFn(sm.signer.Public().(ed25519.PublicKey))
-	msg := sm.toSign.TreeHead.ToBinary(namespace)
-	if !ed25519.Verify(ed25519.PublicKey(vk[:]), msg, sig[:]) {
-		return fmt.Errorf("invalid tree head signature")
-	}
-
-	witness := types.HashFn(vk[:])
-	if _, ok := sm.cosignatures[*witness]; ok {
-		return fmt.Errorf("signature-signer pair is a duplicate") // TODO: maybe not an error
-	}
-	sm.cosignatures[*witness] = sig
-
-	glog.V(3).Infof("accepted new cosignature from witness: %x", *witness)
-	return nil
+	glog.V(3).Infof("rotating tree heads")
+	sm.handleEvents()
+	sm.setCosignedTreeHead()
+	sm.setToCosignTreeHead(nextSTH)
 }
 
-// rotate rotates the log's cosigned and stable STH.  The caller must aquire the
-// source's read-write lock if there are concurrent reads and/or writes.
-func (sm *StateManagerSingle) rotate(next *types.SignedTreeHead) {
-	if reflect.DeepEqual(sm.cosigned.SignedTreeHead, sm.toSign) {
-		// cosigned and toSign are the same.  So, we need to merge all
-		// cosignatures that we already had with the new collected ones.
-		for i := 0; i < len(sm.cosigned.Cosignature); i++ {
-			kh := sm.cosigned.KeyHash[i]
-			sig := sm.cosigned.Cosignature[i]
-
-			if _, ok := sm.cosignatures[kh]; !ok {
-				sm.cosignatures[kh] = &sig
-			}
-		}
-		glog.V(3).Infof("cosigned tree head repeated, merged signatures")
+func (sm *StateManagerSingle) handleEvents() {
+	glog.V(3).Infof("handling any outstanding events")
+	for i, n := 0, len(sm.events); i < n; i++ {
+		sm.handleEvent(<-sm.events)
 	}
-	var cosignatures []types.Signature
-	var keyHashes []types.Hash
+}
 
+func (sm *StateManagerSingle) handleEvent(ev *event) {
+	glog.V(3).Infof("handling event from witness %x", ev.keyHash[:])
+	sm.cosignatures[*ev.keyHash] = ev.cosignature
+}
+
+func (sm *StateManagerSingle) setCosignedTreeHead() {
+	n := len(sm.cosignatures)
+	if n == 0 {
+		sm.cosignedTreeHead = nil
+		return
+	}
+
+	var cth types.CosignedTreeHead
+	cth.SignedTreeHead = *sm.signedTreeHead
+	cth.Cosignature = make([]types.Signature, 0, n)
+	cth.KeyHash = make([]types.Hash, 0, n)
 	for keyHash, cosignature := range sm.cosignatures {
-		cosignatures = append(cosignatures, *cosignature)
-		keyHashes = append(keyHashes, keyHash)
+		cth.KeyHash = append(cth.KeyHash, keyHash)
+		cth.Cosignature = append(cth.Cosignature, *cosignature)
 	}
+	sm.cosignedTreeHead = &cth
+}
 
-	// Update cosigned tree head
-	sm.cosigned.SignedTreeHead = sm.toSign
-	sm.cosigned.Cosignature = cosignatures
-	sm.cosigned.KeyHash = keyHashes
+func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead) {
+	sm.cosignatures = make(map[types.Hash]*types.Signature)
+	sm.signedTreeHead = nextSTH
+}
 
-	// Update to-sign tree head
-	sm.toSign = *next
-	sm.cosignatures = make(map[types.Hash]*types.Signature, 0) // TODO: on repeat we might want to not zero this
-	glog.V(3).Infof("rotated tree heads")
+func (sm *StateManagerSingle) latestSTH(ctx context.Context) (*types.SignedTreeHead, error) {
+	ictx, cancel := context.WithTimeout(ctx, sm.deadline)
+	defer cancel()
+
+	th, err := sm.client.GetTreeHead(ictx)
+	if err != nil {
+		return nil, fmt.Errorf("failed fetching tree head: %v", err)
+	}
+	sth, err := th.Sign(sm.signer, &sm.namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed signing tree head: %v", err)
+	}
+	return sth, nil
 }

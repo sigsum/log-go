@@ -25,5 +25,4 @@ Current status on implementing the above:
 * [ ] get-\* endpoints
 * [ ] domain hint
 * [ ] add-leaf
-* [ ] tree-head endpoints
-	* rgdd is assigned, started on something similar in `rgdd/state`
+* [x] tree-head endpoints
