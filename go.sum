@@ -33,8 +33,6 @@ cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohl
 cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RXyy7KQOVs=
 contrib.go.opencensus.io/exporter/stackdriver v0.13.4/go.mod h1:aXENhDJ1Y4lIg4EUaVTwzvYETVNZk10Pu26tevFKLUc=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-git.sigsum.org/sigsum-lib-go v0.0.1 h1:Rn+rMPAxVPf3Pqbd82htSjbBBXPT65A8COpgIrsCo2s=
-git.sigsum.org/sigsum-lib-go v0.0.1/go.mod h1:hioRNUsIcepuwtEeXSQcw1JIQ4t0+u4egbh6VgSQeS4=
 git.sigsum.org/sigsum-lib-go v0.0.2 h1:1FwdnraPaasw1D1Lb+flRMJRGLTuZrp17AZ6tx+iT/0=
 git.sigsum.org/sigsum-lib-go v0.0.2/go.mod h1:DVmlcf0MBHy4IZdnZ5DcbsKkGEd0EkOAoLINhLgcndY=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
