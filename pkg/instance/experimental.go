@@ -22,7 +22,7 @@ const algEd25519 byte = 1
 // Sigsum API.  Documentation can be found in the transparency-dev repo.
 func getCheckpoint(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
 	glog.V(3).Info("handling get-checkpoint request")
-	sth, err := i.Stateman.ToSign(ctx)
+	sth, err := i.Stateman.ToCosignTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}

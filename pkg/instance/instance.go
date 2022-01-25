@@ -42,8 +42,7 @@ func (i *Instance) Handlers() []Handler {
 	return []Handler{
 		Handler{Instance: i, Handler: addLeaf, Endpoint: types.EndpointAddLeaf, Method: http.MethodPost},
 		Handler{Instance: i, Handler: addCosignature, Endpoint: types.EndpointAddCosignature, Method: http.MethodPost},
-		Handler{Instance: i, Handler: getTreeHeadLatest, Endpoint: types.EndpointGetTreeHeadLatest, Method: http.MethodGet},
-		Handler{Instance: i, Handler: getTreeHeadToSign, Endpoint: types.EndpointGetTreeHeadToSign, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getTreeHeadToCosign, Endpoint: types.EndpointGetTreeHeadToSign, Method: http.MethodGet}, // XXX: ToCosign
 		Handler{Instance: i, Handler: getTreeHeadCosigned, Endpoint: types.EndpointGetTreeHeadCosigned, Method: http.MethodGet},
 		Handler{Instance: i, Handler: getCheckpoint, Endpoint: types.Endpoint("get-checkpoint"), Method: http.MethodGet},
 		Handler{Instance: i, Handler: getConsistencyProof, Endpoint: types.EndpointGetConsistencyProof, Method: http.MethodPost},

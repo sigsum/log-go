@@ -53,7 +53,6 @@ func TestHandlers(t *testing.T) {
 	endpoints := map[types.Endpoint]bool{
 		types.EndpointAddLeaf:             false,
 		types.EndpointAddCosignature:      false,
-		types.EndpointGetTreeHeadLatest:   false,
 		types.EndpointGetTreeHeadToSign:   false,
 		types.EndpointGetTreeHeadCosigned: false,
 		types.EndpointGetConsistencyProof: false,
@@ -296,57 +295,6 @@ func TestAddCosignature(t *testing.T) {
 	}
 }
 
-func TestGetTreeHeadLatest(t *testing.T) {
-	for _, table := range []struct {
-		description string
-		expect      bool                  // set if a mock answer is expected
-		rsp         *types.SignedTreeHead // signed tree head from Trillian client
-		err         error                 // error from Trillian client
-		wantCode    int                   // HTTP status ok
-	}{
-		{
-			description: "invalid: backend failure",
-			expect:      true,
-			err:         fmt.Errorf("something went wrong"),
-			wantCode:    http.StatusInternalServerError,
-		},
-		{
-			description: "valid",
-			expect:      true,
-			rsp:         testSTH,
-			wantCode:    http.StatusOK,
-		},
-	} {
-		// Run deferred functions at the end of each iteration
-		func() {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			stateman := mocksState.NewMockStateManager(ctrl)
-			if table.expect {
-				stateman.EXPECT().Latest(gomock.Any()).Return(table.rsp, table.err)
-			}
-			i := Instance{
-				Config:   testConfig,
-				Stateman: stateman,
-			}
-
-			// Create HTTP request
-			url := types.EndpointGetTreeHeadLatest.Path("http://example.com", i.Prefix)
-			req, err := http.NewRequest("GET", url, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			mustHandle(t, i, types.EndpointGetTreeHeadLatest).ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
-			}
-		}()
-	}
-}
-
 func TestGetTreeToSign(t *testing.T) {
 	for _, table := range []struct {
 		description string
@@ -374,7 +322,7 @@ func TestGetTreeToSign(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().ToSign(gomock.Any()).Return(table.rsp, table.err)
+				stateman.EXPECT().ToCosignTreeHead(gomock.Any()).Return(table.rsp, table.err)
 			}
 			i := Instance{
 				Config:   testConfig,
@@ -425,7 +373,7 @@ func TestGetTreeCosigned(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().Cosigned(gomock.Any()).Return(table.rsp, table.err)
+				stateman.EXPECT().CosignedTreeHead(gomock.Any()).Return(table.rsp, table.err)
 			}
 			i := Instance{
 				Config:   testConfig,

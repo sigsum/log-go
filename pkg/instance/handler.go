@@ -79,21 +79,9 @@ func addCosignature(ctx context.Context, i *Instance, w http.ResponseWriter, r *
 	return http.StatusOK, nil
 }
 
-func getTreeHeadLatest(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
-	glog.V(3).Info("handling get-tree-head-latest request")
-	sth, err := i.Stateman.Latest(ctx)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	if err := sth.ToASCII(w); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
-}
-
-func getTreeHeadToSign(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
+func getTreeHeadToCosign(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
 	glog.V(3).Info("handling get-tree-head-to-sign request")
-	sth, err := i.Stateman.ToSign(ctx)
+	sth, err := i.Stateman.ToCosignTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -105,7 +93,7 @@ func getTreeHeadToSign(ctx context.Context, i *Instance, w http.ResponseWriter, 
 
 func getTreeHeadCosigned(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
 	glog.V(3).Info("handling get-tree-head-cosigned request")
-	cth, err := i.Stateman.Cosigned(ctx)
+	cth, err := i.Stateman.CosignedTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -121,6 +109,7 @@ func getConsistencyProof(ctx context.Context, i *Instance, w http.ResponseWriter
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	// XXX: check tree size of latest thing we signed?
 
 	proof, err := i.Client.GetConsistencyProof(ctx, req)
 	if err != nil {
@@ -138,6 +127,7 @@ func getInclusionProof(ctx context.Context, i *Instance, w http.ResponseWriter, 
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	// XXX: check tree size of latest thing we signed?
 
 	proof, err := i.Client.GetInclusionProof(ctx, req)
 	if err != nil {
@@ -155,6 +145,7 @@ func getLeaves(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	// XXX: check tree size of latest thing we signed?
 
 	leaves, err := i.Client.GetLeaves(ctx, req)
 	if err != nil {
