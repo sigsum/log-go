@@ -1,0 +1,17 @@
+#!/bin/bash
+
+sk=5f69afebc2d6f23c5e56fcbd5bab45b0bf76d70b3f82f8f071a72ceb75c277a48cf3ac85aadd42891c5ae9aef27244cb2a546a2312f80020aad3f2ae1af73314
+vk=8cf3ac85aadd42891c5ae9aef27244cb2a546a2312f80020aad3f2ae1af73314
+wit=711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b
+tree_id=4251255065613170469
+shard_start=1
+prefix=testonly
+
+echo "running sigsum-log-go with vk: $vk"
+$GOPATH/bin/sigsum_log_go \
+	--logtostderr --v 3\
+	--prefix $prefix \
+	--key $sk \
+	--trillian_id $tree_id \
+	--witnesses $wit \
+	--shard_interval_start $shard_start

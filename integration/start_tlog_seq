@@ -1,0 +1,10 @@
+#!/bin/bash
+
+$GOPATH/bin/trillian_log_signer \
+	--logtostderr \
+	--force_master \
+	--rpc_endpoint=localhost:6961 \
+	--http_endpoint=localhost:6964 \
+	--num_sequencers 1 \
+	--sequencer_interval 100ms \
+	--batch_size 100

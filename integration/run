@@ -1,0 +1,84 @@
+#!/bin/bash
+
+#
+# You will need to configure Trillian locally on your test machine.  See
+#
+#     cmd/sigsum_log_go/README.md.
+#
+# for some pointers.  Ensure that trillian_log_server and trillian_log_signer
+# are in $GOPATH, and set the appropriate Trillian id in start_sigsum_server.
+#
+# You will also need to install into your $GOPATH:
+#
+#     go install cmd/sigsum_log_go/main.go
+#     go install cmd/tmp/cosign/main.go
+#     go install cmd/tmp/submit/main.go
+#
+# Run the test as follows:
+#
+#     1. start_tlog_seq ("terminal 1")
+#     2. start_tlog_serv ("terminal 2")
+#     3. start_sigsum_serv ("terminal 3")
+#     4. run ("terminal 4")
+#
+# What you expect to see is if the different endpoints function.
+#
+#     - There is a to-cosign tree head
+#     - Submitting four entries work
+#     - Adding a cosignature works
+#     - Cosigned tree head is not available (waiting for rotate)
+#     - Experimental checkpoint works
+#     - Consistency proof works
+#     - Fetching entries work
+#     - Cosigned tree head is available (tree heads rotated)
+#
+# Warning: it is assumed that there are at least 4 leaves in the database.
+# Warning: the get-inclusion-proof endpoint is not poked.
+# Warning: this needs to be replaced, see issues/add-integration-test.md.
+#
+now=$(date +%s)
+url=http://localhost:6965/testonly/sigsum/v0
+log_vk=8cf3ac85aadd42891c5ae9aef27244cb2a546a2312f80020aad3f2ae1af73314
+wit_sk=e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b
+submit_sk=094277235c42f5f8cba2b63cb14506938b4408730732e3e82e1473e63217767c5aed7ffc3bc088221f6579567b2e6e3c4ac3579bd5e77670755179052c68d5d3
+shard_hint=$(date +%s)
+domain_hint=sigsum.rgdd.se
+
+wait_seconds=5
+
+echo "test: get-tree-head-to-sign"
+curl $url/get-tree-head-to-sign
+sleep $wait_seconds; echo ""
+
+echo "test: submitting four..."
+$GOPATH/bin/submit --sk=$submit_sk --shard_hint=$shard_hint --domain_hint=$domain_hint | bash
+sleep $wait_seconds
+
+echo "test: cosigning..."
+$GOPATH/bin/cosign --url=$url --log_vk=$log_vk --sk=$wit_sk
+sleep $wait_seconds
+echo ""
+
+echo "test: get-tree-head-cosigned"
+curl $url/get-tree-head-cosigned
+sleep $wait_seconds
+echo ""
+
+echo "test: get-checkpoint"
+curl $url/get-checkpoint
+sleep $wait_seconds
+echo ""
+
+echo "test: get-consistency-proof"
+printf "old_size=1\nnew_size=4\n" | curl --data-binary @- $url/get-consistency-proof
+sleep $wait_seconds
+echo ""
+
+echo "test: get-leaves (first and second)"
+printf "start_size=0\nend_size=1\n" | curl --data-binary @- $url/get-leaves
+sleep $wait_seconds
+echo ""
+
+echo "with 30s interval we should now have a cosigned tree head"
+curl $url/get-tree-head-cosigned
+echo ""
