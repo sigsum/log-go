@@ -52,6 +52,9 @@ sleep $wait_seconds; echo ""
 
 echo "test: submitting four..."
 $GOPATH/bin/submit --sk=$submit_sk --shard_hint=$shard_hint --domain_hint=$domain_hint | bash
+$GOPATH/bin/submit --sk=$submit_sk --shard_hint=$shard_hint --domain_hint=$domain_hint | bash
+$GOPATH/bin/submit --sk=$submit_sk --shard_hint=$shard_hint --domain_hint=$domain_hint | bash
+$GOPATH/bin/submit --sk=$submit_sk --shard_hint=$shard_hint --domain_hint=$domain_hint | bash
 sleep $wait_seconds
 
 echo "test: cosigning..."
