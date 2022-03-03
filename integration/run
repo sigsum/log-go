@@ -37,13 +37,12 @@
 # Warning: the get-inclusion-proof endpoint is not poked.
 # Warning: this needs to be replaced, see issues/add-integration-test.md.
 #
+
+. "$(dirname $0)/config"
+
 now=$(date +%s)
 url=http://localhost:6965/testonly/sigsum/v0
-log_vk=8cf3ac85aadd42891c5ae9aef27244cb2a546a2312f80020aad3f2ae1af73314
-wit_sk=e1d7c494dacb0ddf809a17e4528b01f584af22e3766fa740ec52a1711c59500d711090dd2286040b50961b0fe09f58aa665ccee5cb7ee042d819f18f6ab5046b
-submit_sk=094277235c42f5f8cba2b63cb14506938b4408730732e3e82e1473e63217767c5aed7ffc3bc088221f6579567b2e6e3c4ac3579bd5e77670755179052c68d5d3
 shard_hint=$(date +%s)
-domain_hint=sigsum.rgdd.se
 
 wait_seconds=5
 

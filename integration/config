@@ -1,0 +1,18 @@
+# Use createtree to create a trillian tree and set tree_id.
+tree_id=
+
+# Use sigsum_keygen to generate a key pair for the log and set log_sk.
+log_sk=
+
+# Use sigsum_keygen to generate a key pair for the witness and set wit_sk.
+wit_sk=
+
+# Use sigsum_keygen to generate a key pair for submission and set submit_sk.
+# Add a TXT record named $domain_hint with the hash of the vk as its value.
+submit_sk=
+domain_hint=_label.example.com
+
+
+log_vk=$(echo $log_sk | cut -c 65-)
+wit_vk=$(echo $wit_sk | cut -c 65-)
+submit_vk=$(echo $submit_sk | cut -c 65-)
