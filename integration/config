@@ -10,7 +10,7 @@ wit_sk=
 # Use sigsum_keygen to generate a key pair for submission and set submit_sk.
 # Add a TXT record named $domain_hint with the hash of the vk as its value.
 submit_sk=
-domain_hint=_label.example.com
+domain_hint=_sigsum_v0.example.com
 
 
 log_vk=$(echo $log_sk | cut -c 65-)
