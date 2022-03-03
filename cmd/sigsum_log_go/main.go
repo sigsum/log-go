@@ -127,7 +127,7 @@ func setupInstanceFromFlags() (*instance.Instance, error) {
 	// Setup state manager
 	i.Stateman, err = state.NewStateManagerSingle(i.Client, i.Signer, i.Interval, i.Deadline)
 	if err != nil {
-		return nil, fmt.Errorf("NewStateManager: %v", err)
+		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
 	// Setup DNS verifier
