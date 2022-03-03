@@ -5,10 +5,10 @@ is setup properly
 [here](https://github.com/google/certificate-transparency-go/blob/master/trillian/docs/ManualDeployment.md#data-storage).
 
 Other than the database we need Trillian log signer, Trillian log server, and
-sigsum-log-go.
+sigsum-log-go. sigsum-log-go has been tested with trillian v.1.3.13.
 ```
-$ go install github.com/google/trillian/cmd/trillian_log_signer
-$ go install github.com/google/trillian/cmd/trillian_log_server
+$ go install github.com/google/trillian/cmd/trillian_log_signer@v1.3.13
+$ go install github.com/google/trillian/cmd/trillian_log_server@v1.3.13
 $ go install
 ```
 
@@ -26,7 +26,7 @@ As described in more detail
 [here](https://github.com/google/certificate-transparency-go/blob/master/trillian/docs/ManualDeployment.md#trillian-services),
 we need to provision a Merkle tree once:
 ```
-$ go install github.com/google/trillian/cmd/createtree
+$ go install github.com/google/trillian/cmd/createtree@v1.3.13
 $ createtree --admin_server localhost:6962
 <tree id>
 ```
@@ -39,7 +39,7 @@ provisioned.)
 
 We will also need a public key-pair for sigsum-log-go.
 ```
-$ go install golang.sigsum.org/sigsum-log-go/cmd/tmp/keygen
+$ go install golang.sigsum.org/sigsum-log-go/cmd/tmp/keygen@v1.3.13
 $ ./keygen
 sk: <sk>
 vk: <vk>

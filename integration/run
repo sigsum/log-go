@@ -10,16 +10,17 @@
 #
 # You will also need to install into your $GOPATH:
 #
-#     go install cmd/sigsum_log_go/main.go
-#     go install cmd/tmp/cosign/main.go
-#     go install cmd/tmp/submit/main.go
+#     go build -o $GOPATH/bin/sigsum_log_go cmd/sigsum_log_go/main.go
+#     go build -o $GOPATH/bin/sigsum_keygen cmd/tmp/keygen/main.go
+#     go build -o $GOPATH/bin/cosign cmd/tmp/cosign/main.go
+#     go build -o $GOPATH/bin/submit cmd/tmp/submit/main.go
 #
 # Run the test as follows:
 #
-#     1. start_tlog_seq ("terminal 1")
-#     2. start_tlog_serv ("terminal 2")
-#     3. start_sigsum_serv ("terminal 3")
-#     4. run ("terminal 4")
+#     1. integration/start_tlog_seq     # "terminal 1"
+#     2. integration/start_tlog_serv    # "terminal 2"
+#     3. integration/start_sigsum_serv  # "terminal 3"
+#     4. integration/run                # "terminal 4"
 #
 # What you expect to see is if the different endpoints function.
 #
@@ -59,7 +60,7 @@ $GOPATH/bin/cosign --url=$url --log_vk=$log_vk --sk=$wit_sk
 sleep $wait_seconds
 echo ""
 
-echo "test: get-tree-head-cosigned"
+echo "test: get-tree-head-cosigned (expect failure on first run with new log)"
 curl $url/get-tree-head-cosigned
 sleep $wait_seconds
 echo ""
@@ -69,7 +70,7 @@ curl $url/get-checkpoint
 sleep $wait_seconds
 echo ""
 
-echo "test: get-consistency-proof"
+echo "test: get-consistency-proof (expect failure on first run with new log)"
 printf "old_size=1\nnew_size=4\n" | curl --data-binary @- $url/get-consistency-proof
 sleep $wait_seconds
 echo ""
@@ -79,6 +80,6 @@ printf "start_size=0\nend_size=1\n" | curl --data-binary @- $url/get-leaves
 sleep $wait_seconds
 echo ""
 
-echo "with 30s interval we should now have a cosigned tree head"
+echo "with 30s interval we should now have a cosigned tree head (might fail on first run with new log)"
 curl $url/get-tree-head-cosigned
 echo ""
