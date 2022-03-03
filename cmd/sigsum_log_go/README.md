@@ -9,7 +9,6 @@ sigsum-log-go. sigsum-log-go has been tested with trillian v.1.3.13.
 ```
 $ go install github.com/google/trillian/cmd/trillian_log_signer@v1.3.13
 $ go install github.com/google/trillian/cmd/trillian_log_server@v1.3.13
-$ go install
 ```
 
 Start Trillian log signer:
@@ -39,7 +38,7 @@ provisioned.)
 
 We will also need a public key-pair for sigsum-log-go.
 ```
-$ go install golang.sigsum.org/sigsum-log-go/cmd/tmp/keygen@v1.3.13
+$ go install git.sigsum.org/sigsum-log-go/cmd/tmp/keygen
 $ ./keygen
 sk: <sk>
 vk: <vk>
@@ -53,5 +52,5 @@ $ sigsum_log_go --logtostderr -v 9 --http_endpoint localhost:6965 --log_rpc_serv
 ```
 
 Quick test:
-- curl http://localhost:6965/sigsum/v0/get-tree-head-latest
+- curl http://localhost:6965/sigsum/v0/get-tree-head-to-cosign
 - try `submit` and `cosign` commands in `cmd/tmp`
