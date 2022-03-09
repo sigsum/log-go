@@ -1,0 +1,2 @@
+Secret key is currently passed on command line.  The immediate next step is to
+have it in a file (just change how the secret key option works in main.go).
