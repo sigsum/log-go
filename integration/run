@@ -62,7 +62,7 @@ $GOPATH/bin/cosign --url=$url --log_vk=$log_vk --sk=$wit_sk
 sleep $wait_seconds
 echo ""
 
-echo "test: get-tree-head-cosigned -- expect Error=no cosignatures available
+echo "test: get-tree-head-cosigned -- expect Error=no cosignatures available"
 curl $url/get-tree-head-cosigned
 sleep $wait_seconds
 echo ""
@@ -82,6 +82,6 @@ printf "start_size=0\nend_size=1\n" | curl --data-binary @- $url/get-leaves
 sleep $wait_seconds
 echo ""
 
-echo "with 30s interval we should now have a cosigned tree head
+echo "with 30s interval we should now have a cosigned tree head"
 curl $url/get-tree-head-cosigned
 echo ""
