@@ -145,7 +145,18 @@ function check_setup() {
 }
 
 function run_tests() {
-	info "TODO: add tests"
+	log_url=$ssrv_endpoint/$ssrv_prefix/sigsum/v0
+
+	test_alive
+
+	warn "many tests are missing"
+}
+
+function test_alive() {
+	[[ $(curl -s -w "%{http_code}" $log_url/get-tree-head-to-sign | tail -n1) == 200 ]] ||
+		fail "get an HTTP 200 OK response"
+
+	pass "get an HTTP 200 OK response"
 }
 
 function die() {
@@ -159,6 +170,15 @@ function info() {
 
 function warn() {
 	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[33mWARN\e[0m] $@" >&2
+}
+
+function pass() {
+	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[32mPASS\e[0m] $@" >&2
+}
+
+function fail() {
+	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[1;31mFAIL\e[0m] $@" >&2
+	die "abort due to failed tests"
 }
 
 main
