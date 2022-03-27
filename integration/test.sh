@@ -160,25 +160,24 @@ function test_alive() {
 }
 
 function die() {
-	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[1;31mFATA\e[0m] $@" >&2
+	echo -e "\e[37m$(date +"%y-%m-%d %H:%M:%S %Z")\e[0m [\e[31mFATA\e[0m] $@" >&2
 	exit 1
 }
 
 function info() {
-	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[94mINFO\e[0m] $@" >&2
+	echo -e "\e[37m$(date +"%y-%m-%d %H:%M:%S %Z")\e[0m [\e[94mINFO\e[0m] $@" >&2
 }
 
 function warn() {
-	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[33mWARN\e[0m] $@" >&2
+	echo -e "\e[37m$(date +"%y-%m-%d %H:%M:%S %Z")\e[0m [\e[93mWARN\e[0m] $@" >&2
 }
 
 function pass() {
-	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[32mPASS\e[0m] $@" >&2
+	echo -e "\e[37m$(date +"%y-%m-%d %H:%M:%S %Z")\e[0m [\e[32mPASS\e[0m] $@" >&2
 }
 
 function fail() {
-	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[1;31mFAIL\e[0m] $@" >&2
-	die "abort due to failed tests"
+	echo -e "\e[37m$(date +"%y-%m-%d %H:%M:%S %Z")\e[0m [\e[91mFAIL\e[0m] $@" >&2
 }
 
 main
