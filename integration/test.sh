@@ -148,6 +148,7 @@ function run_tests() {
 	log_url=$ssrv_endpoint/$ssrv_prefix/sigsum/v0
 
 	test_alive
+	test_add_leaf
 
 	warn "many tests are missing"
 }
@@ -157,6 +158,26 @@ function test_alive() {
 		fail "get an HTTP 200 OK response"
 
 	pass "get an HTTP 200 OK response"
+}
+
+function test_add_leaf() {
+	desc="add one leaf"
+	output=$(leaf_req $desc | curl -s -w "%{http_code}" --data-binary @- $log_url/add-leaf)
+	if [[ $output != 200 ]]; then
+		fail "$desc: valid ($output)"
+		return
+	fi
+
+	pass $desc
+}
+
+function leaf_req() {
+	data=$1
+	echo "shard_hint=$ssrv_shard_start"
+	echo "checksum=$(openssl dgst -binary <(echo $data) | base16)"
+	echo "signature=$(echo $data | sigsum-debug sign -k $cli_priv -s $ssrv_shard_start)"
+	echo "verification_key=$cli_pub"
+	echo "domain_hint=$cli_domain_hint"
 }
 
 function die() {
