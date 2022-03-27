@@ -1,6 +1,0 @@
-#!/bin/bash
-
-$GOPATH/bin/trillian_log_server \
-	--logtostderr \
-	--rpc_endpoint=localhost:6962 \
-	--http_endpoint=localhost:6963
