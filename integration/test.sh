@@ -149,16 +149,16 @@ function run_tests() {
 }
 
 function die() {
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [FATA] $@" >&2
+	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[1;31mFATA\e[0m] $@" >&2
 	exit 1
 }
 
 function info() {
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [INFO] $@" >&2
+	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[94mINFO\e[0m] $@" >&2
 }
 
 function warn() {
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [WARN] $@" >&2
+	echo -e "\e[90m$(date +"%Y-%m-%d %H:%M:%S")\e[0m [\e[33mWARN\e[0m] $@" >&2
 }
 
 main
