@@ -26,6 +26,7 @@ function check_go_deps() {
 }
 
 function client_setup() {
+	info "setting up client"
 	source $1
 
 	cli_pub=$(echo $cli_priv | sigsum-debug pubkey)
@@ -45,6 +46,7 @@ function client_setup() {
 }
 
 function trillian_setup() {
+	info "setting up Trillian"
 	source $1
 
 	trillian_log_server\
@@ -71,6 +73,7 @@ function trillian_setup() {
 }
 
 function sigsum_setup() {
+	info "setting up Sigsum server"
 	source $1
 
 	wit1_priv=$(sigsum-debug genkey)
