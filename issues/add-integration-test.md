@@ -9,3 +9,7 @@ Today we don't have any integration tests.  Before a new version is tagged, it
 is tested by (i) running unit tests, and (ii) running manual tests against a
 local setup of Trillian and sigsum-log-go.  Automating (ii) would be helpful
 for development and increased confidence that everything works as expected.
+
+Started in branch:
+
+    rgdd/integration

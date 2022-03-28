@@ -18,11 +18,12 @@ There is a draft on bringing the above into main documentation in
 Current status on implementing the above:
 
 * [x] open-ended shard interval
-* [ ] ssh signing format
+* [x] ssh signing format
 	* implement in sigsum-lib-go by updating `ToBinary()`
 	* then pick up the new sigsum-lib-go version in sigsum-log-go
-* [ ] remove arbitrary bytes
+* [x] remove arbitrary bytes
 * [ ] get-\* endpoints
 * [ ] domain hint
+      - sigsum-log-go should drop-in replace sigsum-lib-go/pkg/dns
 * [ ] add-leaf
 * [x] tree-head endpoints
