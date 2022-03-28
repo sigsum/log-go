@@ -56,8 +56,11 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*r
 	if err := req.FromASCII(r.Body); err != nil {
 		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
-
-	if !req.Statement.Verify(&req.VerificationKey, &req.Signature) {
+	stmt := types.Statement{
+		ShardHint: req.ShardHint,
+		Checksum:  *types.HashFn(req.Preimage[:]),
+	}
+	if !stmt.Verify(&req.VerificationKey, &req.Signature) {
 		return nil, fmt.Errorf("invalid signature")
 	}
 	shardEnd := uint64(time.Now().Unix())

@@ -26,7 +26,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf) error 
 	leaf := types.Leaf{
 		Statement: types.Statement{
 			ShardHint: req.ShardHint,
-			Checksum:  req.Checksum,
+			Checksum:  *types.HashFn(req.Preimage[:]),
 		},
 		Signature: req.Signature,
 		KeyHash:   *types.HashFn(req.VerificationKey[:]),
