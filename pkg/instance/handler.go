@@ -29,29 +29,22 @@ func (h Handler) Path() string {
 
 // ServeHTTP is part of the http.Handler interface
 func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// export prometheus metrics
-	var now time.Time = time.Now()
-	var statusCode int
+	start := time.Now()
+	code := 0
 	defer func() {
-		rspcnt.Inc(a.Instance.LogID, string(a.Endpoint), fmt.Sprintf("%d", statusCode))
-		latency.Observe(time.Now().Sub(now).Seconds(), a.Instance.LogID, string(a.Endpoint), fmt.Sprintf("%d", statusCode))
+		end := time.Now().Sub(start).Seconds()
+		sc := fmt.Sprintf("%d", code)
+
+		rspcnt.Inc(a.Instance.LogID, string(a.Endpoint), sc)
+		latency.Observe(end, a.Instance.LogID, string(a.Endpoint), sc)
 	}()
 	reqcnt.Inc(a.Instance.LogID, string(a.Endpoint))
 
-	ctx, cancel := context.WithDeadline(r.Context(), now.Add(a.Instance.Deadline))
-	defer cancel()
-
-	statusCode = a.verifyMethod(w, r)
-	if statusCode != 0 {
-		glog.Warningf("%s/%s: got HTTP %s, wanted HTTP %s", a.Instance.Prefix, string(a.Endpoint), r.Method, a.Method)
+	code = a.verifyMethod(w, r)
+	if code != 0 {
 		return
 	}
-
-	statusCode, err := a.Handler(ctx, a.Instance, w, r)
-	if err != nil {
-		glog.Warningf("handler error %s/%s: %v", a.Instance.Prefix, a.Endpoint, err)
-		http.Error(w, fmt.Sprintf("Error=%s\n", err.Error()), statusCode)
-	}
+	code = a.handle(w, r)
 }
 
 // verifyMethod checks that an appropriate HTTP method is used.  Error handling
@@ -68,6 +61,20 @@ func (h *Handler) verifyMethod(w http.ResponseWriter, r *http.Request) int {
 	}
 
 	http.Error(w, fmt.Sprintf("error=%s", http.StatusText(code)), code)
+	return code
+}
+
+// handle handles an HTTP request for which the HTTP method is already verified
+func (h Handler) handle(w http.ResponseWriter, r *http.Request) int {
+	deadline := time.Now().Add(h.Instance.Deadline)
+	ctx, cancel := context.WithDeadline(r.Context(), deadline)
+	defer cancel()
+
+	code, err := h.Handler(ctx, h.Instance, w, r)
+	if err != nil {
+		glog.V(3).Infof("%s/%s: %v", h.Instance.Prefix, h.Endpoint, err)
+		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)
+	}
 	return code
 }
 
