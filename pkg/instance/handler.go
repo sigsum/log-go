@@ -41,9 +41,9 @@ func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithDeadline(r.Context(), now.Add(a.Instance.Deadline))
 	defer cancel()
 
-	if r.Method != a.Method {
+	statusCode = a.verifyMethod(w, r)
+	if statusCode != 0 {
 		glog.Warningf("%s/%s: got HTTP %s, wanted HTTP %s", a.Instance.Prefix, string(a.Endpoint), r.Method, a.Method)
-		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -52,6 +52,23 @@ func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		glog.Warningf("handler error %s/%s: %v", a.Instance.Prefix, a.Endpoint, err)
 		http.Error(w, fmt.Sprintf("Error=%s\n", err.Error()), statusCode)
 	}
+}
+
+// verifyMethod checks that an appropriate HTTP method is used.  Error handling
+// is based on RFC 7231, see Sections 6.5.5 (Status 405) and 6.5.1 (Status 400).
+func (h *Handler) verifyMethod(w http.ResponseWriter, r *http.Request) int {
+	if h.Method == r.Method {
+		return 0
+	}
+
+	code := http.StatusBadRequest
+	if ok := h.Instance.checkHTTPMethod(r.Method); ok {
+		w.Header().Set("Allow", h.Method)
+		code = http.StatusMethodNotAllowed
+	}
+
+	http.Error(w, fmt.Sprintf("error=%s", http.StatusText(code)), code)
+	return code
 }
 
 func addLeaf(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {

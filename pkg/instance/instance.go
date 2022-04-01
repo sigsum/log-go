@@ -51,6 +51,11 @@ func (i *Instance) Handlers() []Handler {
 	}
 }
 
+// checkHTTPMethod checks if an HTTP method is supported
+func (i *Instance) checkHTTPMethod(m string) bool {
+	return m == http.MethodGet || m == http.MethodPost
+}
+
 func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*requests.Leaf, error) {
 	var req requests.Leaf
 	if err := req.FromASCII(r.Body); err != nil {
