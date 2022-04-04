@@ -28,23 +28,23 @@ func (h Handler) Path() string {
 }
 
 // ServeHTTP is part of the http.Handler interface
-func (a Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	code := 0
 	defer func() {
 		end := time.Now().Sub(start).Seconds()
 		sc := fmt.Sprintf("%d", code)
 
-		rspcnt.Inc(a.Instance.LogID, string(a.Endpoint), sc)
-		latency.Observe(end, a.Instance.LogID, string(a.Endpoint), sc)
+		rspcnt.Inc(h.Instance.LogID, string(h.Endpoint), sc)
+		latency.Observe(end, h.Instance.LogID, string(h.Endpoint), sc)
 	}()
-	reqcnt.Inc(a.Instance.LogID, string(a.Endpoint))
+	reqcnt.Inc(h.Instance.LogID, string(h.Endpoint))
 
-	code = a.verifyMethod(w, r)
+	code = h.verifyMethod(w, r)
 	if code != 0 {
 		return
 	}
-	code = a.handle(w, r)
+	code = h.handle(w, r)
 }
 
 // verifyMethod checks that an appropriate HTTP method is used.  Error handling
