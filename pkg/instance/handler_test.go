@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/types"
 	mocksDB "git.sigsum.org/sigsum-log-go/pkg/db/mocks"
 	mocksDNS "git.sigsum.org/sigsum-log-go/pkg/dns/mocks"
 	mocksState "git.sigsum.org/sigsum-log-go/pkg/state/mocks"

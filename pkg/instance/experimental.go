@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/glog"
 )
 

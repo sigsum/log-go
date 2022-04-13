@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
 func main() {

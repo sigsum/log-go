@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/hex"
-	"git.sigsum.org/sigsum-lib-go/pkg/requests"
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/hex"
+	"git.sigsum.org/sigsum-go/pkg/requests"
+	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
 var (

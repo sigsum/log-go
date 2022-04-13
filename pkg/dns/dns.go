@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/hex"
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/hex"
+	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
 // Verifier can verify that a domain name is aware of a public key

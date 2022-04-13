@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/requests"
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/requests"
+	"git.sigsum.org/sigsum-go/pkg/types"
 	"git.sigsum.org/sigsum-log-go/pkg/db"
 	"git.sigsum.org/sigsum-log-go/pkg/dns"
 	"git.sigsum.org/sigsum-log-go/pkg/state"

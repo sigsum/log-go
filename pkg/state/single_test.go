@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/types"
 	db "git.sigsum.org/sigsum-log-go/pkg/db/mocks"
 	"git.sigsum.org/sigsum-log-go/pkg/state/mocks"
 	"github.com/golang/mock/gomock"

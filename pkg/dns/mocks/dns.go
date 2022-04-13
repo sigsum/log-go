@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "git.sigsum.org/sigsum-lib-go/pkg/types"
+	types "git.sigsum.org/sigsum-go/pkg/types"
 	gomock "github.com/golang/mock/gomock"
 )
 

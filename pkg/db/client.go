@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 
-	"git.sigsum.org/sigsum-lib-go/pkg/requests"
-	"git.sigsum.org/sigsum-lib-go/pkg/types"
+	"git.sigsum.org/sigsum-go/pkg/requests"
+	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
 // Client is an interface that interacts with a log's database backend
