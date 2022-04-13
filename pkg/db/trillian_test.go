@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"git.sigsum.org/log-go/pkg/db/mocks"
 	"git.sigsum.org/sigsum-go/pkg/requests"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"git.sigsum.org/sigsum-log-go/pkg/db/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"

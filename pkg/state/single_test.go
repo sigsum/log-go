@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	db "git.sigsum.org/log-go/pkg/db/mocks"
+	"git.sigsum.org/log-go/pkg/state/mocks"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	db "git.sigsum.org/sigsum-log-go/pkg/db/mocks"
-	"git.sigsum.org/sigsum-log-go/pkg/state/mocks"
 	"github.com/golang/mock/gomock"
 )
 

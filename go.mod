@@ -1,4 +1,4 @@
-module git.sigsum.org/sigsum-log-go
+module git.sigsum.org/log-go
 
 go 1.15
 

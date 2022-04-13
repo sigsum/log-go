@@ -8,7 +8,7 @@ import (
 
 	"git.sigsum.org/sigsum-go/pkg/hex"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"git.sigsum.org/sigsum-log-go/pkg/dns"
+	"git.sigsum.org/log-go/pkg/dns"
 )
 
 var (

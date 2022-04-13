@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"git.sigsum.org/log-go/pkg/db"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"git.sigsum.org/sigsum-log-go/pkg/db"
 	"github.com/golang/glog"
 )
 

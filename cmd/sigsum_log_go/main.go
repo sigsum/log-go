@@ -22,10 +22,10 @@ import (
 	"google.golang.org/grpc"
 
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"git.sigsum.org/sigsum-log-go/pkg/db"
-	"git.sigsum.org/sigsum-log-go/pkg/dns"
-	"git.sigsum.org/sigsum-log-go/pkg/instance"
-	"git.sigsum.org/sigsum-log-go/pkg/state"
+	"git.sigsum.org/log-go/pkg/db"
+	"git.sigsum.org/log-go/pkg/dns"
+	"git.sigsum.org/log-go/pkg/instance"
+	"git.sigsum.org/log-go/pkg/state"
 )
 
 var (
