@@ -1,11 +1,21 @@
 #!/bin/bash
 
+#
+# Requirements to run
+#
+#   - Install required dependencies, see check_go_deps()
+#   - Add the empty values in conf/client.config
+#
+# Usage:
+#
+#     $ ./test.sh
+#
+
 set -eu
 trap cleanup EXIT
 
 function main() {
 	log_dir=$(mktemp -d)
-	info "writing logs to $log_dir"
 
 	check_go_deps
 	trillian_setup conf/trillian.config
@@ -21,8 +31,8 @@ function check_go_deps() {
 	[[ $(command -v trillian_log_server) ]] || die "Hint: go install github.com/google/trillian/cmd/trillian_log_server@v1.3.13"
 	[[ $(command -v createtree)          ]] || die "Hint: go install github.com/google/trillian/cmd/createtree@v1.3.13"
 	[[ $(command -v deletetree)          ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree@v1.3.13"
-	[[ $(command -v sigsum_log_go)       ]] || die "Hint: go install git.sigsum.org/sigsum-log-go/cmd/sigsum_log_go@v0.3.5"
-	[[ $(command -v sigsum-debug)        ]] || die "Hint: see sigsum-tools-go repo, branch rgdd/sigsum-debug"
+	[[ $(command -v sigsum_log_go)       ]] || die "Hint: go install git.sigsum.org/log-go/cmd/sigsum_log_go@latest"
+	[[ $(command -v sigsum-debug)        ]] || die "Hint: install sigsum-debug from temporary sigsum-tools-go repo"
 }
 
 function client_setup() {
@@ -84,7 +94,7 @@ function sigsum_setup() {
 	wit2_pub=$(echo $wit2_priv | sigsum-debug pubkey)
 	wit2_key_hash=$(echo $wit2_pub | sigsum-debug hashkey)
 
-	ssrv_witnesses=$wit1_key_hash,$wit2_key_hash
+	ssrv_witnesses=$wit1_pub,$wit2_pub
 	ssrv_priv=$(sigsum-debug genkey)
 	ssrv_pub=$(echo $ssrv_priv | sigsum-debug pubkey)
 
@@ -99,6 +109,7 @@ function sigsum_setup() {
 		-log_dir=$log_dir -v=3 2>/dev/null &
 	ssrv_pid=$!
 
+	log_url=$ssrv_endpoint/$ssrv_prefix/sigsum/v0
 	info "started Sigsum log server on $ssrv_endpoint (pid $ssrv_pid)"
 }
 
@@ -122,10 +133,11 @@ function cleanup() {
 	info "stopped Trillian log sequencer"
 	info "stopped Sigsum log server"
 
-	deletetree -admin_server=$tsrv_rpc -log_id=$ssrv_tree_id ||
+	if ! deletetree -admin_server=$tsrv_rpc -log_id=$ssrv_tree_id; then
 		warn "failed deleting provisioned Merkle tree"
-
-	info "deleteted provisioned Merkle tree"
+	else
+		info "deleteted provisioned Merkle tree"
+	fi
 
 	kill -2 $tsrv_pid
 	while :; do
@@ -137,6 +149,11 @@ function cleanup() {
 	done
 
 	info "stopped Trillian log server"
+
+	printf "\n  Press any key to delete logs in $log_dir"
+	read dummy
+
+	rm -rf $log_dir
 }
 
 function check_setup() {
@@ -148,39 +165,291 @@ function check_setup() {
 }
 
 function run_tests() {
-	log_url=$ssrv_endpoint/$ssrv_prefix/sigsum/v0
+	num_leaf=5
 
-	test_alive
-	test_add_leaf
+	test_signed_tree_head 0
+	for i in $(seq 1 $num_leaf); do
+		test_add_leaf $i
+	done
 
-	warn "many tests are missing"
+	info "waiting for $num_leaf leaves to be merged..."
+	sleep ${ssrv_interval::-1}
+
+	test_signed_tree_head $num_leaf
+	for i in $(seq 1 $(( $num_leaf - 1 ))); do
+		test_consistency_proof $i $num_leaf
+	done
+
+	test_cosignature $wit1_key_hash $wit1_priv
+	test_cosignature $wit2_key_hash $wit2_priv
+
+	info "waiting for cosignature to be available..."
+	sleep ${ssrv_interval::-1}
+
+	test_cosigned_tree_head $num_leaf
+	for i in $(seq 1 $num_leaf); do
+		test_inclusion_proof $num_leaf $i $(( $i - 1 ))
+	done
+
+	for i in $(seq 1 $num_leaf); do
+		test_get_leaf $i $(( $i - 1 ))
+	done
+
+	warn "no signatures and merkle proofs were verified"
 }
 
-function test_alive() {
-	[[ $(curl -s -w "%{http_code}" $log_url/get-tree-head-to-sign | tail -n1) == 200 ]] ||
-		fail "get an HTTP 200 OK response"
+function test_signed_tree_head() {
+	desc="GET tree-head-to-sign (tree size $1)"
+	curl -s -w "%{http_code}" $log_url/get-tree-head-to-sign \
+		>$log_dir/rsp
 
-	pass "get an HTTP 200 OK response"
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys "timestamp" "tree_size" "root_hash" "signature"; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	now=$(date +%s)
+	if [[ $(value_of "timestamp") -gt $now ]]; then
+		fail "$desc: timestamp $(value_of "timestamp") is too large"
+		return
+	fi
+	if [[ $(value_of "timestamp") -lt $(( $now - ${ssrv_interval::-1} )) ]]; then
+		fail "$desc: timestamp $(value_of "timestamp") is too small"
+		return
+	fi
+
+	if [[ $(value_of "tree_size") != $1 ]]; then
+		fail "$desc: tree size $(value_of "tree_size")"
+		return
+	fi
+
+	# TODO: verify tree head signature
+	pass $desc
+}
+
+function test_cosigned_tree_head() {
+	desc="GET get-tree-head-cosigned (all witnesses)"
+	curl -s -w "%{http_code}" $log_url/get-tree-head-cosigned \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys "timestamp" "tree_size" "root_hash" "signature" "cosignature" "key_hash"; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	now=$(date +%s)
+	if [[ $(value_of "timestamp") -gt $now ]]; then
+		fail "$desc: timestamp $(value_of "timestamp") is too large"
+		return
+	fi
+	if [[ $(value_of "timestamp") -lt $(( $now - ${ssrv_interval::-1} * 2 )) ]]; then
+		fail "$desc: timestamp $(value_of "timestamp") is too small"
+		return
+	fi
+
+	if [[ $(value_of "tree_size") != $1 ]]; then
+		fail "$desc: tree size $(value_of "tree_size")"
+		return
+	fi
+
+	for got in $(value_of key_hash); do
+		found=""
+		for want in $wit1_key_hash $wit2_key_hash; do
+			if [[ $got == $want ]]; then
+				found=true
+			fi
+		done
+
+		if [[ -z $found ]]; then
+			fail "$desc: missing witness $got"
+			return
+		fi
+	done
+
+	# TODO: verify tree head signature
+	# TODO: verify tree head cosignatures
+	pass $desc
+}
+
+function test_inclusion_proof() {
+	desc="POST get-inclusion-proof (tree_size $1, data \"$2\", index $3)"
+	echo "tree_size=$1" > $log_dir/req
+	echo "leaf_hash=$(echo $2 |
+		sigsum-debug hashleaf -k $cli_priv -s $ssrv_shard_start)" >> $log_dir/req
+	cat $log_dir/req |
+		curl -s -w "%{http_code}" --data-binary @- $log_url/get-inclusion-proof \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys "leaf_index" "inclusion_path"; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	if [[ $(value_of leaf_index) != $3 ]]; then
+		fail "$desc: wrong leaf index $(value_of leaf_index)"
+		return
+	fi
+
+	# TODO: verify inclusion proof
+	pass $desc
+}
+
+function test_consistency_proof() {
+	desc="POST get-consistency-proof (old_size $1, new_size $2)"
+	printf "old_size=$1\nnew_size=$2\n" |
+		curl -s -w "%{http_code}" --data-binary @- $log_url/get-consistency-proof \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys "consistency_path"; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	# TODO: verify consistency proof
+	pass $desc
+}
+
+function test_get_leaf() {
+	desc="GET get-leaves (data \"$1\", index $2)"
+	printf "start_size=$2\nend_size=$2\n" |
+		curl -s -w "%{http_code}" --data-binary @- $log_url/get-leaves \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys "shard_hint" "checksum" "signature" "key_hash"; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	if [[ $(value_of shard_hint) != $ssrv_shard_start ]]; then
+		fail "$desc: wrong shard hint $(value_of shard_hint)"
+		return
+	fi
+
+	preimage=$(openssl dgst -binary <(echo $1) | base16)
+	checksum=$(openssl dgst -binary <(echo $preimage | base16 -d) | base16)
+	if [[ $(value_of checksum) != $checksum ]]; then
+		fail "$desc: wrong checksum $(value_of checksum)"
+		return
+	fi
+
+	if [[ $(value_of key_hash) != $cli_key_hash ]]; then
+		fail "$desc: wrong key hash $(value_of key_hash)"
+	fi
+
+	# TODO: check leaf signature
+	pass $desc
 }
 
 function test_add_leaf() {
-	desc="add one leaf"
-	output=$(leaf_req $desc | curl -s -w "%{http_code}" --data-binary @- $log_url/add-leaf)
-	if [[ $output != 200 ]]; then
-		fail "$desc: valid ($output)"
+	desc="POST add-leaf (data \"$1\")"
+	echo "shard_hint=$ssrv_shard_start" > $log_dir/req
+	echo "preimage=$(openssl dgst -binary <(echo $1) | base16)" >> $log_dir/req
+	echo "signature=$(echo $1 |
+		sigsum-debug sign -k $cli_priv -s $ssrv_shard_start)" >> $log_dir/req
+	echo "verification_key=$cli_pub" >> $log_dir/req
+	echo "domain_hint=$cli_domain_hint" >> $log_dir/req
+	cat $log_dir/req |
+		curl -s -w "%{http_code}" --data-binary @- $log_url/add-leaf \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys; then
+		fail "$desc: ascii keys in response $(debug_response)"
 		return
 	fi
 
 	pass $desc
 }
 
-function leaf_req() {
-	data=$1
-	echo "shard_hint=$ssrv_shard_start"
-	echo "checksum=$(openssl dgst -binary <(echo $data) | base16)"
-	echo "signature=$(echo $data | sigsum-debug sign -k $cli_priv -s $ssrv_shard_start)"
-	echo "verification_key=$cli_pub"
-	echo "domain_hint=$cli_domain_hint"
+function test_cosignature() {
+	desc="POST add-cosignature (witness $1)"
+	echo "key_hash=$1" > $log_dir/req
+	echo "cosignature=$(curl -s $log_url/get-tree-head-to-sign |
+		sigsum-debug cosign -w $2 -l $ssrv_pub)" >> $log_dir/req
+	cat $log_dir/req |
+		curl -s -w "%{http_code}" --data-binary @- $log_url/add-cosignature \
+		>$log_dir/rsp
+
+	if [[ $(status_code) != 200 ]]; then
+		fail "$desc: http status code $(status_code)"
+		return
+	fi
+
+	if ! keys; then
+		fail "$desc: ascii keys in response $(debug_response)"
+		return
+	fi
+
+	pass $desc
+}
+
+function debug_response() {
+	echo ""
+	cat $log_dir/rsp
+}
+
+function status_code() {
+	tail -n1 $log_dir/rsp
+}
+
+function value_of() {
+	while read line; do
+		key=$(echo $line | cut -d"=" -f1)
+		if [[ $key != $1 ]]; then
+			continue
+		fi
+
+		value=$(echo $line | cut -d"=" -f2)
+		echo $value
+	done < <(head --lines=-1 $log_dir/rsp)
+}
+
+function keys() {
+	declare -A map
+	map[thedummystring]=to_avoid_error_on_size_zero
+	while read line; do
+		key=$(echo $line | cut -d"=" -f1)
+		map[$key]=ok
+	done < <(head --lines=-1 $log_dir/rsp)
+
+	if [[ $# != $(( ${#map[@]} - 1 )) ]]; then
+		return 1
+	fi
+	for key in $@; do
+		if [[ -z ${map[$key]} ]]; then
+			return 1
+		fi
+	done
+	return 0
 }
 
 function die() {
