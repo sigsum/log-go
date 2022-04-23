@@ -32,15 +32,15 @@ function check_go_deps() {
 	[[ $(command -v createtree)          ]] || die "Hint: go install github.com/google/trillian/cmd/createtree@v1.3.13"
 	[[ $(command -v deletetree)          ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree@v1.3.13"
 	[[ $(command -v sigsum_log_go)       ]] || die "Hint: go install git.sigsum.org/log-go/cmd/sigsum_log_go@latest"
-	[[ $(command -v sigsum-debug)        ]] || die "Hint: install sigsum-debug from temporary sigsum-tools-go repo"
+	[[ $(command -v sigsum-debug)        ]] || die "Hint: install sigsum-debug from sigsum-go, branch merge/sigsum-debug"
 }
 
 function client_setup() {
 	info "setting up client"
 	source $1
 
-	cli_pub=$(echo $cli_priv | sigsum-debug pubkey)
-	cli_key_hash=$(echo $cli_pub | sigsum-debug hashkey)
+	cli_pub=$(echo $cli_priv | sigsum-debug key public)
+	cli_key_hash=$(echo $cli_pub | sigsum-debug key hash)
 
 	[[ $cli_domain_hint =~ ^_sigsum_v0..+ ]] ||
 		die "must have a valid domain hint"
@@ -86,17 +86,18 @@ function sigsum_setup() {
 	info "setting up Sigsum server"
 	source $1
 
-	wit1_priv=$(sigsum-debug genkey)
-	wit1_pub=$(echo $wit1_priv | sigsum-debug pubkey)
-	wit1_key_hash=$(echo $wit1_pub | sigsum-debug hashkey)
+	wit1_priv=$(sigsum-debug key private)
+	wit1_pub=$(echo $wit1_priv | sigsum-debug key public)
+	wit1_key_hash=$(echo $wit1_pub | sigsum-debug key hash)
 
-	wit2_priv=$(sigsum-debug genkey)
-	wit2_pub=$(echo $wit2_priv | sigsum-debug pubkey)
-	wit2_key_hash=$(echo $wit2_pub | sigsum-debug hashkey)
+	wit2_priv=$(sigsum-debug key private)
+	wit2_pub=$(echo $wit2_priv | sigsum-debug key public)
+	wit2_key_hash=$(echo $wit2_pub | sigsum-debug key hash)
 
 	ssrv_witnesses=$wit1_pub,$wit2_pub
-	ssrv_priv=$(sigsum-debug genkey)
-	ssrv_pub=$(echo $ssrv_priv | sigsum-debug pubkey)
+	ssrv_priv=$(sigsum-debug key private)
+	ssrv_pub=$(echo $ssrv_priv | sigsum-debug key public)
+	ssrv_key_hash=$(echo $ssrv_pub | sigsum-debug key hash)
 
 	sigsum_log_go\
 		-prefix=$ssrv_prefix\
@@ -283,9 +284,10 @@ function test_cosigned_tree_head() {
 
 function test_inclusion_proof() {
 	desc="POST get-inclusion-proof (tree_size $1, data \"$2\", index $3)"
+	signature=$(echo $2 | sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)
 	echo "tree_size=$1" > $log_dir/req
 	echo "leaf_hash=$(echo $2 |
-		sigsum-debug hashleaf -k $cli_priv -s $ssrv_shard_start)" >> $log_dir/req
+		sigsum-debug leaf hash -k $cli_key_hash -s $signature -h $ssrv_shard_start)" >> $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- $log_url/get-inclusion-proof \
 		>$log_dir/rsp
@@ -370,7 +372,7 @@ function test_add_leaf() {
 	echo "shard_hint=$ssrv_shard_start" > $log_dir/req
 	echo "preimage=$(openssl dgst -binary <(echo $1) | base16)" >> $log_dir/req
 	echo "signature=$(echo $1 |
-		sigsum-debug sign -k $cli_priv -s $ssrv_shard_start)" >> $log_dir/req
+		sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)" >> $log_dir/req
 	echo "verification_key=$cli_pub" >> $log_dir/req
 	echo "domain_hint=$cli_domain_hint" >> $log_dir/req
 	cat $log_dir/req |
@@ -394,7 +396,7 @@ function test_cosignature() {
 	desc="POST add-cosignature (witness $1)"
 	echo "key_hash=$1" > $log_dir/req
 	echo "cosignature=$(curl -s $log_url/get-tree-head-to-sign |
-		sigsum-debug cosign -w $2 -l $ssrv_pub)" >> $log_dir/req
+		sigsum-debug head sign -k $2 -h $ssrv_key_hash)" >> $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- $log_url/add-cosignature \
 		>$log_dir/rsp
