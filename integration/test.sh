@@ -285,12 +285,8 @@ function test_cosigned_tree_head() {
 function test_inclusion_proof() {
 	desc="POST get-inclusion-proof (tree_size $1, data \"$2\", index $3)"
 	signature=$(echo $2 | sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)
-	echo "tree_size=$1" > $log_dir/req
-	echo "leaf_hash=$(echo $2 |
-		sigsum-debug leaf hash -k $cli_key_hash -s $signature -h $ssrv_shard_start)" >> $log_dir/req
-	cat $log_dir/req |
-		curl -s -w "%{http_code}" --data-binary @- $log_url/get-inclusion-proof \
-		>$log_dir/rsp
+	leaf_hash=$(echo $2 | sigsum-debug leaf hash -k $cli_key_hash -s $signature -h $ssrv_shard_start)
+	curl -s -w "%{http_code}" $log_url/get-inclusion-proof/$1/$leaf_hash >$log_dir/rsp
 
 	if [[ $(status_code) != 200 ]]; then
 		fail "$desc: http status code $(status_code)"
@@ -313,9 +309,7 @@ function test_inclusion_proof() {
 
 function test_consistency_proof() {
 	desc="POST get-consistency-proof (old_size $1, new_size $2)"
-	printf "old_size=$1\nnew_size=$2\n" |
-		curl -s -w "%{http_code}" --data-binary @- $log_url/get-consistency-proof \
-		>$log_dir/rsp
+	curl -s -w "%{http_code}" $log_url/get-consistency-proof/$1/$2 >$log_dir/rsp
 
 	if [[ $(status_code) != 200 ]]; then
 		fail "$desc: http status code $(status_code)"
@@ -333,9 +327,7 @@ function test_consistency_proof() {
 
 function test_get_leaf() {
 	desc="GET get-leaves (data \"$1\", index $2)"
-	printf "start_size=$2\nend_size=$2\n" |
-		curl -s -w "%{http_code}" --data-binary @- $log_url/get-leaves \
-		>$log_dir/rsp
+	curl -s -w "%{http_code}" $log_url/get-leaves/$2/$2 >$log_dir/rsp
 
 	if [[ $(status_code) != 200 ]]; then
 		fail "$desc: http status code $(status_code)"

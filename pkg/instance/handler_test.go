@@ -420,15 +420,9 @@ func TestGetTreeCosigned(t *testing.T) {
 }
 
 func TestGetConsistencyProof(t *testing.T) {
-	buf := func(oldSize, newSize int) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%d\n%s=%d\n",
-			"old_size", oldSize,
-			"new_size", newSize,
-		))
-	}
 	for _, table := range []struct {
 		description string
-		ascii       io.Reader               // buffer used to populate HTTP request
+		params      string                  // params is the query's url params
 		expect      bool                    // set if a mock answer is expected
 		rsp         *types.ConsistencyProof // consistency proof from Trillian client
 		err         error                   // error from Trillian client
@@ -436,29 +430,29 @@ func TestGetConsistencyProof(t *testing.T) {
 	}{
 		{
 			description: "invalid: bad request (parser error)",
-			ascii:       bytes.NewBufferString("key=value\n"),
+			params:      "a/1",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (OldSize is zero)",
-			ascii:       buf(0, 1),
+			params:      "0/1",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (OldSize > NewSize)",
-			ascii:       buf(2, 1),
+			params:      "2/1",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       buf(1, 2),
+			params:      "1/2",
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
-			ascii:       buf(1, 2),
+			params:      "1/2",
 			expect:      true,
 			rsp: &types.ConsistencyProof{
 				OldSize: 1,
@@ -485,7 +479,7 @@ func TestGetConsistencyProof(t *testing.T) {
 
 			// Create HTTP request
 			url := types.EndpointGetConsistencyProof.Path("http://example.com", i.Prefix)
-			req, err := http.NewRequest("POST", url, table.ascii)
+			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
@@ -501,15 +495,9 @@ func TestGetConsistencyProof(t *testing.T) {
 }
 
 func TestGetInclusionProof(t *testing.T) {
-	buf := func(hash *types.Hash, treeSize int) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%d\n",
-			"leaf_hash", hash[:],
-			"tree_size", treeSize,
-		))
-	}
 	for _, table := range []struct {
 		description string
-		ascii       io.Reader             // buffer used to populate HTTP request
+		params      string                // params is the query's url params
 		expect      bool                  // set if a mock answer is expected
 		rsp         *types.InclusionProof // inclusion proof from Trillian client
 		err         error                 // error from Trillian client
@@ -517,24 +505,24 @@ func TestGetInclusionProof(t *testing.T) {
 	}{
 		{
 			description: "invalid: bad request (parser error)",
-			ascii:       bytes.NewBufferString("key=value\n"),
+			params:      "a/0000000000000000000000000000000000000000000000000000000000000000",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (no proof for tree size)",
-			ascii:       buf(types.HashFn([]byte{}), 1),
+			params:      "1/0000000000000000000000000000000000000000000000000000000000000000",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       buf(types.HashFn([]byte{}), 2),
+			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
-			ascii:       buf(types.HashFn([]byte{}), 2),
+			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			expect:      true,
 			rsp: &types.InclusionProof{
 				TreeSize:  2,
@@ -561,7 +549,7 @@ func TestGetInclusionProof(t *testing.T) {
 
 			// Create HTTP request
 			url := types.EndpointGetInclusionProof.Path("http://example.com", i.Prefix)
-			req, err := http.NewRequest("POST", url, table.ascii)
+			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
@@ -577,15 +565,9 @@ func TestGetInclusionProof(t *testing.T) {
 }
 
 func TestGetLeaves(t *testing.T) {
-	buf := func(startSize, endSize int64) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%d\n%s=%d\n",
-			"start_size", startSize,
-			"end_size", endSize,
-		))
-	}
 	for _, table := range []struct {
 		description string
-		ascii       io.Reader     // buffer used to populate HTTP request
+		params      string        // params is the query's url params
 		expect      bool          // set if a mock answer is expected
 		rsp         *types.Leaves // list of leaves from Trillian client
 		err         error         // error from Trillian client
@@ -593,24 +575,24 @@ func TestGetLeaves(t *testing.T) {
 	}{
 		{
 			description: "invalid: bad request (parser error)",
-			ascii:       bytes.NewBufferString("key=value\n"),
+			params:      "a/1",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (StartSize > EndSize)",
-			ascii:       buf(1, 0),
+			params:      "1/0",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       buf(0, 0),
+			params:      "0/0",
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			ascii:       buf(0, testConfig.MaxRange), // query will be pruned
+			params:      fmt.Sprintf("%d/%d", 0, testConfig.MaxRange), // query will be pruned
 			expect:      true,
 			rsp: func() *types.Leaves {
 				var list types.Leaves
@@ -644,7 +626,7 @@ func TestGetLeaves(t *testing.T) {
 
 			// Create HTTP request
 			url := types.EndpointGetLeaves.Path("http://example.com", i.Prefix)
-			req, err := http.NewRequest("POST", url, table.ascii)
+			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}

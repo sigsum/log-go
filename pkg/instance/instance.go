@@ -45,9 +45,9 @@ func (i *Instance) Handlers() []Handler {
 		Handler{Instance: i, Handler: getTreeHeadToCosign, Endpoint: types.EndpointGetTreeHeadToSign, Method: http.MethodGet}, // XXX: ToCosign
 		Handler{Instance: i, Handler: getTreeHeadCosigned, Endpoint: types.EndpointGetTreeHeadCosigned, Method: http.MethodGet},
 		Handler{Instance: i, Handler: getCheckpoint, Endpoint: types.Endpoint("get-checkpoint"), Method: http.MethodGet},
-		Handler{Instance: i, Handler: getConsistencyProof, Endpoint: types.EndpointGetConsistencyProof, Method: http.MethodPost},
-		Handler{Instance: i, Handler: getInclusionProof, Endpoint: types.EndpointGetInclusionProof, Method: http.MethodPost},
-		Handler{Instance: i, Handler: getLeaves, Endpoint: types.EndpointGetLeaves, Method: http.MethodPost},
+		Handler{Instance: i, Handler: getConsistencyProof, Endpoint: types.EndpointGetConsistencyProof, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getInclusionProof, Endpoint: types.EndpointGetInclusionProof, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getLeaves, Endpoint: types.EndpointGetLeaves, Method: http.MethodGet},
 	}
 }
 
@@ -94,7 +94,7 @@ func (i *Instance) cosignatureRequestFromHTTP(r *http.Request) (*requests.Cosign
 
 func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*requests.ConsistencyProof, error) {
 	var req requests.ConsistencyProof
-	if err := req.FromASCII(r.Body); err != nil {
+	if err := req.FromURL(r.URL.Path); err != nil {
 		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 	if req.OldSize < 1 {
@@ -108,7 +108,7 @@ func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*requests.C
 
 func (i *Instance) inclusionProofRequestFromHTTP(r *http.Request) (*requests.InclusionProof, error) {
 	var req requests.InclusionProof
-	if err := req.FromASCII(r.Body); err != nil {
+	if err := req.FromURL(r.URL.Path); err != nil {
 		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 	if req.TreeSize < 2 {
@@ -121,7 +121,7 @@ func (i *Instance) inclusionProofRequestFromHTTP(r *http.Request) (*requests.Inc
 
 func (i *Instance) leavesRequestFromHTTP(r *http.Request) (*requests.Leaves, error) {
 	var req requests.Leaves
-	if err := req.FromASCII(r.Body); err != nil {
+	if err := req.FromURL(r.URL.Path); err != nil {
 		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 
