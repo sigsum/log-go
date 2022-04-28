@@ -283,7 +283,7 @@ function test_cosigned_tree_head() {
 }
 
 function test_inclusion_proof() {
-	desc="POST get-inclusion-proof (tree_size $1, data \"$2\", index $3)"
+	desc="GET get-inclusion-proof (tree_size $1, data \"$2\", index $3)"
 	signature=$(echo $2 | sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)
 	leaf_hash=$(echo $2 | sigsum-debug leaf hash -k $cli_key_hash -s $signature -h $ssrv_shard_start)
 	curl -s -w "%{http_code}" $log_url/get-inclusion-proof/$1/$leaf_hash >$log_dir/rsp
@@ -308,7 +308,7 @@ function test_inclusion_proof() {
 }
 
 function test_consistency_proof() {
-	desc="POST get-consistency-proof (old_size $1, new_size $2)"
+	desc="GET get-consistency-proof (old_size $1, new_size $2)"
 	curl -s -w "%{http_code}" $log_url/get-consistency-proof/$1/$2 >$log_dir/rsp
 
 	if [[ $(status_code) != 200 ]]; then
