@@ -35,7 +35,7 @@ func main() {
 	vk := sk.Public().(ed25519.PublicKey)
 	fmt.Printf("sk: %x\nvk: %x\n", sk, vk)
 
-	rsp, err := http.Get(*url + "/get-tree-head-to-sign")
+	rsp, err := http.Get(*url + "/get-tree-head-to-cosign")
 	if err != nil {
 		log.Fatal(err)
 	}

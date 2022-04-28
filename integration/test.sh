@@ -201,7 +201,7 @@ function run_tests() {
 
 function test_signed_tree_head() {
 	desc="GET tree-head-to-sign (tree size $1)"
-	curl -s -w "%{http_code}" $log_url/get-tree-head-to-sign \
+	curl -s -w "%{http_code}" $log_url/get-tree-head-to-cosign \
 		>$log_dir/rsp
 
 	if [[ $(status_code) != 200 ]]; then
@@ -387,7 +387,7 @@ function test_add_leaf() {
 function test_cosignature() {
 	desc="POST add-cosignature (witness $1)"
 	echo "key_hash=$1" > $log_dir/req
-	echo "cosignature=$(curl -s $log_url/get-tree-head-to-sign |
+	echo "cosignature=$(curl -s $log_url/get-tree-head-to-cosign |
 		sigsum-debug head sign -k $2 -h $ssrv_key_hash)" >> $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- $log_url/add-cosignature \

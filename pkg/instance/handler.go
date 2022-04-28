@@ -104,7 +104,7 @@ func addCosignature(ctx context.Context, i *Instance, w http.ResponseWriter, r *
 }
 
 func getTreeHeadToCosign(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
-	glog.V(3).Info("handling get-tree-head-to-sign request")
+	glog.V(3).Info("handling get-tree-head-to-cosign request")
 	sth, err := i.Stateman.ToCosignTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
