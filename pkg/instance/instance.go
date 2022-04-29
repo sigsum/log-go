@@ -63,7 +63,7 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*r
 	}
 	stmt := types.Statement{
 		ShardHint: req.ShardHint,
-		Checksum:  *types.HashFn(req.Preimage[:]),
+		Checksum:  *types.HashFn(req.Message[:]),
 	}
 	if !stmt.Verify(&req.VerificationKey, &req.Signature) {
 		return nil, fmt.Errorf("invalid signature")

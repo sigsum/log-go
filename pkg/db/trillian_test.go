@@ -21,7 +21,7 @@ import (
 func TestAddLeaf(t *testing.T) {
 	req := &requests.Leaf{
 		ShardHint:       0,
-		Preimage:        types.Hash{},
+		Message:         types.Hash{},
 		Signature:       types.Signature{},
 		VerificationKey: types.PublicKey{},
 		DomainHint:      "example.com",

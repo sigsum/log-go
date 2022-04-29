@@ -662,7 +662,7 @@ func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
 	return Handler{}
 }
 
-func mustLeafBuffer(t *testing.T, shardHint uint64, preimage types.Hash, wantSig bool) io.Reader {
+func mustLeafBuffer(t *testing.T, shardHint uint64, message types.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
@@ -671,7 +671,7 @@ func mustLeafBuffer(t *testing.T, shardHint uint64, preimage types.Hash, wantSig
 	}
 	msg := types.Statement{
 		ShardHint: shardHint,
-		Checksum:  *types.HashFn(preimage[:]),
+		Checksum:  *types.HashFn(message[:]),
 	}
 	sig := ed25519.Sign(sk, msg.ToBinary())
 	if !wantSig {
@@ -680,7 +680,7 @@ func mustLeafBuffer(t *testing.T, shardHint uint64, preimage types.Hash, wantSig
 	return bytes.NewBufferString(fmt.Sprintf(
 		"%s=%d\n"+"%s=%x\n"+"%s=%x\n"+"%s=%x\n"+"%s=%s\n",
 		"shard_hint", shardHint,
-		"preimage", preimage[:],
+		"message", message[:],
 		"signature", sig,
 		"verification_key", vk,
 		"domain_hint", "example.com",

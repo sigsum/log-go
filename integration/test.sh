@@ -344,8 +344,8 @@ function test_get_leaf() {
 		return
 	fi
 
-	preimage=$(openssl dgst -binary <(echo $1) | base16)
-	checksum=$(openssl dgst -binary <(echo $preimage | base16 -d) | base16)
+	message=$(openssl dgst -binary <(echo $1) | base16)
+	checksum=$(openssl dgst -binary <(echo $message | base16 -d) | base16)
 	if [[ $(value_of checksum) != $checksum ]]; then
 		fail "$desc: wrong checksum $(value_of checksum)"
 		return
@@ -362,7 +362,7 @@ function test_get_leaf() {
 function test_add_leaf() {
 	desc="POST add-leaf (data \"$1\")"
 	echo "shard_hint=$ssrv_shard_start" > $log_dir/req
-	echo "preimage=$(openssl dgst -binary <(echo $1) | base16)" >> $log_dir/req
+	echo "message=$(openssl dgst -binary <(echo $1) | base16)" >> $log_dir/req
 	echo "signature=$(echo $1 |
 		sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)" >> $log_dir/req
 	echo "verification_key=$cli_pub" >> $log_dir/req

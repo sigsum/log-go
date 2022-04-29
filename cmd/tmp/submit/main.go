@@ -15,7 +15,7 @@ import (
 
 var (
 	shardHint  = flag.Uint64("shard_hint", 0, "shard hint (decimal)")
-	preimage   = flag.String("preimage", "", "preimage (hex)")
+	message    = flag.String("message", "", "message (hex)")
 	sk         = flag.String("sk", "", "secret key (hex)")
 	domainHint = flag.String("domain_hint", "example.com", "domain hint (string)")
 	base_url   = flag.String("base_url", "localhost:6965/testonly", "base url (string)")
@@ -29,8 +29,8 @@ func main() {
 	mustDecodeHex(*sk, priv[:])
 
 	var p types.Hash
-	if *preimage != "" {
-		mustDecodeHex(*preimage, p[:])
+	if *message != "" {
+		mustDecodeHex(*message, p[:])
 	} else {
 		mustPutRandom(p[:])
 	}
@@ -41,7 +41,7 @@ func main() {
 	}
 	sig := ed25519.Sign(priv, msg.ToBinary())
 
-	fmt.Printf("echo \"shard_hint=%d\npreimage=%x\nsignature=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- %s/sigsum/v0/add-leaf\n",
+	fmt.Printf("echo \"shard_hint=%d\nmessage=%x\nsignature=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- %s/sigsum/v0/add-leaf\n",
 		*shardHint,
 		p[:],
 		sig,
