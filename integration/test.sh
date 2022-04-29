@@ -200,7 +200,7 @@ function run_tests() {
 }
 
 function test_signed_tree_head() {
-	desc="GET tree-head-to-sign (tree size $1)"
+	desc="GET tree-head-to-cosign (tree size $1)"
 	curl -s -w "%{http_code}" $log_url/get-tree-head-to-cosign \
 		>$log_dir/rsp
 
