@@ -24,7 +24,7 @@ type Config struct {
 	Interval   time.Duration // Cosigning frequency
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
 
-	// Witnesses map trusted witness identifiers to public verification keys
+	// Witnesses map trusted witness identifiers to public keys
 	Witnesses map[types.Hash]types.PublicKey
 }
 
@@ -65,7 +65,7 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*r
 		ShardHint: req.ShardHint,
 		Checksum:  *types.HashFn(req.Message[:]),
 	}
-	if !stmt.Verify(&req.VerificationKey, &req.Signature) {
+	if !stmt.Verify(&req.PublicKey, &req.Signature) {
 		return nil, fmt.Errorf("invalid signature")
 	}
 	shardEnd := uint64(time.Now().Unix())
@@ -75,7 +75,7 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*r
 	if req.ShardHint > shardEnd {
 		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, i.ShardStart, shardEnd)
 	}
-	if err := i.DNS.Verify(ctx, req.DomainHint, &req.VerificationKey); err != nil {
+	if err := i.DNS.Verify(ctx, req.DomainHint, &req.PublicKey); err != nil {
 		return nil, fmt.Errorf("invalid domain hint: %v", err)
 	}
 	return &req, nil

@@ -35,7 +35,7 @@ var (
 	trillianID   = flag.Int64("trillian_id", 0, "log identifier in the Trillian database")
 	deadline     = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
 	key          = flag.String("key", "", "hex-encoded Ed25519 signing key")
-	witnesses    = flag.String("witnesses", "", "comma-separated list of trusted witness verification keys in hex")
+	witnesses    = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange     = flag.Int64("max_range", 10, "maximum number of entries that can be retrived in a single request")
 	interval     = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
 	shardStart   = flag.Int64("shard_interval_start", 0, "start of shard interval since the UNIX epoch in seconds")
@@ -168,7 +168,7 @@ func newWitnessMap(witnesses string) (map[types.Hash]types.PublicKey, error) {
 
 			var vk types.PublicKey
 			if n := copy(vk[:], b); n != types.PublicKeySize {
-				return nil, fmt.Errorf("Invalid verification key size: %v", n)
+				return nil, fmt.Errorf("Invalid public key size: %v", n)
 			}
 			w[*types.HashFn(vk[:])] = vk
 		}

@@ -23,7 +23,7 @@ func TestAddLeaf(t *testing.T) {
 		ShardHint:       0,
 		Message:         types.Hash{},
 		Signature:       types.Signature{},
-		VerificationKey: types.PublicKey{},
+		PublicKey:       types.PublicKey{},
 		DomainHint:      "example.com",
 	}
 	for _, table := range []struct {

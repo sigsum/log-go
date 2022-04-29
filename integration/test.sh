@@ -365,7 +365,7 @@ function test_add_leaf() {
 	echo "message=$(openssl dgst -binary <(echo $1) | base16)" >> $log_dir/req
 	echo "signature=$(echo $1 |
 		sigsum-debug leaf sign -k $cli_priv -h $ssrv_shard_start)" >> $log_dir/req
-	echo "verification_key=$cli_pub" >> $log_dir/req
+	echo "public_key=$cli_pub" >> $log_dir/req
 	echo "domain_hint=$cli_domain_hint" >> $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- $log_url/add-leaf \

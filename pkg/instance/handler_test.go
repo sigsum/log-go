@@ -682,7 +682,7 @@ func mustLeafBuffer(t *testing.T, shardHint uint64, message types.Hash, wantSig 
 		"shard_hint", shardHint,
 		"message", message[:],
 		"signature", sig,
-		"verification_key", vk,
+		"public_key", vk,
 		"domain_hint", "example.com",
 	))
 }

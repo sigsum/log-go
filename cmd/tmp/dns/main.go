@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	vk          = flag.String("vk", "5aed7ffc3bc088221f6579567b2e6e3c4ac3579bd5e77670755179052c68d5d3", "verification key (hex)")
+	vk          = flag.String("vk", "5aed7ffc3bc088221f6579567b2e6e3c4ac3579bd5e77670755179052c68d5d3", "public key (hex)")
 	domain_hint = flag.String("domain_hint", "example.com", "domain name that is aware of public key hash in hex")
 )
 

@@ -41,7 +41,7 @@ func main() {
 	}
 	sig := ed25519.Sign(priv, msg.ToBinary())
 
-	fmt.Printf("echo \"shard_hint=%d\nmessage=%x\nsignature=%x\nverification_key=%x\ndomain_hint=%s\" | curl --data-binary @- %s/sigsum/v0/add-leaf\n",
+	fmt.Printf("echo \"shard_hint=%d\nmessage=%x\nsignature=%x\npublic_key=%x\ndomain_hint=%s\" | curl --data-binary @- %s/sigsum/v0/add-leaf\n",
 		*shardHint,
 		p[:],
 		sig,

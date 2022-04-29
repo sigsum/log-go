@@ -29,7 +29,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf) error 
 			Checksum:  *types.HashFn(req.Message[:]),
 		},
 		Signature: req.Signature,
-		KeyHash:   *types.HashFn(req.VerificationKey[:]),
+		KeyHash:   *types.HashFn(req.PublicKey[:]),
 	}
 	serialized := leaf.ToBinary()
 
