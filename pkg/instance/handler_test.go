@@ -13,7 +13,7 @@ import (
 	"time"
 
 	mocksDB "git.sigsum.org/log-go/pkg/db/mocks"
-	mocksDNS "git.sigsum.org/log-go/pkg/dns/mocks"
+	mocksDNS "git.sigsum.org/log-go/internal/mocks/dns"
 	mocksState "git.sigsum.org/log-go/pkg/state/mocks"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
