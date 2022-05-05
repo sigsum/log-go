@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,7 +35,7 @@ var (
 	prefix       = flag.String("prefix", "", "a prefix that proceeds /sigsum/v0/<endpoint>")
 	trillianID   = flag.Int64("trillian_id", 0, "log identifier in the Trillian database")
 	deadline     = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
-	key          = flag.String("key", "", "hex-encoded Ed25519 signing key")
+	key          = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
 	witnesses    = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange     = flag.Int64("max_range", 10, "maximum number of entries that can be retrived in a single request")
 	interval     = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
@@ -146,9 +147,12 @@ func setupInstanceFromFlags() (*instance.Instance, error) {
 	return &i, nil
 }
 
-func newLogIdentity(key string) (crypto.Signer, string, error) {
-	buf, err := hex.DecodeString(key)
+func newLogIdentity(keyFile string) (crypto.Signer, string, error) {
+	buf, err := ioutil.ReadFile(keyFile)
 	if err != nil {
+		return nil, "", err
+	}
+	if buf, err = hex.DecodeString(strings.TrimSpace(string(buf))); err != nil {
 		return nil, "", fmt.Errorf("DecodeString: %v", err)
 	}
 	sk := crypto.Signer(ed25519.PrivateKey(buf))

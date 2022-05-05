@@ -103,7 +103,7 @@ function sigsum_setup() {
 		-prefix=$ssrv_prefix\
 		-trillian_id=$ssrv_tree_id\
 		-shard_interval_start=$ssrv_shard_start\
-		-key=$ssrv_priv\
+		-key=<(echo $ssrv_priv)\
 		-witnesses=$ssrv_witnesses\
 		-interval=$ssrv_interval\
 		-http_endpoint=$ssrv_endpoint\
