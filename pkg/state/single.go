@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"git.sigsum.org/log-go/pkg/db"
+	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/glog"
 )
 
 // StateManagerSingle implements a single-instance StateManager
@@ -50,7 +50,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 	rotation := func() {
 		nextSTH, err := sm.latestSTH(ctx)
 		if err != nil {
-			glog.Warningf("cannot rotate without tree head: %v", err)
+			log.Warning("cannot rotate without tree head: %v", err)
 			return
 		}
 		sm.rotate(nextSTH)
@@ -108,21 +108,21 @@ func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 	sm.Lock()
 	defer sm.Unlock()
 
-	glog.V(3).Infof("rotating tree heads")
+	log.Debug("rotating tree heads")
 	sm.handleEvents()
 	sm.setCosignedTreeHead()
 	sm.setToCosignTreeHead(nextSTH)
 }
 
 func (sm *StateManagerSingle) handleEvents() {
-	glog.V(3).Infof("handling any outstanding events")
+	log.Debug("handling any outstanding events")
 	for i, n := 0, len(sm.events); i < n; i++ {
 		sm.handleEvent(<-sm.events)
 	}
 }
 
 func (sm *StateManagerSingle) handleEvent(ev *event) {
-	glog.V(3).Infof("handling event from witness %x", ev.keyHash[:])
+	log.Debug("handling event from witness %x", ev.keyHash[:])
 	sm.cosignatures[*ev.keyHash] = ev.cosignature
 }
 

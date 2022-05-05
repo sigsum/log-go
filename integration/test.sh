@@ -107,7 +107,9 @@ function sigsum_setup() {
 		-witnesses=$ssrv_witnesses\
 		-interval=$ssrv_interval\
 		-http_endpoint=$ssrv_endpoint\
-		-log_dir=$log_dir -v=3 2>/dev/null &
+		-log-color="true"\
+		-log-level="debug"\
+		-log-file=$log_dir/sigsum-log.log 2>/dev/null &
 	ssrv_pid=$!
 
 	log_url=$ssrv_endpoint/$ssrv_prefix/sigsum/v0

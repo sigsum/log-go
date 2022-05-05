@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/glog"
 )
 
 // Handler implements the http.Handler interface, and contains a reference
@@ -72,14 +72,14 @@ func (h Handler) handle(w http.ResponseWriter, r *http.Request) int {
 
 	code, err := h.Handler(ctx, h.Instance, w, r)
 	if err != nil {
-		glog.V(3).Infof("%s/%s: %v", h.Instance.Prefix, h.Endpoint, err)
+		log.Debug("%s/%s: %v", h.Instance.Prefix, h.Endpoint, err)
 		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)
 	}
 	return code
 }
 
 func addLeaf(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling add-entry request")
+	log.Debug("handling add-leaf request")
 	req, err := i.leafRequestFromHTTP(ctx, r)
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -91,7 +91,7 @@ func addLeaf(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Re
 }
 
 func addCosignature(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling add-cosignature request")
+	log.Debug("handling add-cosignature request")
 	req, err := i.cosignatureRequestFromHTTP(r)
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -104,7 +104,7 @@ func addCosignature(ctx context.Context, i *Instance, w http.ResponseWriter, r *
 }
 
 func getTreeHeadToCosign(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
-	glog.V(3).Info("handling get-tree-head-to-cosign request")
+	log.Debug("handling get-tree-head-to-cosign request")
 	sth, err := i.Stateman.ToCosignTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -116,7 +116,7 @@ func getTreeHeadToCosign(ctx context.Context, i *Instance, w http.ResponseWriter
 }
 
 func getTreeHeadCosigned(ctx context.Context, i *Instance, w http.ResponseWriter, _ *http.Request) (int, error) {
-	glog.V(3).Info("handling get-tree-head-cosigned request")
+	log.Debug("handling get-tree-head-cosigned request")
 	cth, err := i.Stateman.CosignedTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -128,7 +128,7 @@ func getTreeHeadCosigned(ctx context.Context, i *Instance, w http.ResponseWriter
 }
 
 func getConsistencyProof(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling get-consistency-proof request")
+	log.Debug("handling get-consistency-proof request")
 	req, err := i.consistencyProofRequestFromHTTP(r)
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -146,7 +146,7 @@ func getConsistencyProof(ctx context.Context, i *Instance, w http.ResponseWriter
 }
 
 func getInclusionProof(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling get-proof-by-hash request")
+	log.Debug("handling get-inclusion-proof request")
 	req, err := i.inclusionProofRequestFromHTTP(r)
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -164,7 +164,7 @@ func getInclusionProof(ctx context.Context, i *Instance, w http.ResponseWriter, 
 }
 
 func getLeaves(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling get-leaves request")
+	log.Debug("handling get-leaves request")
 	req, err := i.leavesRequestFromHTTP(r)
 	if err != nil {
 		return http.StatusBadRequest, err
