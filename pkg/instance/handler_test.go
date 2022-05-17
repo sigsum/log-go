@@ -53,7 +53,7 @@ func TestHandlers(t *testing.T) {
 	endpoints := map[types.Endpoint]bool{
 		types.EndpointAddLeaf:             false,
 		types.EndpointAddCosignature:      false,
-		types.EndpointGetTreeHeadToSign:   false,
+		types.EndpointGetTreeHeadToCosign: false,
 		types.EndpointGetTreeHeadCosigned: false,
 		types.EndpointGetConsistencyProof: false,
 		types.EndpointGetInclusionProof:   false,
@@ -352,7 +352,7 @@ func TestGetTreeToSign(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadToSign.Path("http://example.com", i.Prefix)
+			url := types.EndpointGetTreeHeadToCosign.Path("http://example.com", i.Prefix)
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -360,7 +360,7 @@ func TestGetTreeToSign(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandle(t, i, types.EndpointGetTreeHeadToSign).ServeHTTP(w, req)
+			mustHandle(t, i, types.EndpointGetTreeHeadToCosign).ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
