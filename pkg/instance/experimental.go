@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/glog"
 )
 
 // algEd25519 identifies a checkpoint signature algorithm
@@ -21,7 +21,7 @@ const algEd25519 byte = 1
 // getCheckpoint is an experimental endpoint that is not part of the official
 // Sigsum API.  Documentation can be found in the transparency-dev repo.
 func getCheckpoint(ctx context.Context, i *Instance, w http.ResponseWriter, r *http.Request) (int, error) {
-	glog.V(3).Info("handling get-checkpoint request")
+	log.Debug("handling get-checkpoint request")
 	sth, err := i.Stateman.ToCosignTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, err

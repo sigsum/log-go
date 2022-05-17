@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/requests"
 	"git.sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/glog"
 	"github.com/google/trillian"
 	trillianTypes "github.com/google/trillian/types"
 	"google.golang.org/grpc/codes"
@@ -33,7 +33,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf) error 
 	}
 	serialized := leaf.ToBinary()
 
-	glog.V(3).Infof("queueing leaf request: %x", types.LeafHash(serialized))
+	log.Debug("queueing leaf request: %x", types.LeafHash(serialized))
 	rsp, err := c.GRPC.QueueLeaf(ctx, &trillian.QueueLeafRequest{
 		LogId: c.TreeID,
 		Leaf: &trillian.LogLeaf{

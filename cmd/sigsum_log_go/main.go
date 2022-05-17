@@ -17,11 +17,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/google/trillian"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
+	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"git.sigsum.org/sigsum-go/pkg/dns"
 	"git.sigsum.org/log-go/pkg/db"
@@ -40,14 +40,20 @@ var (
 	maxRange     = flag.Int64("max_range", 10, "maximum number of entries that can be retrived in a single request")
 	interval     = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
 	shardStart   = flag.Int64("shard_interval_start", 0, "start of shard interval since the UNIX epoch in seconds")
+	logFile      = flag.String("log-file", "", "file to write logs to (Default: stderr)")
+	logLevel     = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
+	logColor     = flag.Bool("log-color", false, "colored logging output (Default: off)")
 
 	gitCommit = "unknown"
 )
 
 func main() {
 	flag.Parse()
-	defer glog.Flush()
-	glog.Infof("sigsum-log-go git-commit %s", gitCommit)
+
+	if err := setupLogging(*logFile, *logLevel, *logColor); err != nil {
+		log.Fatal("setup logging: %v", err)
+	}
+	log.Info("log-go git-commit %s", gitCommit)
 
 	// wait for clean-up before exit
 	var wg sync.WaitGroup
@@ -55,39 +61,63 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	glog.V(3).Infof("configuring sigsum-log-go instance...")
+	log.Debug("configuring log-go instance")
 	instance, err := setupInstanceFromFlags()
 	if err != nil {
-		glog.Errorf("setupInstance: %v", err)
-		return
+		log.Fatal("setup instance: %v", err)
 	}
 
-	glog.V(3).Infof("spawning state manager")
+	log.Debug("starting state manager routine")
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
 		instance.Stateman.Run(ctx)
-		glog.Errorf("state manager shutdown")
+		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
 
-	glog.V(3).Infof("spawning await")
+	log.Debug("starting await routine")
 	server := http.Server{Addr: *httpEndpoint}
 	go await(ctx, func() {
 		wg.Add(1)
 		defer wg.Done()
 		ctxInner, _ := context.WithTimeout(ctx, time.Second*60)
-		glog.Infof("Shutting down HTTP server...")
+		log.Info("stopping http server, please wait...")
 		server.Shutdown(ctxInner)
-		glog.V(3).Infof("HTTP server shutdown")
-		glog.Infof("Shutting down spawned go routines...")
+		log.Info("stopping go routines, please wait...")
 		cancel()
 	})
 
-	glog.Infof("Serving on %v/%v", *httpEndpoint, *prefix)
+	log.Info("serving on %v/%v", *httpEndpoint, *prefix)
 	if err = server.ListenAndServe(); err != http.ErrServerClosed {
-		glog.Errorf("ListenAndServe: %v", err)
+		log.Error("serve: %v", err)
 	}
+}
+
+func setupLogging(logFile, logLevel string, logColor bool) error {
+	if len(logFile) != 0 {
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		log.SetOutput(f)
+	}
+
+	switch logLevel {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warning":
+		log.SetLevel(log.WarningLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	default:
+		return fmt.Errorf("invalid logging level %s", logLevel)
+	}
+
+	log.SetColor(logColor)
+	return nil
 }
 
 // SetupInstance sets up a new sigsum-log-go instance from flags
@@ -138,10 +168,10 @@ func setupInstanceFromFlags() (*instance.Instance, error) {
 	mux := http.NewServeMux()
 	http.Handle("/", mux)
 	for _, handler := range i.Handlers() {
-		glog.V(3).Infof("adding handler: %s", handler.Path())
+		log.Debug("adding handler: %s", handler.Path())
 		mux.Handle(handler.Path(), handler)
 	}
-	glog.V(3).Infof("Adding prometheus handler on path: /metrics")
+	log.Debug("adding prometheus handler on path: /metrics")
 	http.Handle("/metrics", promhttp.Handler())
 
 	return &i, nil
@@ -188,6 +218,6 @@ func await(ctx context.Context, done func()) {
 	case <-sigs:
 	case <-ctx.Done():
 	}
-	glog.V(3).Info("received shutdown signal")
+	log.Debug("received shutdown signal")
 	done()
 }
