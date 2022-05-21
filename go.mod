@@ -3,7 +3,7 @@ module git.sigsum.org/log-go
 go 1.15
 
 require (
-	git.sigsum.org/sigsum-go v0.0.7
+	git.sigsum.org/sigsum-go v0.0.8
 	github.com/golang/mock v1.4.4
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
 	github.com/google/trillian v1.3.13
