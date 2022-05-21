@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.sigsum.org/log-go/pkg/db/mocks"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/requests"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
@@ -21,7 +22,7 @@ import (
 func TestAddLeaf(t *testing.T) {
 	req := &requests.Leaf{
 		ShardHint:       0,
-		Message:         types.Hash{},
+		Message:         merkle.Hash{},
 		Signature:       types.Signature{},
 		PublicKey:       types.PublicKey{},
 		DomainHint:      "example.com",
@@ -96,7 +97,7 @@ func TestGetTreeHead(t *testing.T) {
 	// valid root
 	root := &ttypes.LogRootV1{
 		TreeSize:       0,
-		RootHash:       make([]byte, types.HashSize),
+		RootHash:       make([]byte, merkle.HashSize),
 		TimestampNanos: 1622585623133599429,
 	}
 	buf, err := root.MarshalBinary()
@@ -104,7 +105,7 @@ func TestGetTreeHead(t *testing.T) {
 		t.Fatalf("must marshal log root: %v", err)
 	}
 	// invalid root
-	root.RootHash = make([]byte, types.HashSize+1)
+	root.RootHash = make([]byte, merkle.HashSize+1)
 	bufBadHash, err := root.MarshalBinary()
 	if err != nil {
 		t.Fatalf("must marshal log root: %v", err)
@@ -166,7 +167,7 @@ func TestGetTreeHead(t *testing.T) {
 			wantTh: &types.TreeHead{
 				Timestamp: 1622585623,
 				TreeSize:  0,
-				RootHash:  types.Hash{},
+				RootHash:  merkle.Hash{},
 			},
 		},
 	} {
@@ -248,8 +249,8 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &trillian.GetConsistencyProofResponse{
 				Proof: &trillian.Proof{
 					Hashes: [][]byte{
-						make([]byte, types.HashSize),
-						make([]byte, types.HashSize+1),
+						make([]byte, merkle.HashSize),
+						make([]byte, merkle.HashSize+1),
 					},
 				},
 			},
@@ -261,17 +262,17 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &trillian.GetConsistencyProofResponse{
 				Proof: &trillian.Proof{
 					Hashes: [][]byte{
-						make([]byte, types.HashSize),
-						make([]byte, types.HashSize),
+						make([]byte, merkle.HashSize),
+						make([]byte, merkle.HashSize),
 					},
 				},
 			},
 			wantProof: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 3,
-				Path: []types.Hash{
-					types.Hash{},
-					types.Hash{},
+				Path: []merkle.Hash{
+					merkle.Hash{},
+					merkle.Hash{},
 				},
 			},
 		},
@@ -301,7 +302,7 @@ func TestGetConsistencyProof(t *testing.T) {
 func TestGetInclusionProof(t *testing.T) {
 	req := &requests.InclusionProof{
 		TreeSize: 4,
-		LeafHash: types.Hash{},
+		LeafHash: merkle.Hash{},
 	}
 	for _, table := range []struct {
 		description string
@@ -354,8 +355,8 @@ func TestGetInclusionProof(t *testing.T) {
 					&trillian.Proof{
 						LeafIndex: 1,
 						Hashes: [][]byte{
-							make([]byte, types.HashSize),
-							make([]byte, types.HashSize+1),
+							make([]byte, merkle.HashSize),
+							make([]byte, merkle.HashSize+1),
 						},
 					},
 				},
@@ -370,8 +371,8 @@ func TestGetInclusionProof(t *testing.T) {
 					&trillian.Proof{
 						LeafIndex: 1,
 						Hashes: [][]byte{
-							make([]byte, types.HashSize),
-							make([]byte, types.HashSize),
+							make([]byte, merkle.HashSize),
+							make([]byte, merkle.HashSize),
 						},
 					},
 				},
@@ -379,9 +380,9 @@ func TestGetInclusionProof(t *testing.T) {
 			wantProof: &types.InclusionProof{
 				TreeSize:  4,
 				LeafIndex: 1,
-				Path: []types.Hash{
-					types.Hash{},
-					types.Hash{},
+				Path: []merkle.Hash{
+					merkle.Hash{},
+					merkle.Hash{},
 				},
 			},
 		},
@@ -416,18 +417,18 @@ func TestGetLeaves(t *testing.T) {
 	firstLeaf := &types.Leaf{
 		Statement: types.Statement{
 			ShardHint: 0,
-			Checksum:  types.Hash{},
+			Checksum:  merkle.Hash{},
 		},
 		Signature: types.Signature{},
-		KeyHash:   types.Hash{},
+		KeyHash:   merkle.Hash{},
 	}
 	secondLeaf := &types.Leaf{
 		Statement: types.Statement{
 			ShardHint: 0,
-			Checksum:  types.Hash{},
+			Checksum:  merkle.Hash{},
 		},
 		Signature: types.Signature{},
-		KeyHash:   types.Hash{},
+		KeyHash:   merkle.Hash{},
 	}
 
 	for _, table := range []struct {

@@ -7,6 +7,7 @@ import (
 
 	"git.sigsum.org/sigsum-go/pkg/log"
 	"git.sigsum.org/sigsum-go/pkg/requests"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/google/trillian"
 	trillianTypes "github.com/google/trillian/types"
@@ -26,14 +27,14 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf) error 
 	leaf := types.Leaf{
 		Statement: types.Statement{
 			ShardHint: req.ShardHint,
-			Checksum:  *types.HashFn(req.Message[:]),
+			Checksum:  *merkle.HashFn(req.Message[:]),
 		},
 		Signature: req.Signature,
-		KeyHash:   *types.HashFn(req.PublicKey[:]),
+		KeyHash:   *merkle.HashFn(req.PublicKey[:]),
 	}
 	serialized := leaf.ToBinary()
 
-	log.Debug("queueing leaf request: %x", types.LeafHash(serialized))
+	log.Debug("queueing leaf request: %x", merkle.HashLeafNode(serialized))
 	rsp, err := c.GRPC.QueueLeaf(ctx, &trillian.QueueLeafRequest{
 		LogId: c.TreeID,
 		Leaf: &trillian.LogLeaf{
@@ -75,7 +76,7 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (*types.TreeHead, erro
 	if err := r.UnmarshalBinary(rsp.SignedLogRoot.LogRoot); err != nil {
 		return nil, fmt.Errorf("no log root: unmarshal failed: %v", err)
 	}
-	if len(r.RootHash) != types.HashSize {
+	if len(r.RootHash) != merkle.HashSize {
 		return nil, fmt.Errorf("unexpected hash length: %d", len(r.RootHash))
 	}
 	return treeHeadFromLogRoot(&r), nil
@@ -181,10 +182,10 @@ func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) *types.TreeHead {
 	return &th
 }
 
-func nodePathFromHashes(hashes [][]byte) ([]types.Hash, error) {
-	path := make([]types.Hash, len(hashes))
+func nodePathFromHashes(hashes [][]byte) ([]merkle.Hash, error) {
+	path := make([]merkle.Hash, len(hashes))
 	for i := 0; i < len(hashes); i++ {
-		if len(hashes[i]) != types.HashSize {
+		if len(hashes[i]) != merkle.HashSize {
 			return nil, fmt.Errorf("unexpected hash length: %v", len(hashes[i]))
 		}
 

@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -24,6 +25,6 @@ type StateManager interface {
 
 // event is a verified cosignature request
 type event struct {
-	keyHash     *types.Hash
+	keyHash     *merkle.Hash
 	cosignature *types.Signature
 }

@@ -10,6 +10,7 @@ import (
 
 	"git.sigsum.org/log-go/pkg/db"
 	"git.sigsum.org/sigsum-go/pkg/log"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -17,7 +18,7 @@ import (
 type StateManagerSingle struct {
 	client    db.Client
 	signer    crypto.Signer
-	namespace types.Hash
+	namespace merkle.Hash
 	interval  time.Duration
 	deadline  time.Duration
 
@@ -29,14 +30,14 @@ type StateManagerSingle struct {
 
 	// Syncronized and deduplicated witness cosignatures for signedTreeHead
 	events       chan *event
-	cosignatures map[types.Hash]*types.Signature
+	cosignatures map[merkle.Hash]*types.Signature
 }
 
 func NewStateManagerSingle(client db.Client, signer crypto.Signer, interval, deadline time.Duration) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
 		client:    client,
 		signer:    signer,
-		namespace: *types.HashFn(signer.Public().(ed25519.PublicKey)),
+		namespace: *merkle.HashFn(signer.Public().(ed25519.PublicKey)),
 		interval:  interval,
 		deadline:  deadline,
 	}
@@ -97,7 +98,7 @@ func (sm *StateManagerSingle) AddCosignature(ctx context.Context, pub *types.Pub
 		return fmt.Errorf("invalid cosignature")
 	}
 	select {
-	case sm.events <- &event{types.HashFn(pub[:]), sig}:
+	case sm.events <- &event{merkle.HashFn(pub[:]), sig}:
 		return nil
 	case <-ctx.Done():
 		return fmt.Errorf("request timeout")
@@ -136,7 +137,7 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 	var cth types.CosignedTreeHead
 	cth.SignedTreeHead = *sm.signedTreeHead
 	cth.Cosignature = make([]types.Signature, 0, n)
-	cth.KeyHash = make([]types.Hash, 0, n)
+	cth.KeyHash = make([]merkle.Hash, 0, n)
 	for keyHash, cosignature := range sm.cosignatures {
 		cth.KeyHash = append(cth.KeyHash, keyHash)
 		cth.Cosignature = append(cth.Cosignature, *cosignature)
@@ -145,7 +146,7 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 }
 
 func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead) {
-	sm.cosignatures = make(map[types.Hash]*types.Signature)
+	sm.cosignatures = make(map[merkle.Hash]*types.Signature)
 	sm.signedTreeHead = nextSTH
 }
 

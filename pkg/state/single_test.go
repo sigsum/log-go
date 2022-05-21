@@ -12,6 +12,7 @@ import (
 
 	db "git.sigsum.org/log-go/pkg/db/mocks"
 	"git.sigsum.org/log-go/pkg/state/mocks"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
 )
@@ -87,7 +88,7 @@ func TestToCosignTreeHead(t *testing.T) {
 func TestCosignedTreeHead(t *testing.T) {
 	want := &types.CosignedTreeHead{
 		Cosignature: make([]types.Signature, 1),
-		KeyHash:     make([]types.Hash, 1),
+		KeyHash:     make([]merkle.Hash, 1),
 	}
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
@@ -130,7 +131,7 @@ func TestAddCosignature(t *testing.T) {
 		},
 	} {
 		sm := &StateManagerSingle{
-			namespace:      *types.HashFn(nil),
+			namespace:      *merkle.HashFn(nil),
 			signedTreeHead: &types.SignedTreeHead{},
 			events:         make(chan *event, 1),
 		}
@@ -161,17 +162,17 @@ func TestRotate(t *testing.T) {
 	sth := &types.SignedTreeHead{}
 	nextSTH := &types.SignedTreeHead{TreeHead: types.TreeHead{Timestamp: 1}}
 	ev := &event{
-		keyHash:     &types.Hash{},
+		keyHash:     &merkle.Hash{},
 		cosignature: &types.Signature{},
 	}
 	wantCTH := &types.CosignedTreeHead{
 		SignedTreeHead: *sth,
-		KeyHash:        []types.Hash{*ev.keyHash},
+		KeyHash:        []merkle.Hash{*ev.keyHash},
 		Cosignature:    []types.Signature{*ev.cosignature},
 	}
 	sm := &StateManagerSingle{
 		signedTreeHead: sth,
-		cosignatures:   make(map[types.Hash]*types.Signature),
+		cosignatures:   make(map[merkle.Hash]*types.Signature),
 		events:         make(chan *event, 1),
 	}
 	defer close(sm.events)
@@ -207,7 +208,7 @@ func mustKeyPair(t *testing.T) (crypto.Signer, types.PublicKey) {
 	return sk, pub
 }
 
-func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *types.Hash) *types.SignedTreeHead {
+func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *merkle.Hash) *types.SignedTreeHead {
 	t.Helper()
 	sth, err := th.Sign(s, kh)
 	if err != nil {

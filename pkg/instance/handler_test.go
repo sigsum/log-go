@@ -15,6 +15,7 @@ import (
 	mocksDB "git.sigsum.org/log-go/pkg/db/mocks"
 	mocksDNS "git.sigsum.org/log-go/internal/mocks/dns"
 	mocksState "git.sigsum.org/log-go/pkg/state/mocks"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
 )
@@ -22,29 +23,29 @@ import (
 var (
 	testWitVK  = types.PublicKey{}
 	testConfig = Config{
-		LogID:      fmt.Sprintf("%x", types.HashFn([]byte("logid"))[:]),
+		LogID:      fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
 		TreeID:     0,
 		Prefix:     "testonly",
 		MaxRange:   3,
 		Deadline:   10,
 		Interval:   10,
 		ShardStart: 10,
-		Witnesses: map[types.Hash]types.PublicKey{
-			*types.HashFn(testWitVK[:]): testWitVK,
+		Witnesses: map[merkle.Hash]types.PublicKey{
+			*merkle.HashFn(testWitVK[:]): testWitVK,
 		},
 	}
 	testSTH = &types.SignedTreeHead{
 		TreeHead: types.TreeHead{
 			Timestamp: 0,
 			TreeSize:  0,
-			RootHash:  *types.HashFn([]byte("root hash")),
+			RootHash:  *merkle.HashFn([]byte("root hash")),
 		},
 		Signature: types.Signature{},
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
 		Cosignature:    []types.Signature{types.Signature{}},
-		KeyHash:        []types.Hash{types.Hash{}},
+		KeyHash:        []merkle.Hash{merkle.Hash{}},
 	}
 )
 
@@ -175,29 +176,29 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafBuffer(t, 10, types.Hash{}, false),
+			ascii:       mustLeafBuffer(t, 10, merkle.Hash{}, false),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is before shard start)",
-			ascii:       mustLeafBuffer(t, 9, types.Hash{}, true),
+			ascii:       mustLeafBuffer(t, 9, merkle.Hash{}, true),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (shard hint is after shard end)",
-			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, types.Hash{}, true),
+			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, merkle.Hash{}, true),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: failed verifying domain hint",
-			ascii:       mustLeafBuffer(t, 10, types.Hash{}, true),
+			ascii:       mustLeafBuffer(t, 10, merkle.Hash{}, true),
 			expectDNS:   true,
 			errDNS:      fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description:    "invalid: backend failure",
-			ascii:          mustLeafBuffer(t, 10, types.Hash{}, true),
+			ascii:          mustLeafBuffer(t, 10, merkle.Hash{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			errTrillian:    fmt.Errorf("something went wrong"),
@@ -205,7 +206,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid",
-			ascii:          mustLeafBuffer(t, 10, types.Hash{}, true),
+			ascii:          mustLeafBuffer(t, 10, merkle.Hash{}, true),
 			expectDNS:      true,
 			expectTrillian: true,
 			wantCode:       http.StatusOK,
@@ -250,7 +251,7 @@ func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
 		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
 			"cosignature", types.Signature{},
-			"key_hash", *types.HashFn(testWitVK[:]),
+			"key_hash", *merkle.HashFn(testWitVK[:]),
 		))
 	}
 	for _, table := range []struct {
@@ -269,7 +270,7 @@ func TestAddCosignature(t *testing.T) {
 			description: "invalid: bad request (unknown witness)",
 			ascii: bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
 				"cosignature", types.Signature{},
-				"key_hash", *types.HashFn(testWitVK[1:]),
+				"key_hash", *merkle.HashFn(testWitVK[1:]),
 			)),
 			wantCode: http.StatusBadRequest,
 		},
@@ -457,8 +458,8 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 2,
-				Path: []types.Hash{
-					*types.HashFn([]byte{}),
+				Path: []merkle.Hash{
+					*merkle.HashFn([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -527,8 +528,8 @@ func TestGetInclusionProof(t *testing.T) {
 			rsp: &types.InclusionProof{
 				TreeSize:  2,
 				LeafIndex: 0,
-				Path: []types.Hash{
-					*types.HashFn([]byte{}),
+				Path: []merkle.Hash{
+					*merkle.HashFn([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -600,10 +601,10 @@ func TestGetLeaves(t *testing.T) {
 					list = append(list[:], types.Leaf{
 						Statement: types.Statement{
 							ShardHint: 0,
-							Checksum:  types.Hash{},
+							Checksum:  merkle.Hash{},
 						},
 						Signature: types.Signature{},
-						KeyHash:   types.Hash{},
+						KeyHash:   merkle.Hash{},
 					})
 				}
 				return &list
@@ -662,7 +663,7 @@ func mustHandle(t *testing.T, i Instance, e types.Endpoint) Handler {
 	return Handler{}
 }
 
-func mustLeafBuffer(t *testing.T, shardHint uint64, message types.Hash, wantSig bool) io.Reader {
+func mustLeafBuffer(t *testing.T, shardHint uint64, message merkle.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
@@ -671,7 +672,7 @@ func mustLeafBuffer(t *testing.T, shardHint uint64, message types.Hash, wantSig 
 	}
 	msg := types.Statement{
 		ShardHint: shardHint,
-		Checksum:  *types.HashFn(message[:]),
+		Checksum:  *merkle.HashFn(message[:]),
 	}
 	sig := ed25519.Sign(sk, msg.ToBinary())
 	if !wantSig {

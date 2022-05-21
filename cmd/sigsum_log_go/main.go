@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	"git.sigsum.org/sigsum-go/pkg/log"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/types"
 	"git.sigsum.org/sigsum-go/pkg/dns"
 	"git.sigsum.org/log-go/pkg/db"
@@ -191,8 +192,8 @@ func newLogIdentity(keyFile string) (crypto.Signer, string, error) {
 }
 
 // newWitnessMap creates a new map of trusted witnesses
-func newWitnessMap(witnesses string) (map[types.Hash]types.PublicKey, error) {
-	w := make(map[types.Hash]types.PublicKey)
+func newWitnessMap(witnesses string) (map[merkle.Hash]types.PublicKey, error) {
+	w := make(map[merkle.Hash]types.PublicKey)
 	if len(witnesses) > 0 {
 		for _, witness := range strings.Split(witnesses, ",") {
 			b, err := hex.DecodeString(witness)
@@ -204,7 +205,7 @@ func newWitnessMap(witnesses string) (map[types.Hash]types.PublicKey, error) {
 			if n := copy(vk[:], b); n != types.PublicKeySize {
 				return nil, fmt.Errorf("Invalid public key size: %v", n)
 			}
-			w[*types.HashFn(vk[:])] = vk
+			w[*merkle.HashFn(vk[:])] = vk
 		}
 	}
 	return w, nil

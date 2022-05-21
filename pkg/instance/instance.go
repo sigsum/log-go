@@ -10,6 +10,7 @@ import (
 	"git.sigsum.org/log-go/pkg/db"
 	"git.sigsum.org/log-go/pkg/state"
 	"git.sigsum.org/sigsum-go/pkg/dns"
+	"git.sigsum.org/sigsum-go/pkg/merkle"
 	"git.sigsum.org/sigsum-go/pkg/requests"
 	"git.sigsum.org/sigsum-go/pkg/types"
 )
@@ -25,7 +26,7 @@ type Config struct {
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
 
 	// Witnesses map trusted witness identifiers to public keys
-	Witnesses map[types.Hash]types.PublicKey
+	Witnesses map[merkle.Hash]types.PublicKey
 }
 
 // Instance is an instance of the log's front-end
@@ -63,7 +64,7 @@ func (i *Instance) leafRequestFromHTTP(ctx context.Context, r *http.Request) (*r
 	}
 	stmt := types.Statement{
 		ShardHint: req.ShardHint,
-		Checksum:  *types.HashFn(req.Message[:]),
+		Checksum:  *merkle.HashFn(req.Message[:]),
 	}
 	if !stmt.Verify(&req.PublicKey, &req.Signature) {
 		return nil, fmt.Errorf("invalid signature")
