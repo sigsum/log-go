@@ -179,10 +179,6 @@ function run_tests() {
 	sleep ${ssrv_interval::-1}
 
 	test_signed_tree_head $num_leaf
-	for i in $(seq 1 $(( $num_leaf - 1 ))); do
-		test_consistency_proof $i $num_leaf
-	done
-
 	test_cosignature $wit1_key_hash $wit1_priv
 	test_cosignature $wit2_key_hash $wit2_priv
 
@@ -190,15 +186,26 @@ function run_tests() {
 	sleep ${ssrv_interval::-1}
 
 	test_cosigned_tree_head $num_leaf
+	root_hash=$(value_of root_hash)
 	for i in $(seq 1 $num_leaf); do
-		test_inclusion_proof $num_leaf $i $(( $i - 1 ))
+		test_inclusion_proof $num_leaf $i $(( $i - 1 )) $root_hash
 	done
 
 	for i in $(seq 1 $num_leaf); do
 		test_get_leaf $i $(( $i - 1 ))
 	done
 
-	warn "no signatures and merkle proofs were verified"
+	for j in $(seq $(( $num_leaf + 1 )) $(( 2 * $num_leaf ))); do
+		test_add_leaf $j
+	done
+
+	info "waiting for $num_leaf leaves to be merged..."
+	sleep ${ssrv_interval::-1}
+
+	test_signed_tree_head $j
+	test_consistency_proof $i $j $root_hash $(value_of root_hash)
+
+	warn "no signatures were verified"
 }
 
 function test_signed_tree_head() {
@@ -305,7 +312,11 @@ function test_inclusion_proof() {
 		return
 	fi
 
-	# TODO: verify inclusion proof
+	if ! head --lines=-1 $log_dir/rsp | sigsum-debug leaf inclusion -l $leaf_hash -n $1 -r $4; then
+		fail "$desc: incorrect inclusion proof"
+		return
+	fi
+
 	pass $desc
 }
 
@@ -323,7 +334,11 @@ function test_consistency_proof() {
 		return
 	fi
 
-	# TODO: verify consistency proof
+	if ! head --lines=-1 $log_dir/rsp | sigsum-debug head consistency -n $1 -N $2 -r $3 -R $4; then
+		fail "$desc: incorrect inclusion proof"
+		return
+	fi
+
 	pass $desc
 }
 
