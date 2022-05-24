@@ -1,27 +1,27 @@
-# sigsum-log-go
+# Sigsum log-go
 This repository provides a
 	[Trillian](https://transparency.dev/#trillian)
 	[personality](https://github.com/google/trillian/blob/master/docs/Personalities.md)
-that implements the sigsum/v0
+implementing the sigsum/v0
 	[design](https://git.sigsum.org/sigsum/tree/doc/design.md)
 and
 	[API](https://git.sigsum.org/sigsum/tree/doc/api.md).
 
 ## Public prototype
-There is a public prototype that is up and running with zero promises of uptime,
+There is a public prototype running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
 - Base URL: https://poc.sigsum.org/crocodile-icefish/
 - Public key: `4791eff3bfc17f352bcc76d4752b38c07882093a5935a84577c63de224b0f6b3`
 - Shard start: 1651494520 (Mon 02 May 2022 12:28:40 PM UTC)
 
-A [witness](https://github.com/sigsum/sigsum-witness-py) is also up and running
-with zero-promises of uptime, stability, etc.  Relevant witness information:
+A [witness](https://github.com/sigsum/sigsum-witness-py) is running as well,
+this too with zero promises of uptime, stability, etc.  Relevant witness information:
 
 - Public key: `812dbef0156b079e2d048747b2189cbfa64f96e2204a17cb23cb528080871503`.
 
-As described in our design and API documentation, you can talk to the
-log by passing ASCII key-value pairs.  For example, fetching a cosigned
+As described in the design and API documentation, you can talk to the
+log by sending it ASCII key-value pairs.  For example, fetching a co-signed
 tree head and two log entries:
 
 ```
@@ -48,4 +48,4 @@ key_hash=c522d929b261241eef174b51b8472fa5d5f961892089a7b85fd25ce73271abca
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
 separate repository in the near future, see
-	[sigsum-lib-go](https://git.sigsum.org/sigsum-lib-go/).
+	[sigsum-go](https://git.sigsum.org/sigsum-go/).
