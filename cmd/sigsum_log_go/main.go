@@ -43,6 +43,11 @@ var (
 	logFile      = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel     = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
 	logColor     = flag.Bool("log-color", false, "colored logging output (Default: off)")
+	role         = flag.String("role", "primary", "log role: primary (default) or secondary")
+	secondaryURL = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
+	secondaryPubkey = flag.String("secondary-pubkey", "", "hex-encoded Ed25519 public key for secondary node")
+	primaryURL   = flag.String("primary-url", "", "primary node endpoint for fetching leafs")
+	primaryPubkey = flag.String("primary-pubkey", "", "hex-encoded Ed25519 public key for primary node")
 
 	gitCommit = "unknown"
 )
@@ -130,6 +135,7 @@ func setupInstanceFromFlags() (*instance.Instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
+
 	i.TreeID = *trillianID
 	i.Prefix = *prefix
 	i.MaxRange = *maxRange
@@ -156,13 +162,52 @@ func setupInstanceFromFlags() (*instance.Instance, error) {
 	}
 
 	// Setup state manager
-	i.Stateman, err = state.NewStateManagerSingle(i.Client, i.Signer, i.Interval, i.Deadline)
-	if err != nil {
-		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
+	switch *role {
+	case "primary":
+		if *primaryURL != "" {
+			return nil, fmt.Errorf("a primary node must not configure primary-url")
+		}
+		if *primaryPubkey != "" {
+			return nil, fmt.Errorf("a primary node must not configure primary-pubkey")
+		}
+		if *secondaryURL != "" && *secondaryPubkey != "" {
+			p, err := newServiceEndpoint(*secondaryURL, *secondaryPubkey)
+			if err != nil {
+				return nil, fmt.Errorf("newServiceEndpoint: %v", err)
+			}
+			i.Peer = *p
+		}
+		i.Role = instance.Primary
+		i.Stateman, err = state.NewStateManagerSingle(i.Client, i.Signer, i.Interval, i.Deadline, i.Peer.URL, i.Peer.Pubkey)
+		if err != nil {
+			return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
+		}
+		i.DNS = dns.NewDefaultResolver()
+
+
+	case "secondary":
+		if *secondaryURL != "" {
+			return nil, fmt.Errorf("a secondary node must not configure secondary-url")
+		}
+		if *secondaryPubkey != "" {
+			return nil, fmt.Errorf("a secondary node must not configure secondary-pubkey")
+		}
+		p, err := newServiceEndpoint(*primaryURL, *primaryPubkey)
+		if err != nil {
+			return nil, fmt.Errorf("newServiceEndpoint: %v", err)
+		}
+		i.Peer = *p
+		i.Role = instance.Secondary
+		// TODO: verify that GRPC.TreeType() == PREORDERED_LOG
+		i.Stateman, err = state.NewStateManagerSingleSecondary(i.Client, i.Signer, i.Interval, i.Deadline, i.Peer.URL, i.Peer.Pubkey)
+		if err != nil {
+			return nil, fmt.Errorf("NewStateManagerSingleSecondary: %v", err)
+		}
+
+	default:
+		return nil, fmt.Errorf("invalid role: %s", *role)
 	}
 
-	// Setup DNS verifier
-	i.DNS = dns.NewDefaultResolver()
 
 	// Register HTTP endpoints
 	mux := http.NewServeMux()
@@ -208,6 +253,21 @@ func newWitnessMap(witnesses string) (map[types.Hash]types.PublicKey, error) {
 		}
 	}
 	return w, nil
+}
+
+func newServiceEndpoint(url string, pkhex string) (*instance.ServiceEndpoint, error) {
+	pkbuf, err := hex.DecodeString(pkhex)
+	if err != nil {
+		return nil, fmt.Errorf("DecodeString: %v", err)
+	}
+
+	var ep instance.ServiceEndpoint
+	ep.URL = url
+	if n := copy(ep.Pubkey[:], pkbuf); n != types.PublicKeySize {
+		return nil, fmt.Errorf("invalid pubkey size: %v", n)
+	}
+
+	return &ep, nil
 }
 
 // await waits for a shutdown signal and then runs a clean-up function
