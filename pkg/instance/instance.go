@@ -35,43 +35,21 @@ type Instance struct {
 	Signer   crypto.Signer      // provides access to Ed25519 private key
 	Stateman state.StateManager // coordinates access to (co)signed tree heads
 	DNS      dns.Verifier       // checks if domain name knows a public key
-	Role     Role
-	Peer     ServiceEndpoint
 }
 
-type Role int64
-const (
-	Primary Role = iota
-	Secondary
-)
-
-type ServiceEndpoint struct {
-	URL string
-	Pubkey types.PublicKey
-}
-
+// Handlers returns a list of sigsum handlers
 func (i *Instance) Handlers() []Handler {
-	switch i.Role {
-	case Primary:
-		return []Handler{
-			Handler{Instance: i, Handler: addLeaf, Endpoint: types.EndpointAddLeaf, Method: http.MethodPost},
-			Handler{Instance: i, Handler: addCosignature, Endpoint: types.EndpointAddCosignature, Method: http.MethodPost},
-			Handler{Instance: i, Handler: getTreeHeadToCosign, Endpoint: types.EndpointGetTreeHeadToCosign, Method: http.MethodGet}, // ToSign -> ToCoSign
-			Handler{Instance: i, Handler: getTreeHeadCosigned, Endpoint: types.EndpointGetTreeHeadCosigned, Method: http.MethodGet},
-			Handler{Instance: i, Handler: getCheckpoint, Endpoint: types.Endpoint("get-checkpoint"), Method: http.MethodGet},
-			Handler{Instance: i, Handler: getConsistencyProof, Endpoint: types.EndpointGetConsistencyProof, Method: http.MethodGet},
-			Handler{Instance: i, Handler: getInclusionProof, Endpoint: types.EndpointGetInclusionProof, Method: http.MethodGet},
-			Handler{Instance: i, Handler: getLeaves, Endpoint: types.EndpointGetLeaves, Method: http.MethodGet},
-		}
-	case Secondary:
-		return []Handler{
-			Handler{Instance: i, Handler: getTreeHeadToCosign, Endpoint: types.EndpointGetSecondaryTreeHead, Method: http.MethodGet},
-		}
-	default:
-		return []Handler{}
+	return []Handler{
+		Handler{Instance: i, Handler: addLeaf, Endpoint: types.EndpointAddLeaf, Method: http.MethodPost},
+		Handler{Instance: i, Handler: addCosignature, Endpoint: types.EndpointAddCosignature, Method: http.MethodPost},
+		Handler{Instance: i, Handler: getTreeHeadToCosign, Endpoint: types.EndpointGetTreeHeadToCosign, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getTreeHeadCosigned, Endpoint: types.EndpointGetTreeHeadCosigned, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getCheckpoint, Endpoint: types.Endpoint("get-checkpoint"), Method: http.MethodGet},
+		Handler{Instance: i, Handler: getConsistencyProof, Endpoint: types.EndpointGetConsistencyProof, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getInclusionProof, Endpoint: types.EndpointGetInclusionProof, Method: http.MethodGet},
+		Handler{Instance: i, Handler: getLeaves, Endpoint: types.EndpointGetLeaves, Method: http.MethodGet},
 	}
 }
-
 
 // checkHTTPMethod checks if an HTTP method is supported
 func (i *Instance) checkHTTPMethod(m string) bool {
@@ -117,7 +95,7 @@ func (i *Instance) cosignatureRequestFromHTTP(r *http.Request) (*requests.Cosign
 func (i *Instance) consistencyProofRequestFromHTTP(r *http.Request) (*requests.ConsistencyProof, error) {
 	var req requests.ConsistencyProof
 	if err := req.FromURL(r.URL.Path); err != nil {
-		return nil, fmt.Errorf("FromURL: %v", err)
+		return nil, fmt.Errorf("FromASCII: %v", err)
 	}
 	if req.OldSize < 1 {
 		return nil, fmt.Errorf("OldSize(%d) must be larger than zero", req.OldSize)

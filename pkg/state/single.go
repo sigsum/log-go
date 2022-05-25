@@ -8,21 +8,18 @@ import (
 	"sync"
 	"time"
 
-	"git.sigsum.org/log-go/pkg/client"
 	"git.sigsum.org/log-go/pkg/db"
 	"git.sigsum.org/sigsum-go/pkg/log"
-	//"git.sigsum.org/sigsum-go/pkg/requests"
 	"git.sigsum.org/sigsum-go/pkg/types"
 )
 
-// StateManagerSingle implements a single-instance StateManager for primary nodes
+// StateManagerSingle implements a single-instance StateManager
 type StateManagerSingle struct {
 	client    db.Client
 	signer    crypto.Signer
 	namespace types.Hash
 	interval  time.Duration
 	deadline  time.Duration
-	secondary *client.Client
 
 	// Lock-protected access to pointers.  A write lock is only obtained once
 	// per interval when doing pointer rotation.  All endpoints are readers.
@@ -35,14 +32,13 @@ type StateManagerSingle struct {
 	cosignatures map[types.Hash]*types.Signature
 }
 
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration, securl string, secpk types.PublicKey) (*StateManagerSingle, error) {
+func NewStateManagerSingle(client db.Client, signer crypto.Signer, interval, deadline time.Duration) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
-		client:    dbcli,
+		client:    client,
 		signer:    signer,
 		namespace: *types.HashFn(signer.Public().(ed25519.PublicKey)),
 		interval:  interval,
 		deadline:  deadline,
-		secondary: client.NewClient(securl, secpk),
 	}
 	sth, err := sm.latestSTH(context.Background())
 	sm.setCosignedTreeHead()
@@ -161,57 +157,9 @@ func (sm *StateManagerSingle) latestSTH(ctx context.Context) (*types.SignedTreeH
 	if err != nil {
 		return nil, fmt.Errorf("failed fetching tree head: %v", err)
 	}
-
-	//pth, err := choseTree(ctx, sm.deadline, sm.secondary, th)
-	pth, err := th, nil	// DEBUG
-	if err != nil {
-		return nil, fmt.Errorf("failed chosing tree head: %v", err)
-	}
-
-	sth, err := pth.Sign(sm.signer, &sm.namespace)
+	sth, err := th.Sign(sm.signer, &sm.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed signing tree head: %v", err)
 	}
-
 	return sth, nil
-}
-
-func choseTree(ctx context.Context, deadline time.Duration, secondary *client.Client, th *types.TreeHead) (*types.TreeHead, error) {
-	// TODO: handle multiple secondaries and not just one
-
-	if !secondary.Configured {
-		return th, nil
-	}
-
-	sctx, cancel := context.WithTimeout(ctx, deadline) // FIXME: use a separate timeout value for secondaries?
-	defer cancel()
-	secsth, err := secondary.GetCurrentTreeHead(sctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed getting the latest tree head from all secondaries: %v", err)
-	}
-
-	if secsth.TreeSize < th.TreeSize {
-		// We're stuck at secsth.size so let's verify
-		// consistency since secsth and sign that
-
-		// TODO: get and verify consinstency proof
-
-		// req := &requests.ConsistencyProof{
-		// 	OldSize: secsth.TreeSize,
-		// 	NewSize: th.TreeSize,
-		// }
-
-		// proof, err := sm.client.GetConsistencyProof(ctx, req)
-		// if err != nil {
-		// 	return nil, fmt.Errorf("unable to get consistency proof from %d to %d: %v", req.OldSize, req.NewSize, err)
-		// }
-
-		// if !proof.Verify() {
-		// 	return nil, fmt.Errorf("invalid consistency proof from %d to %d", req.OldSize, req.NewSize)
-		// }
-
-		th = &secsth.TreeHead // FIXME: need to copy?
-	}
-
-	return th, nil
 }
