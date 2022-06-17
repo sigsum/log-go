@@ -185,7 +185,7 @@ func newLogIdentity(keyFile string) (crypto.Signer, string, error) {
 	if buf, err = hex.DecodeString(strings.TrimSpace(string(buf))); err != nil {
 		return nil, "", fmt.Errorf("DecodeString: %v", err)
 	}
-	sk := crypto.Signer(ed25519.PrivateKey(buf))
+	sk := crypto.Signer(ed25519.NewKeyFromSeed(buf))
 	vk := sk.Public().(ed25519.PublicKey)
 	return sk, hex.EncodeToString([]byte(vk[:])), nil
 }
