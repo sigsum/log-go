@@ -2,6 +2,8 @@ module git.sigsum.org/log-go
 
 go 1.15
 
+replace git.sigsum.org/sigsum-go => /home/rgdd/src/git.sigsum.org/sigsum-go
+
 require (
 	git.sigsum.org/sigsum-go v0.0.7
 	github.com/golang/mock v1.4.4

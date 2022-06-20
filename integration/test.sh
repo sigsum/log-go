@@ -213,6 +213,9 @@ function test_signed_tree_head() {
 	curl -s -w "%{http_code}" $log_url/get-tree-head-to-cosign \
 		>$log_dir/rsp
 
+	head --lines=-1 $log_dir/rsp >> /home/rgdd/output
+	echo "===" >> /home/rgdd/output
+
 	if [[ $(status_code) != 200 ]]; then
 		fail "$desc: http status code $(status_code)"
 		return
@@ -323,6 +326,10 @@ function test_inclusion_proof() {
 function test_consistency_proof() {
 	desc="GET get-consistency-proof (old_size $1, new_size $2)"
 	curl -s -w "%{http_code}" $log_url/get-consistency-proof/$1/$2 >$log_dir/rsp
+
+	echo "old_size=$1, new_size=$2" >> /home/rgdd/output
+	head --lines=-1 $log_dir/rsp >> /home/rgdd/output
+	echo "===" >> /home/rgdd/output
 
 	if [[ $(status_code) != 200 ]]; then
 		fail "$desc: http status code $(status_code)"
