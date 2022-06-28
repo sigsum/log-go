@@ -11,39 +11,38 @@ and
 There is a public prototype running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
-- Base URL: https://poc.sigsum.org/crocodile-icefish/
-- Public key: `4791eff3bfc17f352bcc76d4752b38c07882093a5935a84577c63de224b0f6b3`
-- Shard start: 1651494520 (Mon 02 May 2022 12:28:40 PM UTC)
+- Base URL: https://ghost-shrimp.sigsum.org/
+- Public key: `e65f8bff3a5cfe1781b094ebcf41d6a6d0e254c0de5144373719e64099fbb343`
+- Shard start: 1656173139 (Sat 25 Jun 2022 04:05:39 PM UTC)
 
-A [witness](https://github.com/sigsum/sigsum-witness-py) is running as well,
+Two [witnesses](https://github.com/sigsum/sigsum-witness-py) are running as well,
 this too with zero promises of uptime, stability, etc.  Relevant witness information:
 
-- Public key: `812dbef0156b079e2d048747b2189cbfa64f96e2204a17cb23cb528080871503`.
+- Public key: `812dbef0156b079e2d048747b2189cbfa64f96e2204a17cb23cb528080871503`
+- Public key: `8c343bffe33a5889b5f350dc162bbdfec3b29e2c498475ccdf969a2743be0291`
 
 As described in the design and API documentation, you can talk to the
-log by sending it ASCII key-value pairs.  For example, fetching a co-signed
+log by sending it ASCII key-value pairs.  For example, fetching a cosigned
 tree head and two log entries:
 
 ```
-$ curl https://poc.sigsum.org/crocodile-icefish/sigsum/v0/get-tree-head-cosigned
-timestamp=1651496711
-tree_size=3
-root_hash=9e1197a53487295824c659fff4d05c6386f6d5e59cbc3d70f5693901cac15ca8
-signature=d93ee124ce3b33fc2a7c16c2d74da5353a4f7e55c77a775f7eaec786e26dbf3e2cf25f7b00f9611d4f55196d4734242cf750ec2d42801f0b8abf27ae0146850e
-cosignature=1f65d3d9f24a160ef26c47352329234e6f045e29f21af5d55dde6e42e8bb0577ef34382e405f208488f18cc3b1e55fa439d1641cd2a376320820192728bb4f02
-cosignature=050ca46592dc9f1f4e8a4ad2ceae233dd25865a67c0cb8f938f10469f780dfb6c41c641aa19c968e526c1a9340241207a3b67d1f003b7b3fb18ff74ba1aa3702
-key_hash=e94908c5c663c19a37b0b5e1e09db411cdb77e3e5d5f49bd7a8e2f53f748bdec
+$ curl https://ghost-shrimp.sigsum.org/sigsum/v0/get-tree-head-cosigned
+timestamp=1656448119
+tree_size=77
+root_hash=e2382a44b83dd21403d9989fc6b1438a1043e1acb791e5630f45706e3e5ac466
+signature=be19395e1914c67c7e2a49303c672675ff6a2365ead7dc0751e109923174c53c81b5fb56d1446c6e43c0ba68c88160b243e75fc6fd1e66aedbfae14165786a0a
+cosignature=96faf7c119c895445c90c028caa0c287385d3c9e0d24672b0d499fc71e7ec4cad2bd6d242c66ff7ba9362161110933c397e6eadf48722be35c6f22e9c0a18605
 key_hash=15e203ad786ad5e36c053ba883d09ad7dc6b2011bb9c111330f79c8f1d6b8e69
 
-$ curl https://poc.sigsum.org/crocodile-icefish/sigsum/v0/get-leaves/0/1
-shard_hint=1651495935
-checksum=a7f95461acc7e1b5c03371f3656c1f1d3b5c61478863955e6155d1795fab5c02
-signature=36b205d4468b824f8c419c4f78583654780378ffb8e092078736d4e0354d52d5fcce54c9742092333ec50841b07e482898b549ca09956715d0a754633535fe0b
-key_hash=c522d929b261241eef174b51b8472fa5d5f961892089a7b85fd25ce73271abca
-shard_hint=1651495944
-checksum=a7f1de4e4a83913b9f8279cb5d74f5adda378d3e21cacf8be89c35e4a133d01b
-signature=67f90c0579c29f6d91e1d7fd06ed900cd76db44e4d899acc77e2535e268ce09a040d9ca0b2c1becb5ae79ce35ec260ed65b8436d7ff524415080343bd207cd06
-key_hash=c522d929b261241eef174b51b8472fa5d5f961892089a7b85fd25ce73271abca
+$ curl https://ghost-shrimp.sigsum.org/sigsum/v0/get-leaves/0/1
+shard_hint=1656251476
+checksum=c87b1ea095861174ef52ed7281eaf44fc237671f3fd61803a3cea3c98b9e81fe
+signature=b32cad0ce5f1593250ce863ec3c039275db21b63bcae09aa905e348409ff97283b6f76efd9d87f4945a9b7d550ba480746f7aa08011f2217b7ed100159c87007
+key_hash=d96934d633dca1ef8913a5421338ff371d07279f4b0b787b13c338f3520194e4
+shard_hint=1656251511
+checksum=471f5f5accbae3f550e0478a5bf32a272f107c9609380c15ddade128c8595681
+signature=8745e005d0330c836e0f1137167697b324cb6765996a97ee53273f997c12259b2e7ab3d48aeb566c589230ece505ac392eb57629edcb7f0f26ee4eb18c1a620f
+key_hash=d96934d633dca1ef8913a5421338ff371d07279f4b0b787b13c338f3520194e4
 ```
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
