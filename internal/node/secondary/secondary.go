@@ -68,17 +68,14 @@ func (s Secondary) InternalHTTPHandlers() []handler.Handler {
 }
 
 func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
-	sctx, cancel := context.WithTimeout(ctx, time.Second*10) // FIXME: parameterize 10
-	defer cancel()
-
-	prim, err := s.Primary.GetUnsignedTreeHead(sctx)
+	prim, err := s.Primary.GetUnsignedTreeHead(ctx)
 	if err != nil {
 		log.Warning("unable to get tree head from primary: %v", err)
 		return
 	}
 	log.Debug("got tree head from primary, size %d", prim.TreeSize)
 
-	curTH, err := treeHeadFromTrillian(sctx, s.TrillianClient)
+	curTH, err := treeHeadFromTrillian(ctx, s.TrillianClient)
 	if err != nil {
 		log.Warning("unable to get tree head from trillian: %v", err)
 		return
@@ -89,7 +86,8 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 			StartSize: uint64(index),
 			EndSize:   prim.TreeSize - 1,
 		}
-		leaves, err = s.Primary.GetLeaves(sctx, req)
+		// TODO: set context per request
+		leaves, err = s.Primary.GetLeaves(ctx, req)
 		if err != nil {
 			log.Warning("error fetching leaves [%d..%d] from primary: %v", req.StartSize, req.EndSize, err)
 			return
