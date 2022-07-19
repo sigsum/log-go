@@ -155,7 +155,6 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 		log.Error("secondary is ahead of us: %d > %d", secSTH.TreeSize, proposedTreeHead.TreeSize)
 		return refreshTreeHead(sm.signedTreeHead.TreeHead)
 	}
-
 	if secSTH.TreeSize == proposedTreeHead.TreeSize {
 		if secSTH.RootHash != proposedTreeHead.RootHash {
 			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.TreeSize)
@@ -164,27 +163,26 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.TreeSize)
 		return proposedTreeHead
 	}
-	//
-	// Now we know that the proposed tree size is larger than the secondary's tree size.
-	// We also now that the secondary's minimum tree size is 0.
-	// This means that the proposed tree size is at least 1.
-	//
-	// Case 1: secondary tree size is 0, primary tree size is >0 --> return based on what we signed before
-	// Case 2: secondary tree size is 1, primary tree size is >1 --> fetch consistency proof, if ok ->
-	//   2a) secondary tree size is smaller than or equal to what we than signed before -> return whatever we signed before
-	//   2b) secondary tree size is larger than what we signed before -> return secondary tree head
-	//
-	// (If not ok in case 2, return based on what we signed before)
-	//
+	// We now know that
+	// * the proposed tree is ahead of the secondary (including them not being equal)
+	// * the minimal tree size is 0, so the proposed tree is at tree size 1 or greater
+
+	// Consistency proofs can not be produced from a tree of size 0, so don't try when the secondary is at 0.
 	if secSTH.TreeSize == 0 {
+		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
 		return refreshTreeHead(sm.signedTreeHead.TreeHead)
 	}
-	if err := sm.verifyConsistencyWithLatest(ctx, secSTH.TreeHead); err != nil {
-		log.Error("secondaries tree not consistent with ours: %v", err)
+	if err := sm.verifyConsistency(ctx, &secSTH.TreeHead, proposedTreeHead); err != nil {
+		log.Error("secondary tree not consistent with ours: %v", err)
 		return refreshTreeHead(sm.signedTreeHead.TreeHead)
 	}
-	if secSTH.TreeSize <= sm.signedTreeHead.TreeSize {
-		log.Warning("secondary is behind what primary already signed: %d <= %d", secSTH.TreeSize, sm.signedTreeHead.TreeSize)
+	// We now know that
+	// * we have two candidates: latest published and secondary's tree
+	// * secondary's tree is verified to be consistent with our proposed tree
+
+	// Protect against going backwards by chosing the larger of secondary tree and latest published.
+	if sm.signedTreeHead.TreeSize > secSTH.TreeHead.TreeSize {
+		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
 		return refreshTreeHead(sm.signedTreeHead.TreeHead)
 	}
 
@@ -192,8 +190,7 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	return refreshTreeHead(secSTH.TreeHead)
 }
 
-func (sm *StateManagerSingle) verifyConsistencyWithLatest(ctx context.Context, to types.TreeHead) error {
-	from := sm.signedTreeHead.TreeHead
+func (sm *StateManagerSingle) verifyConsistency(ctx context.Context, from, to *types.TreeHead) error {
 	req := &requests.ConsistencyProof{
 		OldSize: from.TreeSize,
 		NewSize: to.TreeSize,
