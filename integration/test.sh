@@ -267,6 +267,7 @@ function sigsum_start() {
 		if [[ $role = primary ]]; then
 			extra_args+=" -witnesses=${nvars[$i:ssrv_witnesses]}"
 			extra_args+=" -shard-interval-start=${nvars[$i:ssrv_shard_start]}"
+			extra_args+=" -sth-path=${nvars[$i:log_dir]}/sth-store"
 		else
 			binary=sigsum-log-secondary
 		fi

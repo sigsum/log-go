@@ -47,6 +47,7 @@ var (
 	logColor         = flag.Bool("log-color", false, "colored logging output (Default: false)")
 	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
 	secondaryPubkey  = flag.String("secondary-pubkey", "", "hex-encoded Ed25519 public key for secondary node")
+	sthStorePath     = flag.String("sth-path", "/var/lib/sigsum-log/sth", "path to file where latest published STH is being stored")
 
 	gitCommit = "unknown"
 )
@@ -66,7 +67,12 @@ func main() {
 	defer cancel()
 
 	log.Debug("configuring log-go-primary")
-	node, err := setupPrimaryFromFlags()
+	sthFile, err := os.OpenFile(*sthStorePath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal("opening STH file: %v", err)
+	}
+	defer sthFile.Close()
+	node, err := setupPrimaryFromFlags(sthFile)
 	if err != nil {
 		log.Fatal("setup primary: %v", err)
 	}
@@ -117,7 +123,7 @@ func main() {
 }
 
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
-func setupPrimaryFromFlags() (*primary.Primary, error) {
+func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	var p primary.Primary
 	var err error
 
@@ -167,7 +173,7 @@ func setupPrimaryFromFlags() (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Deadline, p.Secondary)
+	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Deadline, p.Secondary, sthFile)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
