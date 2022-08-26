@@ -624,8 +624,8 @@ function test_get_leaf() {
 		return
 	fi
 
-	local message=$(openssl dgst -binary <(echo $data) | base16)
-	local checksum=$(openssl dgst -binary <(echo $message | base16 -d) | base16)
+	local message=$(openssl dgst -binary <(echo $data) | b16encode)
+	local checksum=$(openssl dgst -binary <(echo $message | b16decode) | b16encode)
 	if [[ $(value_of $pri checksum) != $checksum ]]; then
 		fail "$desc: wrong checksum $(value_of $pri checksum)"
 		return
@@ -693,7 +693,7 @@ function add_leaf() {
 	local log_dir=${nvars[$s:log_dir]}
 
 	echo "shard_hint=${nvars[$s:ssrv_shard_start]}" > $log_dir/req
-	echo "message=$(openssl dgst -binary <(echo $data) | base16)" >> $log_dir/req
+	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" >> $log_dir/req
 	echo "signature=$(echo $data |
 		sigsum-debug leaf sign -k $cli_priv -h ${nvars[$s:ssrv_shard_start]})" >> $log_dir/req
 	echo "public_key=$cli_pub" >> $log_dir/req
@@ -784,6 +784,14 @@ function keys() {
 function pp() {
 	[[ $1 == -p ]] && shift
 	[[ -d /proc/$1 ]]
+}
+
+function b16encode {
+	python3 -c 'import sys; sys.stdout.write(sys.stdin.buffer.read().hex())'
+}
+
+function b16decode {
+	python3 -c 'import sys; sys.stdout.buffer.write(bytes.fromhex(sys.stdin.read()))'
 }
 
 function die() {
