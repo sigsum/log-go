@@ -15,85 +15,80 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"
-	//"google.golang.org/grpc/codes"
-	//"google.golang.org/grpc/status"
 )
 
 // TODO: Add TestAddSequencedLeaves
-// TODO: Update TestAddLeaf
-//func TestAddLeaf(t *testing.T) {
-//	req := &requests.Leaf{
-//		ShardHint:  0,
-//		Message:    merkle.Hash{},
-//		Signature:  types.Signature{},
-//		PublicKey:  types.PublicKey{},
-//		DomainHint: "example.com",
-//	}
-//	for _, table := range []struct {
-//		description string
-//		req         *requests.Leaf
-//		rsp         *trillian.QueueLeafResponse
-//		err         error
-//		wantErr     bool
-//	}{
-//		{
-//			description: "invalid: backend failure",
-//			req:         req,
-//			err:         fmt.Errorf("something went wrong"),
-//			wantErr:     true,
-//		},
-//		{
-//			description: "invalid: no response",
-//			req:         req,
-//			wantErr:     true,
-//		},
-//		{
-//			description: "invalid: no queued leaf",
-//			req:         req,
-//			rsp:         &trillian.QueueLeafResponse{},
-//			wantErr:     true,
-//		},
-//		{
-//			description: "invalid: leaf is already queued or included",
-//			req:         req,
-//			rsp: &trillian.QueueLeafResponse{
-//				QueuedLeaf: &trillian.QueuedLogLeaf{
-//					Leaf: &trillian.LogLeaf{
-//						LeafValue: []byte{0}, // does not matter for test
-//					},
-//					Status: status.New(codes.AlreadyExists, "duplicate").Proto(),
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			description: "valid",
-//			req:         req,
-//			rsp: &trillian.QueueLeafResponse{
-//				QueuedLeaf: &trillian.QueuedLogLeaf{
-//					Leaf: &trillian.LogLeaf{
-//						LeafValue: []byte{0}, // does not matter for test
-//					},
-//					Status: status.New(codes.OK, "ok").Proto(),
-//				},
-//			},
-//		},
-//	} {
-//		// Run deferred functions at the end of each iteration
-//		func() {
-//			ctrl := gomock.NewController(t)
-//			defer ctrl.Finish()
-//			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
-//			grpc.EXPECT().QueueLeaf(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
-//			client := TrillianClient{GRPC: grpc}
-//
-//			_, err := client.AddLeaf(context.Background(), table.req, 0)
-//			if got, want := err != nil, table.wantErr; got != want {
-//				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
-//			}
-//		}()
-//	}
-//}
+
+func TestAddLeaf(t *testing.T) {
+	req := &requests.Leaf{
+		ShardHint:  0,
+		Message:    merkle.Hash{},
+		Signature:  types.Signature{},
+		PublicKey:  types.PublicKey{},
+		DomainHint: "example.com",
+	}
+	for _, table := range []struct {
+		description       string
+		req               *requests.Leaf
+		rsp               *trillian.QueueLeafResponse
+		queueLeafErr      error
+		inclusionProofErr error
+		wantErr           bool
+		wantSequenced     bool
+	}{
+		{
+			description:  "invalid: backend failure",
+			req:          req,
+			queueLeafErr: fmt.Errorf("something went wrong"),
+			wantErr:      true,
+		},
+		{
+			description:       "unsequenced",
+			req:               req,
+			queueLeafErr:      nil,
+			inclusionProofErr: fmt.Errorf("not found"),
+			wantErr:           false,
+			wantSequenced:     false,
+		},
+		{
+			description:       "sequenced",
+			req:               req,
+			queueLeafErr:      nil,
+			inclusionProofErr: nil,
+			wantErr:           false,
+			wantSequenced:     true,
+		},
+	} {
+		// Run deferred functions at the end of each iteration
+		t.Run(table.description, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
+			grpc.EXPECT().QueueLeaf(gomock.Any(), gomock.Any()).Return(table.rsp, table.queueLeafErr)
+			if table.queueLeafErr == nil {
+				grpc.EXPECT().GetInclusionProofByHash(gomock.Any(), gomock.Any()).Return(
+					// returns a fake inclusion proof just to pass validation in GetInclusionProof
+					&trillian.GetInclusionProofByHashResponse{
+						Proof: []*trillian.Proof{{LeafIndex: 1, Hashes: [][]byte{make([]byte, merkle.HashSize)}}},
+					},
+					table.inclusionProofErr,
+				)
+			}
+			client := TrillianClient{GRPC: grpc}
+
+			sequenced, err := client.AddLeaf(context.Background(), table.req, 0)
+			if got, want := err != nil, table.wantErr; got != want {
+				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
+			}
+			if err != nil {
+				return
+			}
+			if sequenced != table.wantSequenced {
+				t.Errorf("got sequenced == %v, expected %v", sequenced, table.wantSequenced)
+			}
+		})
+	}
+}
 
 func TestGetTreeHead(t *testing.T) {
 	// valid root
