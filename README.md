@@ -48,3 +48,64 @@ key_hash=d96934d633dca1ef8913a5421338ff371d07279f4b0b787b13c338f3520194e4
 Go tooling that makes it easier to interact with sigsum logs will appear in a
 separate repository in the near future, see
 	[sigsum-go](https://gitlab.sigsum.org/sigsum/core/sigsum-go/).
+
+## Development
+
+### Integration tests
+
+There's an integration test script in `integration/test.sh`. To run it, setup
+the prerequisites described bellow, then start the script from the
+`integration/` directory:
+
+```
+$ cd integration
+$ ./test.sh
+```
+
+#### Install dependencies
+
+```
+# Install Sigsum server
+go install ./cmd/...
+# Install sigsum-debug
+go install git.sigsum.org/sigsum-go/cmd/sigsum-debug
+# Install Trillian
+go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
+```
+
+
+#### MariaDB server
+
+While the integration test will start all the other components it expects to
+find a mariadb server running on localhost on port 3306. On this server, there
+should be an existing database named `test`, initiallized with Trillian's
+[`storage.sql`](https://github.com/google/trillian/blob/master/storage/mysql/schema/storage.sql),
+and a user with username `test` and password `zaphod` that can acees this
+database.
+
+#### Client config
+
+Use `sigsum-debug` to generate a private key:
+
+```
+$ sigsum-debug key private
+5f0af480f639e8cb7a52d62f6aa301ef69db585a1db8df93f404e06b15fbbebc
+```
+
+Compute the keyhash associated to this new private key:
+```
+echo 5f0af480f639e8cb7a52d62f6aa301ef69db585a1db8df93f404e06b15fbbebc | sigsum-debug key public | sigsum-debug key hash
+657237c6570e11001fd18529e44832368f86a34f6cd32b11a7f0237ffa7bfa68
+```
+
+Choose a domain hint that starts with "_sigsum_v0." (e.g.
+`_sigsum_v0.example.com`) and add a `TXT` record for this domain that contains
+the keyhash.
+
+Create a file `integration/config/client.conf` with the private key and domain
+name, e.g.:
+
+```
+cli_priv=5f0af480f639e8cb7a52d62f6aa301ef69db585a1db8df93f404e06b15fbbebc
+cli_domain_hint=_sigsum_v0.example.com
+```
