@@ -329,7 +329,8 @@ function node_stop_fe() {
 
 function node_stop_be() {
 	for i in $@; do
-		pp ${nvars[$i:tsrv_pid]} && kill -2 ${nvars[$i:tsrv_pid]}
+		# The Trillian log server doesn't exit properly on SIGINT so we give it 5 second and then send SIGTERM.
+		pp ${nvars[$i:tsrv_pid]} && /usr/bin/kill --signal SIGINT --timeout 5000 SIGTERM ${nvars[$i:tsrv_pid]}
 		while :; do
 			sleep 1
 
