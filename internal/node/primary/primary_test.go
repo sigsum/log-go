@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (

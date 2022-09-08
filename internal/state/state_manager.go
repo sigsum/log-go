@@ -3,8 +3,8 @@ package state
 import (
 	"context"
 
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // StateManager coordinates access to a nodes tree heads and (co)signatures.

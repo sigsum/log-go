@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.sigsum.org/log-go/internal/node/handler"
-	"git.sigsum.org/log-go/internal/requests"
-	"git.sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/log-go/internal/requests"
+	"sigsum.org/sigsum-go/pkg/log"
 )
 
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {

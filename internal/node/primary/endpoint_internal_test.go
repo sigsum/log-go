@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	mocksDB "git.sigsum.org/log-go/internal/mocks/db"
-	"git.sigsum.org/log-go/internal/node/handler"
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	mocksDB "sigsum.org/log-go/internal/mocks/db"
+	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
 )
 

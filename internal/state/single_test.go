@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	mocksClient "git.sigsum.org/log-go/internal/mocks/client"
-	mocksDB "git.sigsum.org/log-go/internal/mocks/db"
-	"git.sigsum.org/sigsum-go/pkg/hex"
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	mocksClient "sigsum.org/log-go/internal/mocks/client"
+	mocksDB "sigsum.org/log-go/internal/mocks/db"
+	"sigsum.org/sigsum-go/pkg/hex"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
 )
 

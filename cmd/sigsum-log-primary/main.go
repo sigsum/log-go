@@ -18,15 +18,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
-	"git.sigsum.org/log-go/internal/db"
-	"git.sigsum.org/log-go/internal/node/primary"
-	"git.sigsum.org/log-go/internal/state"
-	"git.sigsum.org/log-go/internal/utils"
-	"git.sigsum.org/sigsum-go/pkg/client"
-	"git.sigsum.org/sigsum-go/pkg/dns"
-	"git.sigsum.org/sigsum-go/pkg/log"
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/log-go/internal/db"
+	"sigsum.org/log-go/internal/node/primary"
+	"sigsum.org/log-go/internal/state"
+	"sigsum.org/log-go/internal/utils"
+	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/dns"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type dummyConfig struct {

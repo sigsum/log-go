@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.sigsum.org/sigsum-go/pkg/log"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type Config interface {

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"git.sigsum.org/sigsum-go/pkg/dns"
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	sigsumreq "git.sigsum.org/sigsum-go/pkg/requests"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/dns"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func LeafRequestFromHTTP(r *http.Request, shardStart uint64, ctx context.Context, vf dns.Verifier) (*sigsumreq.Leaf, error) {

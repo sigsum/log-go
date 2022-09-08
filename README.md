@@ -47,4 +47,4 @@ key_hash=d96934d633dca1ef8913a5421338ff371d07279f4b0b787b13c338f3520194e4
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
 separate repository in the near future, see
-	[sigsum-go](https://git.sigsum.org/sigsum-go/).
+	[sigsum-go](https://gitlab.sigsum.org/sigsum/core/sigsum-go/).

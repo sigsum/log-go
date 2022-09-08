@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	mocksDB "git.sigsum.org/log-go/internal/mocks/db"
-	mocksDNS "git.sigsum.org/log-go/internal/mocks/dns"
-	mocksState "git.sigsum.org/log-go/internal/mocks/state"
-	"git.sigsum.org/log-go/internal/node/handler"
-	"git.sigsum.org/sigsum-go/pkg/merkle"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	mocksDB "sigsum.org/log-go/internal/mocks/db"
+	mocksDNS "sigsum.org/log-go/internal/mocks/dns"
+	mocksState "sigsum.org/log-go/internal/mocks/state"
+	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
 )
 

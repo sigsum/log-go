@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.sigsum.org/log-go/internal/node/handler"
-	"git.sigsum.org/sigsum-go/pkg/log"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func getTreeHeadUnsigned(ctx context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {

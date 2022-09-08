@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"git.sigsum.org/log-go/internal/db"
-	"git.sigsum.org/log-go/internal/node/handler"
-	"git.sigsum.org/sigsum-go/pkg/client"
-	"git.sigsum.org/sigsum-go/pkg/log"
-	"git.sigsum.org/sigsum-go/pkg/requests"
-	"git.sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/log-go/internal/db"
+	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // Config is a collection of log parameters

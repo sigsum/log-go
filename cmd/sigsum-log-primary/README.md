@@ -38,7 +38,7 @@ provisioned.)
 
 We will also need a public key-pair for sigsum-log-primary.
 ```
-$ go install git.sigsum.org/sigsum-go/cmd/sigsum-debug@latest
+$ go install sigsum.org/sigsum-go/cmd/sigsum-debug@latest
 $ sigsum-debug key private | tee sk | sigsum-debug key public > vk
 ```
 
