@@ -329,11 +329,19 @@ function node_stop_fe() {
 
 function node_stop_be() {
 	for i in $@; do
-		pp ${nvars[$i:tsrv_pid]} && kill -2 ${nvars[$i:tsrv_pid]}
+		pp ${nvars[$i:tsrv_pid]} && kill ${nvars[$i:tsrv_pid]}
 		while :; do
 			sleep 1
 
-			pp ${nvars[$i:tsrv_pid]} && continue
+			# The Trillian log server doesn't exit
+			# properly on first SIGTERM, so we repeat it,
+			# rather than just waiting for the process to
+			# shut down.
+			if pp ${nvars[$i:tsrv_pid]}; then
+				info "Resending SIGTERM to process ${nvars[$i:tsrv_pid]}"
+				kill ${nvars[$i:tsrv_pid]}
+				continue
+			fi
 
 			break
 		done
