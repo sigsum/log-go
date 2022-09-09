@@ -77,9 +77,9 @@ function check_go_deps() {
 	[[ $(command -v createtree)           ]] || die "Hint: go install github.com/google/trillian/cmd/createtree@v1.5.0"
 	[[ $(command -v deletetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree@v1.5.0"
 	[[ $(command -v updatetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/updatetree@v1.5.0"
-	[[ $(command -v sigsum-log-primary)   ]] || die "Hint: go install git.sigsum.org/log-go/cmd/sigsum-log-primary@latest"
-	[[ $(command -v sigsum-log-secondary) ]] || die "Hint: go install git.sigsum.org/log-go/cmd/sigsum-log-secondary@latest"
-	[[ $(command -v sigsum-debug)         ]] || die "Hint: go install git.sigsum.org/sigsum-go/cmd/sigsum-debug@latest"
+	[[ $(command -v sigsum-log-primary)   ]] || die "Hint: go install sigsum.org/log-go/cmd/sigsum-log-primary@latest"
+	[[ $(command -v sigsum-log-secondary) ]] || die "Hint: go install sigsum.org/log-go/cmd/sigsum-log-secondary@latest"
+	[[ $(command -v sigsum-debug)         ]] || die "Hint: go install sigsum.org/sigsum-go/cmd/sigsum-debug@latest"
 }
 
 function client_setup() {
