@@ -10,9 +10,9 @@ Before running tests, first install the tools listed in
 `check_go_deps` in `test.sh`. The trillian servers also need a
 database, see next section.
 
-FIXME: Document how to ensure that certain of the dependencies, in
-particular, commands like `sigsum-log-primary`, are built from local
-sources possibly with modifications.
+To test unreleased changes to one of the dependencies, e.g.,
+sigsum-log-primary, you must run `go install` in that directory, e.g,
+`cd ../cmd/sigsum-log-primary && go install`.
 
 ## Database
 
