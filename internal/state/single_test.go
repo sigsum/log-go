@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +16,6 @@ import (
 
 	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/hex"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
 	"github.com/golang/mock/gomock"
@@ -225,7 +225,7 @@ func validConsistencyProof_5_10(t *testing.T) *types.ConsistencyProof {
 }
 
 func hashFromString(t *testing.T, s string) (h merkle.Hash) {
-	b, err := hex.Deserialize(s)
+	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatal(err)
 	}
