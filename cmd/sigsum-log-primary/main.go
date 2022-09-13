@@ -44,7 +44,6 @@ var (
 	testMode         = flag.Bool("test-mode", false, "run in test mode (Default: false)")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	logColor         = flag.Bool("log-color", false, "colored logging output (Default: false)")
 	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
 	secondaryPubkey  = flag.String("secondary-pubkey", "", "hex-encoded Ed25519 public key for secondary node")
 	sthStorePath     = flag.String("sth-path", "/var/lib/sigsum-log/sth", "path to file where latest published STH is being stored")
@@ -55,7 +54,7 @@ var (
 func main() {
 	flag.Parse()
 
-	if err := utils.SetupLogging(*logFile, *logLevel, *logColor); err != nil {
+	if err := utils.SetupLogging(*logFile, *logLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
 	log.Info("log-go git-commit %s", gitCommit)

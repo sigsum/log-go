@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	stdlog "log"
 	"os"
 	"strings"
 
@@ -15,13 +16,13 @@ import (
 
 // TODO: Move SetupLogging to sigsum-go/pkg/log
 
-func SetupLogging(logFile, logLevel string, logColor bool) error {
+func SetupLogging(logFile, logLevel string) error {
 	if len(logFile) != 0 {
 		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
-		log.SetOutput(f)
+		stdlog.SetOutput(f)
 	}
 
 	switch logLevel {
@@ -36,8 +37,6 @@ func SetupLogging(logFile, logLevel string, logColor bool) error {
 	default:
 		return fmt.Errorf("invalid logging level %s", logLevel)
 	}
-
-	log.SetColor(logColor)
 	return nil
 }
 
