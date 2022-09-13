@@ -23,6 +23,7 @@ declare -r loga=conf/primary.config
 declare -r logb=conf/secondary.config
 declare -r logc=conf/logc.config
 declare -r client=conf/client.config
+declare -r mysql_uri='sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test'
 
 function main() {
 	local testflavour=basic
@@ -192,6 +193,7 @@ function trillian_start_server() {
 		info "starting up Trillian server ($i)"
 
 		trillian_log_server\
+			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tsrv_rpc]}\
 			-http_endpoint=${nvars[$i:tsrv_http]}\
 			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
@@ -208,6 +210,7 @@ function trillian_start_sequencer() {
 		info "starting up Trillian sequencer ($i)"
 		trillian_log_signer\
 			-force_master\
+			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
 			-http_endpoint=${nvars[$i:tseq_http]}\
 			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
