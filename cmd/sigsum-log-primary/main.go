@@ -53,8 +53,10 @@ var (
 
 func main() {
 	flag.Parse()
-
-	if err := utils.SetupLogging(*logFile, *logLevel); err != nil {
+	if err := utils.LogToFile(*logFile); err != nil {
+		log.Fatal("open log file failed: %v", err);
+	}
+	if err := log.SetLevelFromString(*logLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
 	log.Info("log-go git-commit %s", gitCommit)
