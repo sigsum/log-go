@@ -35,7 +35,6 @@ var (
 	testMode         = flag.Bool("test-mode", false, "run in test mode (Default: false)")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	logColor         = flag.Bool("log-color", false, "colored logging output (Default: false)")
 	primaryURL       = flag.String("primary-url", "", "primary node endpoint for fetching leaves")
 	primaryPubkey    = flag.String("primary-pubkey", "", "hex-encoded Ed25519 public key for primary node")
 
@@ -45,7 +44,10 @@ var (
 func main() {
 	flag.Parse()
 
-	if err := utils.SetupLogging(*logFile, *logLevel, *logColor); err != nil {
+	if err := utils.LogToFile(*logFile); err != nil {
+		log.Fatal("open log file failed: %v", err);
+	}
+	if err := log.SetLevelFromString(*logLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
 	log.Info("log-go git-commit %s", gitCommit)
