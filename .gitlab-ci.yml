@@ -5,14 +5,12 @@ stages:
 - build
 - test
 
+# go-build builds all packages
 go-build:
   stage: build
   script: go build ./...
 
-go-fmt:
-  stage: test
-  script: go fmt ./...
-
+# go-test runs tests with the data-race detector enabled
 go-test:
   stage: test
   script: go test -race ./...
