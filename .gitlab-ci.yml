@@ -1,0 +1,15 @@
+image: docker.io/library/golang:1.18
+
+stages:
+- build
+- test
+
+# go-build builds all packages
+go-build:
+  stage: build
+  script: go build ./...
+
+# go-test runs tests with the data-race detector enabled
+go-test:
+  stage: test
+  script: go test -race ./...
