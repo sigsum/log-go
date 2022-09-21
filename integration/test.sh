@@ -84,10 +84,16 @@ function check_go_deps() {
 }
 
 function client_setup() {
+	# NOTE: not ready for multiple clients --  stomping on everything
 	for i in $@; do
 		info "setting up client ($i)"
-		source $1 # NOTE: not ready for multiple clients --  stomping on everything
-
+		if [[ -f $1 ]];
+		then
+			source $1
+		else
+			cli_priv=$(sigsum-debug key private)
+			cli_domain_hint=_sigsum_v0.example.com
+		fi
 		cli_pub=$(echo $cli_priv | sigsum-debug key public)
 		cli_key_hash=$(echo $cli_pub | sigsum-debug key hash)
 
