@@ -75,7 +75,7 @@ func InclusionProofRequestFromHTTP(r *http.Request) (*sigsumreq.InclusionProof, 
 	return &req, nil
 }
 
-func LeavesRequestFromHTTP(r *http.Request, maxRange uint64) (*sigsumreq.Leaves, error) {
+func LeavesRequestFromHTTP(r *http.Request, maxIndex, maxRange uint64) (*sigsumreq.Leaves, error) {
 	var req sigsumreq.Leaves
 	if err := req.FromURL(r.URL.Path); err != nil {
 		return nil, fmt.Errorf("parse url: %w", err)
@@ -83,6 +83,9 @@ func LeavesRequestFromHTTP(r *http.Request, maxRange uint64) (*sigsumreq.Leaves,
 
 	if req.StartSize > req.EndSize {
 		return nil, fmt.Errorf("start_size(%d) must be less than or equal to end_size(%d)", req.StartSize, req.EndSize)
+	}
+	if req.EndSize > maxIndex {
+		return nil, fmt.Errorf("end_size(%d) outside of current tree", req.EndSize)
 	}
 	if req.EndSize-req.StartSize+1 > maxRange {
 		req.EndSize = req.StartSize + maxRange - 1
