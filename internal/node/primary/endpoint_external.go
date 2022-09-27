@@ -118,16 +118,19 @@ func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWri
 func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling get-leaves request")
-	req, err := requests.LeavesRequestFromHTTP(r, uint64(p.MaxRange))
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
+	// TODO: Use math.MaxUint64, available from golang 1.17.
+	maxIndex := ^uint64(0)
 	if doLimitToCurrentTree {
 		curTree := p.Stateman.ToCosignTreeHead()
-		if req.EndSize >= curTree.TreeHead.TreeSize {
-			return http.StatusBadRequest, fmt.Errorf("end_size outside of current tree")
+		treeSize := curTree.TreeHead.TreeSize
+		if treeSize == 0 {
+			return http.StatusBadRequest, fmt.Errorf("tree is empty")
 		}
+		maxIndex = treeSize - 1
+	}
+	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, uint64(p.MaxRange))
+	if err != nil {
+		return http.StatusBadRequest, err
 	}
 
 	leaves, err := p.TrillianClient.GetLeaves(ctx, req)

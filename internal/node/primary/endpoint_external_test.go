@@ -31,6 +31,7 @@ var (
 		Cosignature:    []types.Signature{types.Signature{}},
 		KeyHash:        []merkle.Hash{merkle.Hash{}},
 	}
+	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
 	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
 	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 2}} // 2 < testConfig.MaxRange
 	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 5}} // 5 >= testConfig.MaxRange+1
@@ -511,16 +512,41 @@ func TestGetLeaves(t *testing.T) {
 		{
 			description: "invalid: bad request (EndSize >= current tree size)",
 			params:      "0/2",
-			sth:         &sth2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
 			params:      "0/0",
-			sth:         &sth2,
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
+		},
+		{
+			description: "invalid: empty tree",
+			params:      "0/0",
+		        sth:         &sth0,
+			wantCode:    http.StatusBadRequest,
+		},
+		{
+			description: "valid: three middle elements",
+			params:      "1/3",
+		        sth:         &sth5,
+			expect:      true,
+			rsp: func() *types.Leaves {
+				var list types.Leaves
+				for i := int64(0); i < testConfig.MaxRange; i++ {
+					list = append(list[:], types.Leaf{
+						Statement: types.Statement{
+							ShardHint: 0,
+							Checksum:  merkle.Hash{},
+						},
+						Signature: types.Signature{},
+						KeyHash:   merkle.Hash{},
+					})
+				}
+				return &list
+			}(),
+			wantCode: http.StatusOK,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
@@ -555,6 +581,8 @@ func TestGetLeaves(t *testing.T) {
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.sth != nil {
 				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
+			} else {
+				stateman.EXPECT().ToCosignTreeHead().Return(&sth2)
 			}
 			node := Primary{
 				Config:         testConfig,
