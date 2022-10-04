@@ -30,12 +30,12 @@ func TestPath(t *testing.T) {
 	}{
 		{
 			description: "no prefix",
-			want:        "/sigsum/v0/add-leaf",
+			want:        "/add-leaf",
 		},
 		{
 			description: "a prefix",
 			prefix:      "test-prefix",
-			want:        "/test-prefix/sigsum/v0/add-leaf",
+			want:        "/test-prefix/add-leaf",
 		},
 	} {
 		testConfig := dummyConfig{

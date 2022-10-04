@@ -27,7 +27,7 @@ var (
 	externalEndpoint = flag.String("external-endpoint", "localhost:6965", "host:port specification of where sigsum-log-secondary serves clients")
 	internalEndpoint = flag.String("internal-endpoint", "localhost:6967", "host:port specification of where sigsum-log-secondary serves other log nodes")
 	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
-	prefix           = flag.String("url-prefix", "", "a prefix that proceeds /sigsum/v0/<endpoint>")
+	prefix           = flag.String("url-prefix", "", "a prefix that preceeds /<endpoint>")
 	trillianID       = flag.Int64("tree-id", 0, "log identifier in the Trillian database")
 	deadline         = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
 	key              = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
