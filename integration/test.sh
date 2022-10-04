@@ -284,7 +284,6 @@ function sigsum_start() {
 		      -external-endpoint=${nvars[$i:ssrv_endpoint]} \
 		      -internal-endpoint=${nvars[$i:ssrv_internal]} \
 		      -test-mode=true \
-		      -log-color=false \
 		      -log-level=debug \
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) \
