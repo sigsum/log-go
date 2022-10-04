@@ -87,8 +87,7 @@ func (sm *StateManagerSingle) AddCosignature(ctx context.Context, pub *types.Pub
 	sm.RLock()
 	defer sm.RUnlock()
 
-	msg := sm.signedTreeHead.TreeHead.ToBinary(&sm.namespace)
-	if !ed25519.Verify(ed25519.PublicKey(pub[:]), msg, sig[:]) {
+	if !sm.signedTreeHead.TreeHead.Verify(pub, sig, &sm.namespace) {
 		return fmt.Errorf("invalid cosignature")
 	}
 	select {
