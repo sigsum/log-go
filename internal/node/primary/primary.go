@@ -18,7 +18,7 @@ import (
 type Config struct {
 	LogID      string        // H(public key), then hex-encoded
 	TreeID     int64         // Merkle tree identifier used by Trillian
-	Prefix     string        // The portion between base URL and st/v0 (may be "")
+	Prefix     string        // The portion between base URL and /<endpoint> (may be "")
 	MaxRange   int64         // Maximum number of leaves per get-leaves request
 	Deadline   time.Duration // Deadline used for gRPC requests
 	Interval   time.Duration // Cosigning frequency
