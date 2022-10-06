@@ -27,9 +27,9 @@ type Handler struct {
 // Path returns a path that should be configured for this handler
 func (h Handler) Path() string {
 	if len(h.Prefix()) == 0 {
-		return h.Endpoint.Path("", "sigsum", "v0")
+		return h.Endpoint.Path("")
 	}
-	return h.Endpoint.Path("", h.Prefix(), "sigsum", "v0")
+	return h.Endpoint.Path("", h.Prefix())
 }
 
 // ServeHTTP is part of the http.Handler interface

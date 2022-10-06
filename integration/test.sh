@@ -250,8 +250,8 @@ function sigsum_setup() {
 		nvars[$i:ssrv_interval]=$ssrv_interval_sec
 
 
-		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}/sigsum/v0
-		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}/sigsum/v0
+		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
+		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 
 		nvars[$i:wit1_priv]=$(sigsum-debug key private)
 		nvars[$i:wit1_pub]=$(echo ${nvars[$i:wit1_priv]} | sigsum-debug key public)

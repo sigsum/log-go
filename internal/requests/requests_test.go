@@ -73,7 +73,7 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 				vf.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.dnsErr)
 			}
 
-			url := types.EndpointAddLeaf.Path("http://example.org/sigsum/v0")
+			url := types.EndpointAddLeaf.Path("http://example.org/sigsum")
 			req, err := http.NewRequest(http.MethodPost, url, table.params)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -109,7 +109,7 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 		{"invalid: unknown witness", input(*merkle.HashFn([]byte("w2"))), nil},
 		{"valid", input(*merkle.HashFn([]byte("w1"))), &sigsumreq.Cosignature{types.Signature{}, *merkle.HashFn([]byte("w1"))}},
 	} {
-		url := types.EndpointAddCosignature.Path("http://example.org/sigsum/v0")
+		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
 		req, err := http.NewRequest(http.MethodPost, url, table.params)
 		if err != nil {
 			t.Fatalf("must create http request: %v", err)
@@ -139,7 +139,7 @@ func TestConsistencyProofRequestFromHTTP(t *testing.T) {
 		{"invalid: bad request (out of range 2/2)", "1/1", nil},
 		{"valid", "1/2", &sigsumreq.ConsistencyProof{1, 2}},
 	} {
-		url := types.EndpointGetConsistencyProof.Path("http://example.org/sigsum/v0/")
+		url := types.EndpointGetConsistencyProof.Path("http://example.org/sigsum/")
 		req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 		if err != nil {
 			t.Fatalf("must create http request: %v", err)
@@ -168,7 +168,7 @@ func TestInclusionProofRequestFromHTTP(t *testing.T) {
 		{"invalid: bad request (out of range)", "1/0000000000000000000000000000000000000000000000000000000000000000", nil},
 		{"valid", "2/0000000000000000000000000000000000000000000000000000000000000000", &sigsumreq.InclusionProof{2, merkle.Hash{}}},
 	} {
-		url := types.EndpointGetInclusionProof.Path("http://example.org/sigsum/v0/")
+		url := types.EndpointGetInclusionProof.Path("http://example.org/sigsum/")
 		req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 		if err != nil {
 			t.Fatalf("must create http request: %v", err)
@@ -198,7 +198,7 @@ func TestGetLeaves(t *testing.T) {
 		{"invalid: bad request (StartSize > EndSize)", "1/0", nil},
 		{"valid", "0/10", &sigsumreq.Leaves{0, maxRange - 1}},
 	} {
-		url := types.EndpointGetLeaves.Path("http://example.org/sigsum/v0/")
+		url := types.EndpointGetLeaves.Path("http://example.org/sigsum/")
 		req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 		if err != nil {
 			t.Fatalf("must create http request: %v", err)
