@@ -78,8 +78,6 @@ function check_go_deps() {
 	[[ $(command -v createtree)           ]] || die "Hint: go install github.com/google/trillian/cmd/createtree"
 	[[ $(command -v deletetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree"
 	[[ $(command -v updatetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/updatetree"
-	[[ $(command -v sigsum-log-primary)   ]] || die "Hint: go install sigsum.org/log-go/cmd/sigsum-log-primary"
-	[[ $(command -v sigsum-log-secondary) ]] || die "Hint: go install sigsum.org/log-go/cmd/sigsum-log-secondary"
 	[[ $(command -v sigsum-debug)         ]] || die "Hint: go install sigsum.org/sigsum-go/cmd/sigsum-debug"
 }
 
@@ -292,7 +290,9 @@ function sigsum_start() {
 		      -test-mode=true \
 		      -log-level=debug \
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
-		$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) \
+		# Can't use go run, because then we don't get the right pid to kill for cleanup.
+		go build -o $binary ../cmd/$binary/main.go
+		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) \
 			2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 		nvars[$i:ssrv_pid]=$!
 
