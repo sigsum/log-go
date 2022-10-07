@@ -78,7 +78,7 @@ function check_go_deps() {
 	[[ $(command -v createtree)           ]] || die "Hint: go install github.com/google/trillian/cmd/createtree"
 	[[ $(command -v deletetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree"
 	[[ $(command -v updatetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/updatetree"
-	[[ $(command -v sigsum-debug)         ]] || die "Hint: go install sigsum.org/sigsum-go/cmd/sigsum-debug"
+	go build -o sigsum-debug sigsum.org/sigsum-go/cmd/sigsum-debug
 }
 
 function client_setup() {
@@ -89,11 +89,11 @@ function client_setup() {
 		then
 			source $1
 		else
-			cli_priv=$(sigsum-debug key private)
+			cli_priv=$(./sigsum-debug key private)
 			cli_domain_hint=_sigsum_v0.example.com
 		fi
-		cli_pub=$(echo $cli_priv | sigsum-debug key public)
-		cli_key_hash=$(echo $cli_pub | sigsum-debug key hash)
+		cli_pub=$(echo $cli_priv | ./sigsum-debug key public)
+		cli_key_hash=$(echo $cli_pub | ./sigsum-debug key hash)
 
 		[[ $cli_domain_hint =~ ^_sigsum_v0..+ ]] ||
 			die "must have a valid domain hint"
@@ -251,17 +251,17 @@ function sigsum_setup() {
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 
-		nvars[$i:wit1_priv]=$(sigsum-debug key private)
-		nvars[$i:wit1_pub]=$(echo ${nvars[$i:wit1_priv]} | sigsum-debug key public)
-		nvars[$i:wit1_key_hash]=$(echo ${nvars[$i:wit1_pub]} | sigsum-debug key hash)
-		nvars[$i:wit2_priv]=$(sigsum-debug key private)
-		nvars[$i:wit2_pub]=$(echo ${nvars[$i:wit2_priv]} | sigsum-debug key public)
-		nvars[$i:wit2_key_hash]=$(echo ${nvars[$i:wit2_pub]} | sigsum-debug key hash)
+		nvars[$i:wit1_priv]=$(./sigsum-debug key private)
+		nvars[$i:wit1_pub]=$(echo ${nvars[$i:wit1_priv]} | ./sigsum-debug key public)
+		nvars[$i:wit1_key_hash]=$(echo ${nvars[$i:wit1_pub]} | ./sigsum-debug key hash)
+		nvars[$i:wit2_priv]=$(./sigsum-debug key private)
+		nvars[$i:wit2_pub]=$(echo ${nvars[$i:wit2_priv]} | ./sigsum-debug key public)
+		nvars[$i:wit2_key_hash]=$(echo ${nvars[$i:wit2_pub]} | ./sigsum-debug key hash)
 		nvars[$i:ssrv_witnesses]=${nvars[$i:wit1_pub]},${nvars[$i:wit2_pub]}
 
-		nvars[$i:ssrv_priv]=$(sigsum-debug key private)
-		nvars[$i:ssrv_pub]=$(echo ${nvars[$i:ssrv_priv]} | sigsum-debug key public)
-		nvars[$i:ssrv_key_hash]=$(echo ${nvars[$i:ssrv_pub]} | sigsum-debug key hash)
+		nvars[$i:ssrv_priv]=$(./sigsum-debug key private)
+		nvars[$i:ssrv_pub]=$(echo ${nvars[$i:ssrv_priv]} | ./sigsum-debug key public)
+		nvars[$i:ssrv_key_hash]=$(echo ${nvars[$i:ssrv_pub]} | ./sigsum-debug key hash)
 	done
 }
 
@@ -572,8 +572,8 @@ function test_inclusion_proof() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (tree_size $tree_size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | sigsum-debug leaf sign -k $cli_priv -h ${nvars[$pri:ssrv_shard_start]})
-	local leaf_hash=$(echo ${data} | sigsum-debug leaf hash -k $cli_key_hash -s $signature -h ${nvars[$pri:ssrv_shard_start]})
+	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $cli_priv -h ${nvars[$pri:ssrv_shard_start]})
+	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k $cli_key_hash -s $signature -h ${nvars[$pri:ssrv_shard_start]})
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${tree_size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -711,7 +711,7 @@ function add_leaf() {
 	echo "shard_hint=${nvars[$s:ssrv_shard_start]}" > $log_dir/req
 	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" >> $log_dir/req
 	echo "signature=$(echo $data |
-		sigsum-debug leaf sign -k $cli_priv -h ${nvars[$s:ssrv_shard_start]})" >> $log_dir/req
+		./sigsum-debug leaf sign -k $cli_priv -h ${nvars[$s:ssrv_shard_start]})" >> $log_dir/req
 	echo "public_key=$cli_pub" >> $log_dir/req
 	echo "domain_hint=$cli_domain_hint" >> $log_dir/req
 
@@ -729,7 +729,7 @@ function test_cosignature() {
 
 	echo "key_hash=$1" > $log_dir/req
 	echo "cosignature=$(curl -s ${nvars[$pri:log_url]}/get-tree-head-to-cosign |
-		sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" >> $log_dir/req
+		./sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" >> $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp
