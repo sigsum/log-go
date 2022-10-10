@@ -8,9 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
+	db "sigsum.org/log-go/internal/db"
 	requests "sigsum.org/sigsum-go/pkg/requests"
 	types "sigsum.org/sigsum-go/pkg/types"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.
@@ -37,10 +38,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddLeaf mocks base method.
-func (m *MockClient) AddLeaf(arg0 context.Context, arg1 *requests.Leaf, arg2 uint64) (bool, error) {
+func (m *MockClient) AddLeaf(arg0 context.Context, arg1 *requests.Leaf, arg2 uint64) (db.AddLeafStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddLeaf", arg0, arg1, arg2)
-	ret0, _ := ret[0].(bool)
+	ret0, _ := ret[0].(db.AddLeafStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
