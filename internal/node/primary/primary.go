@@ -6,6 +6,7 @@ import (
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -32,6 +33,7 @@ type Primary struct {
 	Signer          crypto.Signer      // provides access to Ed25519 private key
 	Stateman        state.StateManager // coordinates access to (co)signed tree heads
 	TokenVerifier   token.Verifier     // checks if domain name knows a public key
+	RateLimiter     rateLimit.Limiter  // per-domain rate-limiting (if non-nil)
 	Secondary       client.Client
 }
 

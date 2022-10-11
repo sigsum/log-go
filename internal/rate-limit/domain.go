@@ -15,6 +15,9 @@ type DomainDb interface {
 	// Checks if access count is < limit. If so increment count
 	// and return true, otherwise, return false.
 	AccessAllowed(domain string, limit int) bool
+	// Undos increment from a previous AccessAllowed, in case no
+	// resources were consumed.
+	AccessRelax(domain string)
 
 	// Like GetAccessCount above, but uses the domain's public
 	// suffix, and fails if there's no known suffix.
@@ -23,6 +26,7 @@ type DomainDb interface {
 	// Like AccessAllowed above, but uses the domain's public
 	// suffix, and refuses acess if there's no known suffix.
 	PublicAccessAllowed(domain string, limit int) bool
+	PublicAccessRelax(domain string)
 
 	// Resets all counts to zero (e.g., call daily).
 	Reset()
@@ -56,6 +60,16 @@ func (db *domainDb) AccessAllowed(domain string, limit int) bool {
 	}
 	db.counts[domain]++
 	return true
+}
+
+func (db *domainDb) AccessRelax(domain string) {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+	// Non-zero count is the expeced case, except if there were a
+	// Reset call between AccessAllowed and AccessRelax.
+	if db.counts[domain] > 0 {
+		db.counts[domain]--
+	}
 }
 
 func (db *domainDb) Reset() {
@@ -123,6 +137,14 @@ func (db *domainDb) PublicAccessAllowed(domain string, limit int) bool {
 	return db.AccessAllowed(registeredDomain, limit)
 }
 
+func (db *domainDb) PublicAccessRelax(domain string) {
+	registeredDomain, err := db.getRegisteredDomain(domain)
+	if err != nil {
+		return
+	}
+	db.AccessRelax(registeredDomain)
+}
+
 type exception struct {
 	label    string
 	wildcard string
@@ -143,7 +165,7 @@ func parseSuffixFile(suffixFile io.Reader) (map[string]bool, map[string]map[stri
 	wildcards := make(map[string]map[string]bool)
 	exceptions := []exception{}
 
-	// Parse file, populate siffixes and wildcard mappinds, and record exceptions for later.
+	// Parse file, populate suffixes and wildcard mappings, and record exceptions for later.
 	for scanner := bufio.NewScanner(suffixFile); scanner.Scan(); {
 		lineno++
 		b := bytes.TrimSpace(scanner.Bytes())

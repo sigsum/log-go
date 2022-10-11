@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
@@ -17,10 +18,13 @@ import (
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling add-leaf request")
-	// TODO: Ignores returned domain, should be used for rate limit.
-	req, _, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
+	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
 	if err != nil {
 		return http.StatusBadRequest, err
+	}
+	// TODO: Handle nil domain
+	if p.RateLimiter != nil && !p.RateLimiter.AccessAllowed(*domain, time.Now()) {
+		return http.StatusForbidden, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
 		return http.StatusBadRequest, fmt.Errorf("invalid signature")
@@ -37,6 +41,9 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 		&leaf, sth.TreeSize)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	if p.RateLimiter != nil && status.AlreadyExists {
+		p.RateLimiter.AccessRelax(*domain)
 	}
 	if status.IsSequenced {
 		return http.StatusOK, nil
