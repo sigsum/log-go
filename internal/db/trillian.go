@@ -52,7 +52,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSi
 		alreadyExists = true
 	default:
 		log.Warning("gRPC error: %v", err)
-		return AddLeafStatus{false, false}, fmt.Errorf("back-end failure")
+		return AddLeafStatus{}, fmt.Errorf("back-end failure")
 	}
 	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, *merkle.HashLeafNode(serialized)})
 	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: err == nil}, nil
