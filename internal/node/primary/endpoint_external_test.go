@@ -15,6 +15,7 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksDNS "sigsum.org/log-go/internal/mocks/dns"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
+	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -49,7 +50,7 @@ func TestAddLeaf(t *testing.T) {
 		errDNS         error     // error from DNS verifier
 		wantCode       int       // HTTP status ok
 		expectStateman bool
-		sequenced      bool // return value from db.AddLeaf()
+		leafStatus     db.AddLeafStatus // return value from db.AddLeaf()
 		sthStateman    *types.SignedTreeHead
 	}{
 		{
@@ -105,7 +106,7 @@ func TestAddLeaf(t *testing.T) {
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
-			sequenced:      true,
+			leafStatus:     db.AddLeafStatus{IsSequenced: true},
 			wantCode:       http.StatusOK,
 		},
 	} {
@@ -119,7 +120,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 			client := mocksDB.NewMockClient(ctrl)
 			if table.expectTrillian {
-				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.sequenced, table.errTrillian)
+				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expectStateman {

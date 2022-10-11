@@ -76,15 +76,15 @@ func TestAddLeaf(t *testing.T) {
 			}
 			client := TrillianClient{GRPC: grpc}
 
-			sequenced, err := client.AddLeaf(context.Background(), table.req, 0)
+			status, err := client.AddLeaf(context.Background(), table.req, 0)
 			if got, want := err != nil, table.wantErr; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
 			if err != nil {
 				return
 			}
-			if sequenced != table.wantSequenced {
-				t.Errorf("got sequenced == %v, expected %v", sequenced, table.wantSequenced)
+			if status.IsSequenced != table.wantSequenced {
+				t.Errorf("got sequenced == %v, expected %v", status.IsSequenced, table.wantSequenced)
 			}
 		})
 	}

@@ -26,7 +26,7 @@ type TrillianClient struct {
 
 // AddLeaf adds a leaf to the tree and returns true if the leaf has
 // been sequenced into the tree of size treeSize.
-func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSize uint64) (bool, error) {
+func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSize uint64) (AddLeafStatus, error) {
 	leaf := types.Leaf{
 		Statement: types.Statement{
 			ShardHint: req.ShardHint,
@@ -44,15 +44,18 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSi
 			LeafValue: serialized,
 		},
 	})
+	var alreadyExists bool
 	switch status.Code(err) {
 	case codes.OK:
+		alreadyExists = false
 	case codes.AlreadyExists:
+		alreadyExists = true
 	default:
 		log.Warning("gRPC error: %v", err)
-		return false, fmt.Errorf("back-end failure")
+		return AddLeafStatus{}, fmt.Errorf("back-end failure")
 	}
 	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, *merkle.HashLeafNode(serialized)})
-	return err == nil, nil
+	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: err == nil}, nil
 }
 
 // AddSequencedLeaves adds a set of already sequenced leaves to the tree.

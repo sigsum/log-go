@@ -21,11 +21,11 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	}
 
 	sth := p.Stateman.ToCosignTreeHead()
-	sequenced, err := p.TrillianClient.AddLeaf(ctx, req, sth.TreeSize)
+	status, err := p.TrillianClient.AddLeaf(ctx, req, sth.TreeSize)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	if sequenced {
+	if status.IsSequenced {
 		return http.StatusOK, nil
 	} else {
 		return http.StatusAccepted, nil
