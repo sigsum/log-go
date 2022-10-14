@@ -14,7 +14,7 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/node/handler"
-	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -101,6 +101,7 @@ func TestAddLeaf(t *testing.T) {
 				Config:         testConfig,
 				TrillianClient: client,
 				Stateman:       stateman,
+				RateLimiter:    rateLimit.NoLimit{},
 			}
 
 			// Create HTTP request

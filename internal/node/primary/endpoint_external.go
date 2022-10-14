@@ -23,7 +23,8 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 		return http.StatusBadRequest, err
 	}
 	// TODO: Handle nil domain
-	if p.RateLimiter != nil && !p.RateLimiter.AccessAllowed(*domain, time.Now()) {
+	relax := p.RateLimiter.AccessAllowed(*domain, *merkle.HashFn(req.PublicKey[:]), time.Now())
+	if (relax == nil) {
 		return http.StatusForbidden, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
@@ -42,8 +43,8 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	if p.RateLimiter != nil && status.AlreadyExists {
-		p.RateLimiter.AccessRelax(*domain)
+	if status.AlreadyExists {
+		relax()
 	}
 	if status.IsSequenced {
 		return http.StatusOK, nil

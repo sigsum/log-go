@@ -6,33 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 )
 
-type DomainDb interface {
-	// Returns current access count for domain, as is.
-	GetAccessCount(domain string) int
-	// Checks if access count is < limit. If so increment count
-	// and return true, otherwise, return false.
-	AccessAllowed(domain string, limit int) bool
-	// Undos increment from a previous AccessAllowed, in case no
-	// resources were consumed.
-	AccessRelax(domain string)
-
-	// Like GetAccessCount above, but uses the domain's public
-	// suffix, and fails if there's no known suffix.
-	GetPublicAccessCount(domain string) (int, error)
-
-	// Like AccessAllowed above, but uses the domain's public
-	// suffix, and refuses acess if there's no known suffix.
-	PublicAccessAllowed(domain string, limit int) bool
-	PublicAccessRelax(domain string)
-
-	// Resets all counts to zero (e.g., call daily).
-	Reset()
-}
-
-type domainDb struct {
+type DomainDb struct {
 	// The suffix sets are not modified after construction, hence need no locking.
 
 	// Represents a plain rule, "example.com".
@@ -40,45 +16,9 @@ type domainDb struct {
 	// Represents a wildcard rule, "*.example.org", and
 	// exceptions, "!foo.example.org".
 	wildcards map[string]map[string]bool
-
-	// Protects the counts mapping.
-	lock   sync.Mutex
-	counts map[string]int
 }
 
-func (db *domainDb) GetAccessCount(domain string) int {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-	return db.counts[domain]
-}
-
-func (db *domainDb) AccessAllowed(domain string, limit int) bool {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-	if db.counts[domain] >= limit {
-		return false
-	}
-	db.counts[domain]++
-	return true
-}
-
-func (db *domainDb) AccessRelax(domain string) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-	// Non-zero count is the expeced case, except if there were a
-	// Reset call between AccessAllowed and AccessRelax.
-	if db.counts[domain] > 0 {
-		db.counts[domain]--
-	}
-}
-
-func (db *domainDb) Reset() {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-	db.counts = make(map[string]int)
-}
-
-func (db *domainDb) getSuffix(domain string) (string, error) {
+func (db *DomainDb) getSuffix(domain string) (string, error) {
 	s := domain
 	for {
 		if db.suffixes[s] {
@@ -99,7 +39,7 @@ func (db *domainDb) getSuffix(domain string) (string, error) {
 }
 
 // The registered domain is the recognized suffix + one additional label.
-func (db *domainDb) getRegisteredDomain(domain string) (string, error) {
+func (db *DomainDb) GetRegisteredDomain(domain string) (string, error) {
 	suffix, err := db.getSuffix(domain)
 	if err != nil {
 		return "", err
@@ -119,30 +59,6 @@ func (db *domainDb) getRegisteredDomain(domain string) (string, error) {
 	}
 	// Omit additional labels.
 	return domain[dot+1:], nil
-}
-
-func (db *domainDb) GetPublicAccessCount(domain string) (int, error) {
-	registeredDomain, err := db.getRegisteredDomain(domain)
-	if err != nil {
-		return 0, err
-	}
-	return db.GetAccessCount(registeredDomain), nil
-}
-
-func (db *domainDb) PublicAccessAllowed(domain string, limit int) bool {
-	registeredDomain, err := db.getRegisteredDomain(domain)
-	if err != nil {
-		return false
-	}
-	return db.AccessAllowed(registeredDomain, limit)
-}
-
-func (db *domainDb) PublicAccessRelax(domain string) {
-	registeredDomain, err := db.getRegisteredDomain(domain)
-	if err != nil {
-		return
-	}
-	db.AccessRelax(registeredDomain)
 }
 
 type exception struct {
@@ -208,11 +124,10 @@ func parseSuffixFile(suffixFile io.Reader) (map[string]bool, map[string]map[stri
 func NewDomainDb(suffixFile io.Reader) (DomainDb, error) {
 	suffixes, wildcards, err := parseSuffixFile(suffixFile)
 	if err != nil {
-		return nil, err
+		return DomainDb{}, err
 	}
-	return &domainDb{
+	return DomainDb{
 		suffixes:  suffixes,
 		wildcards: wildcards,
-		counts:    make(map[string]int),
 	}, nil
 }
