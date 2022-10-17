@@ -22,10 +22,13 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	// TODO: Handle nil domain
-	relax := p.RateLimiter.AccessAllowed(*domain, *merkle.HashFn(req.PublicKey[:]), time.Now())
+	relax := p.RateLimiter.AccessAllowed(domain, &req.PublicKey, time.Now())
 	if (relax == nil) {
-		return http.StatusForbidden, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+		if domain == nil {
+			return http.StatusForbidden, fmt.Errorf("rate-limit for unknown domain exceeded")
+		} else {
+			return http.StatusForbidden, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+		}
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
 		return http.StatusBadRequest, fmt.Errorf("invalid signature")

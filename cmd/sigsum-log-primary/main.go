@@ -40,7 +40,7 @@ var (
 	witnesses        = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange         = flag.Int64("max-range", 10, "maximum number of entries that can be retrived in a single request")
 	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
-	rateLimitConfig = flag.String("rate-limit-config", "", "enable rate limiting, based on given config file")
+	rateLimitConfig  = flag.String("rate-limit-config", "", "enable rate limiting, based on given config file")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
 	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")

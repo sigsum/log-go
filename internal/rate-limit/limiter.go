@@ -6,18 +6,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
 	// resources were consumed. Otherwise, returns nil.
-	AccessAllowed(domain string, keyHash [32]byte, now time.Time) func()
+	AccessAllowed(domain *string, pub *types.PublicKey, now time.Time) func()
 }
 
 type NoLimit struct{}
 
-func (l NoLimit) AccessAllowed(domain string, keyHash [32]byte, now time.Time) func() {
+func (l NoLimit) AccessAllowed(_ *string, _ *types.PublicKey, _ time.Time) func() {
 	return func() {}
 }
 
@@ -44,10 +47,9 @@ type limiter struct {
 	allowedDomains map[string]int
 	allowPublic    int
 	domainDb       DomainDb
-
-	keyCounts    accessCounts
-	domainCounts accessCounts
-	publicCounts accessCounts
+	keyCounts      accessCounts
+	domainCounts   accessCounts
+	publicCounts   accessCounts
 
 	resetSchedule schedule
 }
@@ -68,18 +70,23 @@ func (l *limiter) domainAllowed(domain string) (func(), bool) {
 	}
 }
 
-func (l *limiter) AccessAllowed(domain string, keyHash [32]byte, now time.Time) func() {
+func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey, now time.Time) func() {
 	if l.resetSchedule.IsTime(now) {
 		l.keyCounts.Reset()
 		l.domainCounts.Reset()
 		l.publicCounts.Reset()
 	}
+
 	// TODO: Avoid conversion to string.
-	key := string(keyHash[:])
-	if limit, ok := l.allowedKeys[key]; ok {
-		return l.keyCounts.AccessAllowed(key, limit)
+	keyHash := string((*merkle.HashFn((*pub)[:]))[:])
+	if limit, ok := l.allowedKeys[keyHash]; ok {
+		return l.keyCounts.AccessAllowed(keyHash, limit)
 	}
-	domain = strings.ToLower(domain)
+	if submitDomain == nil {
+		// Skip all domain-based checks.
+		return nil
+	}
+	domain := strings.ToLower(*submitDomain)
 	if relax, ok := l.domainAllowed(domain); ok {
 		return relax
 	}
@@ -111,6 +118,7 @@ func NewLimiter(configFile io.Reader, now time.Time) (Limiter, error) {
 			return nil, err
 		}
 	}
+
 	l := limiter{
 		allowedKeys:    config.AllowedKeys,
 		allowedDomains: config.AllowedDomains,
@@ -118,6 +126,7 @@ func NewLimiter(configFile io.Reader, now time.Time) (Limiter, error) {
 		domainDb:       db,
 		resetSchedule:  schedule{next: now.Add(schedulePeriod)},
 	}
+
 	// Initialize the mappings.
 	l.keyCounts.Reset()
 	l.domainCounts.Reset()
