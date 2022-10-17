@@ -170,14 +170,6 @@ func TestAddCosignature(t *testing.T) {
 			wantCode:    http.StatusBadRequest,
 		},
 		{
-			description: "invalid: bad request (unknown witness)",
-			ascii: bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
-				"cosignature", types.Signature{},
-				"key_hash", *merkle.HashFn(testWitVK[1:]),
-			)),
-			wantCode: http.StatusBadRequest,
-		},
-		{
 			description: "invalid: backend failure",
 			ascii:       buf(),
 			expect:      true,
@@ -197,7 +189,7 @@ func TestAddCosignature(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().AddCosignature(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.err)
+				stateman.EXPECT().AddCosignature(gomock.Any(), gomock.Any()).Return(table.err)
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -293,7 +285,7 @@ func TestGetTreeCosigned(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().CosignedTreeHead(gomock.Any()).Return(table.rsp, table.err)
+				stateman.EXPECT().CosignedTreeHead().Return(table.rsp, table.err)
 			}
 			node := Primary{
 				Config:   testConfig,

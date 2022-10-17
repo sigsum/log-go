@@ -18,9 +18,6 @@ var (
 		Deadline:   10,
 		Interval:   10,
 		ShardStart: 10,
-		Witnesses: map[merkle.Hash]types.PublicKey{
-			*merkle.HashFn(testWitVK[:]): testWitVK,
-		},
 	}
 )
 

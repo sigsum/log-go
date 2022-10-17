@@ -39,11 +39,7 @@ func addCosignature(_ context.Context, c handler.Config, w http.ResponseWriter, 
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	pub, ok := p.Witnesses[req.KeyHash]
-	if !ok {
-		return http.StatusForbidden, fmt.Errorf("unknown witness: %x", req.KeyHash)
-	}
-	if err := p.Stateman.AddCosignature(&pub, &req.Cosignature); err != nil {
+	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Cosignature); err != nil {
 		return http.StatusBadRequest, err
 	}
 	return http.StatusOK, nil

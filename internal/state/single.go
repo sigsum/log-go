@@ -28,6 +28,9 @@ type StateManagerSingle struct {
 	secondary client.Client
 	sthFile   *os.File
 
+	// Witnesses map trusted witness identifiers to public keys
+	witnesses map[merkle.Hash]types.PublicKey
+
 	// Lock-protected access to pointers. The pointed-to values
 	// must be treated as immutable. All endpoints are readers.
 	sync.RWMutex
@@ -41,7 +44,8 @@ type StateManagerSingle struct {
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration, secondary client.Client, sthFile *os.File) (*StateManagerSingle, error) {
+func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration,
+	secondary client.Client, sthFile *os.File, witnesses map[merkle.Hash]types.PublicKey) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
@@ -50,6 +54,7 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, dead
 		deadline:  deadline,
 		secondary: secondary,
 		sthFile:   sthFile,
+		witnesses: witnesses,
 	}
 	var err error
 	if sm.signedTreeHead, err = sm.restoreSTH(); err != nil {
@@ -82,7 +87,13 @@ func (sm *StateManagerSingle) CosignedTreeHead() (*types.CosignedTreeHead, error
 	return sm.cosignedTreeHead, nil
 }
 
-func (sm *StateManagerSingle) AddCosignature(pub *types.PublicKey, sig *types.Signature) error {
+func (sm *StateManagerSingle) AddCosignature(keyHash *merkle.Hash, sig *types.Signature) error {
+	// This mapping is immutable, no lock needed.
+	pub, ok := sm.witnesses[*keyHash]
+	if !ok {
+		return fmt.Errorf("unknown witness: %x", keyHash)
+	}
+
 	// Write lock, since cosignatures mapping is updated. Note
 	// that we can't release lock in between access to
 	// sm.signedTreeHead and sm.cosignatures, since on concurrent
@@ -90,7 +101,7 @@ func (sm *StateManagerSingle) AddCosignature(pub *types.PublicKey, sig *types.Si
 	sm.Lock()
 	defer sm.Unlock()
 
-	if !sm.signedTreeHead.TreeHead.Verify(pub, sig, &sm.namespace) {
+	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.namespace) {
 		return fmt.Errorf("invalid cosignature")
 	}
 	sm.cosignatures[*merkle.HashFn(pub[:])] = sig

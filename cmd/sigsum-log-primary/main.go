@@ -143,7 +143,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	if *shardStart < 0 {
 		return nil, fmt.Errorf("shard start must be larger than zero")
 	}
-	p.Config.Witnesses, err = newWitnessMap(*witnesses)
+	witnessMap, err := newWitnessMap(*witnesses)
 	if err != nil {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)
 	}
@@ -174,7 +174,8 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Deadline, p.Secondary, sthFile)
+	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Deadline,
+		p.Secondary, sthFile, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
