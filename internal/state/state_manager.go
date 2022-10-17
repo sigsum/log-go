@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 
-	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -21,10 +20,4 @@ type StateManager interface {
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
 	Run(context.Context)
-}
-
-// event is a verified cosignature request
-type event struct {
-	keyHash     *merkle.Hash
-	cosignature *types.Signature
 }
