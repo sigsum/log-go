@@ -37,13 +37,10 @@ func LeafRequestFromHTTP(r *http.Request, shardStart uint64, ctx context.Context
 	return &req, nil
 }
 
-func CosignatureRequestFromHTTP(r *http.Request, w map[merkle.Hash]types.PublicKey) (*sigsumreq.Cosignature, error) {
+func CosignatureRequestFromHTTP(r *http.Request) (*sigsumreq.Cosignature, error) {
 	var req sigsumreq.Cosignature
 	if err := req.FromASCII(r.Body); err != nil {
 		return nil, fmt.Errorf("parse ascii: %w", err)
-	}
-	if _, ok := w[req.KeyHash]; !ok {
-		return nil, fmt.Errorf("unknown witness: %x", req.KeyHash)
 	}
 	return &req, nil
 }
