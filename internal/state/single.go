@@ -24,7 +24,8 @@ type StateManagerSingle struct {
 	signer    crypto.Signer
 	namespace merkle.Hash
 	interval  time.Duration
-	deadline  time.Duration
+	// Timeout for interaction with the secondary.
+	timeout   time.Duration
 	secondary client.Client
 	sthFile   *os.File
 
@@ -44,14 +45,14 @@ type StateManagerSingle struct {
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration,
+func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, timeout time.Duration,
 	secondary client.Client, sthFile *os.File, witnesses map[merkle.Hash]types.PublicKey) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
 		namespace: *merkle.HashFn(signer.Public().(ed25519.PublicKey)),
 		interval:  interval,
-		deadline:  deadline,
+		timeout:   timeout,
 		secondary: secondary,
 		sthFile:   sthFile,
 		witnesses: witnesses,
@@ -115,9 +116,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			ictx, cancel := context.WithTimeout(ctx, sm.deadline)
-			defer cancel()
-			if err := sm.tryRotate(ictx); err != nil {
+			if err := sm.tryRotate(ctx); err != nil {
 				log.Warning("failed rotating tree heads: %v", err)
 			}
 		case <-ctx.Done():
@@ -127,6 +126,8 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 }
 
 func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, sm.timeout)
+	defer cancel()
 	th, err := sm.client.GetTreeHead(ctx)
 	if err != nil {
 		return fmt.Errorf("get tree head: %v", err)

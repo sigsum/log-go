@@ -19,7 +19,7 @@ type Config struct {
 	TreeID     int64         // Merkle tree identifier used by Trillian
 	Prefix     string        // The portion between base URL and /<endpoint> (may be "")
 	MaxRange   int64         // Maximum number of leaves per get-leaves request
-	Deadline   time.Duration // Deadline used for gRPC requests
+	Timeout    time.Duration // Timeout used for gRPC requests
 	Interval   time.Duration // Cosigning frequency
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
 }
@@ -43,8 +43,8 @@ func (p Primary) Prefix() string {
 func (p Primary) LogID() string {
 	return p.Config.LogID
 }
-func (p Primary) Deadline() time.Duration {
-	return p.Config.Deadline
+func (p Primary) Timeout() time.Duration {
+	return p.Config.Timeout
 }
 
 // PublicHTTPHandlers returns all external handlers

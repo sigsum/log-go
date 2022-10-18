@@ -35,7 +35,7 @@ var (
 	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
 	prefix           = flag.String("url-prefix", "", "a prefix that precedes /<endpoint>")
 	trillianID       = flag.Int64("tree-id", 0, "tree identifier in the Trillian database")
-	deadline         = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
+	timeout          = flag.Duration("timeout", time.Second*10, "timeout for backend requests")
 	key              = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
 	witnesses        = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange         = flag.Int64("max-range", 10, "maximum number of entries that can be retrived in a single request")
@@ -137,7 +137,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	p.Config.TreeID = *trillianID
 	p.Config.Prefix = *prefix
 	p.Config.MaxRange = *maxRange
-	p.Config.Deadline = *deadline
+	p.Config.Timeout = *timeout
 	p.Config.Interval = *interval
 	p.Config.ShardStart = uint64(*shardStart)
 	if *shardStart < 0 {
@@ -149,7 +149,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	// Setup trillian client.
-	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Deadline)}
+	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Timeout)}
 	conn, err := grpc.Dial(*rpcBackend, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %v", err)
@@ -174,7 +174,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Deadline,
+	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Timeout,
 		p.Secondary, sthFile, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)

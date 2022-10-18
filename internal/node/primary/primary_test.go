@@ -15,7 +15,7 @@ var (
 		TreeID:     0,
 		Prefix:     "testonly",
 		MaxRange:   3,
-		Deadline:   10,
+		Timeout:    10,
 		Interval:   10,
 		ShardStart: 10,
 	}

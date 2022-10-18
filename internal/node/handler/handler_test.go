@@ -14,9 +14,9 @@ type dummyConfig struct {
 	prefix string
 }
 
-func (c dummyConfig) Prefix() string          { return c.prefix }
-func (c dummyConfig) LogID() string           { return "dummyLogID" }
-func (c dummyConfig) Deadline() time.Duration { return time.Nanosecond }
+func (c dummyConfig) Prefix() string         { return c.prefix }
+func (c dummyConfig) LogID() string          { return "dummyLogID" }
+func (c dummyConfig) Timeout() time.Duration { return time.Nanosecond }
 
 // TestPath checks that Path works for an endpoint (add-leaf)
 func TestPath(t *testing.T) {

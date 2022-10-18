@@ -19,7 +19,7 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 	log.Debug("handling get-tree-head-to-cosign request")
 
 	signedTreeHead := func() (*types.SignedTreeHead, error) {
-		tctx, cancel := context.WithTimeout(ctx, s.Config.Deadline)
+		tctx, cancel := context.WithTimeout(ctx, s.Config.Timeout)
 		defer cancel()
 		th, err := treeHeadFromTrillian(tctx, s.TrillianClient)
 		if err != nil {

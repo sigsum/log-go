@@ -13,7 +13,7 @@ import (
 type Config interface {
 	Prefix() string
 	LogID() string
-	Deadline() time.Duration
+	Timeout() time.Duration
 }
 
 // Handler implements the http.Handler interface
@@ -77,8 +77,7 @@ func (h Handler) verifyMethod(w http.ResponseWriter, r *http.Request) int {
 
 // handle handles an HTTP request for which the HTTP method is already verified
 func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
-	deadline := time.Now().Add(h.Deadline())
-	ctx, cancel := context.WithDeadline(r.Context(), deadline)
+	ctx, cancel := context.WithTimeout(r.Context(), h.Timeout())
 	defer cancel()
 
 	code, err := h.Fun(ctx, h.Config, w, r)

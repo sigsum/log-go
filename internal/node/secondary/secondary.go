@@ -20,7 +20,7 @@ type Config struct {
 	LogID    string        // H(public key), then hex-encoded
 	TreeID   int64         // Merkle tree identifier used by Trillian
 	Prefix   string        // The portion between base URL and st/v0 (may be "")
-	Deadline time.Duration // Deadline used for gRPC requests
+	Timeout  time.Duration // Timeout used for gRPC requests
 	Interval time.Duration // Signing frequency
 }
 
@@ -41,8 +41,8 @@ func (s Secondary) Prefix() string {
 func (s Secondary) LogID() string {
 	return s.Config.LogID
 }
-func (s Secondary) Deadline() time.Duration {
-	return s.Config.Deadline
+func (s Secondary) Timeout() time.Duration {
+	return s.Config.Timeout
 }
 
 func (s Secondary) Run(ctx context.Context) {
