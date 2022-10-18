@@ -13,6 +13,7 @@ import (
 	"sigsum.org/log-go/internal/db"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
+	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -36,6 +37,7 @@ var (
 // TODO: remove tests that are now located in internal/requests instead
 
 func TestAddLeaf(t *testing.T) {
+	// TODO: Set up a mock rate limiter.
 	for _, table := range []struct {
 		description    string
 		ascii          io.Reader // buffer used to populate HTTP request
