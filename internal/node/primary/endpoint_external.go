@@ -32,15 +32,14 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	}
 }
 
-func addCosignature(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
+func addCosignature(_ context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling add-cosignature request")
-	req, err := requests.CosignatureRequestFromHTTP(r, p.Witnesses)
+	req, err := requests.CosignatureRequestFromHTTP(r)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	vk := p.Witnesses[req.KeyHash]
-	if err := p.Stateman.AddCosignature(ctx, &vk, &req.Cosignature); err != nil {
+	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Cosignature); err != nil {
 		return http.StatusBadRequest, err
 	}
 	return http.StatusOK, nil
@@ -56,10 +55,10 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 	return http.StatusOK, nil
 }
 
-func getTreeHeadCosigned(ctx context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
+func getTreeHeadCosigned(_ context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling get-tree-head-cosigned request")
-	cth, err := p.Stateman.CosignedTreeHead(ctx)
+	cth, err := p.Stateman.CosignedTreeHead()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}

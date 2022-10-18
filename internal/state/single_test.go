@@ -2,7 +2,6 @@ package state
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/ed25519"
 	"crypto/rand"
@@ -71,7 +70,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer os.Remove(tmpFile.Name())
-			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), secondary, tmpFile)
+			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), secondary, tmpFile, nil)
 			if got, want := err != nil, table.description != "valid"; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
@@ -114,7 +113,7 @@ func TestCosignedTreeHead(t *testing.T) {
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
 	}
-	cth, err := sm.CosignedTreeHead(context.Background())
+	cth, err := sm.CosignedTreeHead()
 	if err != nil {
 		t.Errorf("should not fail with error: %v", err)
 		return
@@ -124,7 +123,7 @@ func TestCosignedTreeHead(t *testing.T) {
 	}
 
 	sm.cosignedTreeHead = nil
-	cth, err = sm.CosignedTreeHead(context.Background())
+	cth, err = sm.CosignedTreeHead()
 	if err == nil {
 		t.Errorf("should fail without a cosigned tree head")
 		return
@@ -133,6 +132,7 @@ func TestCosignedTreeHead(t *testing.T) {
 
 func TestAddCosignature(t *testing.T) {
 	secret, public := mustKeyPair(t)
+
 	for _, table := range []struct {
 		desc    string
 		signer  crypto.Signer
@@ -154,27 +154,17 @@ func TestAddCosignature(t *testing.T) {
 		sm := &StateManagerSingle{
 			namespace:      *merkle.HashFn(nil),
 			signedTreeHead: &types.SignedTreeHead{},
-			events:         make(chan *event, 1),
+			witnesses:      map[merkle.Hash]types.PublicKey{*merkle.HashFn(public[:]): public},
+			cosignatures:   make(map[merkle.Hash]*types.Signature),
 		}
-		defer close(sm.events)
 
 		sth := mustSign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.namespace)
-		ctx := context.Background()
-		err := sm.AddCosignature(ctx, &table.vk, &sth.Signature)
+		err := sm.AddCosignature(merkle.HashFn(table.vk[:]), &sth.Signature)
 		if got, want := err != nil, table.wantErr; got != want {
 			t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.desc, err)
 		}
 		if err != nil {
 			continue
-		}
-
-		ctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
-		defer cancel()
-		if err := sm.AddCosignature(ctx, &table.vk, &sth.Signature); err == nil {
-			t.Errorf("expected full channel in test %q", table.desc)
-		}
-		if got, want := len(sm.events), 1; got != want {
-			t.Errorf("wanted %d cosignatures but got %d in test %q", want, got, table.desc)
 		}
 	}
 }

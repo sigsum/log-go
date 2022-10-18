@@ -97,16 +97,12 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 	input := func(h merkle.Hash) io.Reader {
 		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x\nkey_hash=%x\n", types.Signature{}, h))
 	}
-	w := map[merkle.Hash]types.PublicKey{
-		*merkle.HashFn([]byte("w1")): types.PublicKey{},
-	}
 	for _, table := range []struct {
 		desc    string
 		params  io.Reader
 		wantRsp *sigsumreq.Cosignature
 	}{
 		{"invalid: parser error", bytes.NewBufferString("abcd"), nil},
-		{"invalid: unknown witness", input(*merkle.HashFn([]byte("w2"))), nil},
 		{"valid", input(*merkle.HashFn([]byte("w1"))), &sigsumreq.Cosignature{types.Signature{}, *merkle.HashFn([]byte("w1"))}},
 	} {
 		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
@@ -115,7 +111,7 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 			t.Fatalf("must create http request: %v", err)
 		}
 
-		parsedReq, err := CosignatureRequestFromHTTP(req, w)
+		parsedReq, err := CosignatureRequestFromHTTP(req)
 		if got, want := err != nil, table.desc != "valid"; got != want {
 			t.Errorf("%s: got error %v but wanted %v: %v", table.desc, got, want, err)
 		}

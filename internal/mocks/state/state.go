@@ -8,8 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "sigsum.org/sigsum-go/pkg/types"
 	gomock "github.com/golang/mock/gomock"
+	merkle "sigsum.org/sigsum-go/pkg/merkle"
+	types "sigsum.org/sigsum-go/pkg/types"
 )
 
 // MockStateManager is a mock of StateManager interface.
@@ -36,32 +37,32 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 }
 
 // AddCosignature mocks base method.
-func (m *MockStateManager) AddCosignature(arg0 context.Context, arg1 *types.PublicKey, arg2 *types.Signature) error {
+func (m *MockStateManager) AddCosignature(arg0 *merkle.Hash, arg1 *types.Signature) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCosignature indicates an expected call of AddCosignature.
-func (mr *MockStateManagerMockRecorder) AddCosignature(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) AddCosignature(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCosignature", reflect.TypeOf((*MockStateManager)(nil).AddCosignature), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCosignature", reflect.TypeOf((*MockStateManager)(nil).AddCosignature), arg0, arg1)
 }
 
 // CosignedTreeHead mocks base method.
-func (m *MockStateManager) CosignedTreeHead(arg0 context.Context) (*types.CosignedTreeHead, error) {
+func (m *MockStateManager) CosignedTreeHead() (*types.CosignedTreeHead, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CosignedTreeHead", arg0)
+	ret := m.ctrl.Call(m, "CosignedTreeHead")
 	ret0, _ := ret[0].(*types.CosignedTreeHead)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CosignedTreeHead indicates an expected call of CosignedTreeHead.
-func (mr *MockStateManagerMockRecorder) CosignedTreeHead(arg0 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CosignedTreeHead", reflect.TypeOf((*MockStateManager)(nil).CosignedTreeHead), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CosignedTreeHead", reflect.TypeOf((*MockStateManager)(nil).CosignedTreeHead))
 }
 
 // Run mocks base method.

@@ -13,18 +13,12 @@ type StateManager interface {
 	ToCosignTreeHead() *types.SignedTreeHead
 
 	// CosignedTreeHead returns the node's cosigned tree head
-	CosignedTreeHead(context.Context) (*types.CosignedTreeHead, error)
+	CosignedTreeHead() (*types.CosignedTreeHead, error)
 
 	// AddCosignature verifies that a cosignature is valid for the to-cosign
 	// tree head before adding it
-	AddCosignature(context.Context, *types.PublicKey, *types.Signature) error
+	AddCosignature(*merkle.Hash, *types.Signature) error
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
 	Run(context.Context)
-}
-
-// event is a verified cosignature request
-type event struct {
-	keyHash     *merkle.Hash
-	cosignature *types.Signature
 }

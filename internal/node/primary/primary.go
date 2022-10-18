@@ -10,7 +10,6 @@ import (
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/dns"
-	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -23,9 +22,6 @@ type Config struct {
 	Deadline   time.Duration // Deadline used for gRPC requests
 	Interval   time.Duration // Cosigning frequency
 	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
-
-	// Witnesses map trusted witness identifiers to public keys
-	Witnesses map[merkle.Hash]types.PublicKey
 }
 
 // Primary is an instance of the log's primary node

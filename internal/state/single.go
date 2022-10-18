@@ -28,21 +28,24 @@ type StateManagerSingle struct {
 	secondary client.Client
 	sthFile   *os.File
 
-	// Lock-protected access to pointers.  A write lock is only obtained once
-	// per interval when doing pointer rotation.  All endpoints are readers.
+	// Witnesses map trusted witness identifiers to public keys
+	witnesses map[merkle.Hash]types.PublicKey
+
+	// Lock-protected access to pointers. The pointed-to values
+	// must be treated as immutable. All endpoints are readers.
 	sync.RWMutex
 	signedTreeHead   *types.SignedTreeHead
 	cosignedTreeHead *types.CosignedTreeHead
 
 	// Syncronized and deduplicated witness cosignatures for signedTreeHead
-	events       chan *event
 	cosignatures map[merkle.Hash]*types.Signature
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration, secondary client.Client, sthFile *os.File) (*StateManagerSingle, error) {
+func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, deadline time.Duration,
+	secondary client.Client, sthFile *os.File, witnesses map[merkle.Hash]types.PublicKey) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
@@ -51,6 +54,7 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, dead
 		deadline:  deadline,
 		secondary: secondary,
 		sthFile:   sthFile,
+		witnesses: witnesses,
 	}
 	var err error
 	if sm.signedTreeHead, err = sm.restoreSTH(); err != nil {
@@ -74,7 +78,7 @@ func (sm *StateManagerSingle) ToCosignTreeHead() *types.SignedTreeHead {
 	return sm.signedTreeHead
 }
 
-func (sm *StateManagerSingle) CosignedTreeHead(_ context.Context) (*types.CosignedTreeHead, error) {
+func (sm *StateManagerSingle) CosignedTreeHead() (*types.CosignedTreeHead, error) {
 	sm.RLock()
 	defer sm.RUnlock()
 	if sm.cosignedTreeHead == nil {
@@ -83,24 +87,28 @@ func (sm *StateManagerSingle) CosignedTreeHead(_ context.Context) (*types.Cosign
 	return sm.cosignedTreeHead, nil
 }
 
-func (sm *StateManagerSingle) AddCosignature(ctx context.Context, pub *types.PublicKey, sig *types.Signature) error {
-	sm.RLock()
-	defer sm.RUnlock()
+func (sm *StateManagerSingle) AddCosignature(keyHash *merkle.Hash, sig *types.Signature) error {
+	// This mapping is immutable, no lock needed.
+	pub, ok := sm.witnesses[*keyHash]
+	if !ok {
+		return fmt.Errorf("unknown witness: %x", keyHash)
+	}
 
-	if !sm.signedTreeHead.TreeHead.Verify(pub, sig, &sm.namespace) {
+	// Write lock, since cosignatures mapping is updated. Note
+	// that we can't release lock in between access to
+	// sm.signedTreeHead and sm.cosignatures, since on concurrent
+	// rotate we might add a cosignature for an old tree head.
+	sm.Lock()
+	defer sm.Unlock()
+
+	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.namespace) {
 		return fmt.Errorf("invalid cosignature")
 	}
-	select {
-	case sm.events <- &event{merkle.HashFn(pub[:]), sig}:
-		return nil
-	case <-ctx.Done():
-		return fmt.Errorf("request timeout")
-	}
+	sm.cosignatures[*merkle.HashFn(pub[:])] = sig
+	return nil
 }
 
 func (sm *StateManagerSingle) Run(ctx context.Context) {
-	sm.events = make(chan *event, 4096)
-	defer close(sm.events)
 	ticker := time.NewTicker(sm.interval)
 	defer ticker.Stop()
 
@@ -112,8 +120,6 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 			if err := sm.tryRotate(ictx); err != nil {
 				log.Warning("failed rotating tree heads: %v", err)
 			}
-		case ev := <-sm.events:
-			sm.handleEvent(ev)
 		case <-ctx.Done():
 			return
 		}
@@ -210,22 +216,9 @@ func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 	defer sm.Unlock()
 
 	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.TreeSize, sm.treeStatusString())
-	sm.handleEvents()
 	sm.setCosignedTreeHead()
 	sm.setToCosignTreeHead(nextSTH)
 	log.Debug("tree heads rotated: %s", sm.treeStatusString())
-}
-
-func (sm *StateManagerSingle) handleEvents() {
-	log.Debug("handling any outstanding events")
-	for i, n := 0, len(sm.events); i < n; i++ {
-		sm.handleEvent(<-sm.events)
-	}
-}
-
-func (sm *StateManagerSingle) handleEvent(ev *event) {
-	log.Debug("handling event from witness %x", ev.keyHash[:])
-	sm.cosignatures[*ev.keyHash] = ev.cosignature
 }
 
 func (sm *StateManagerSingle) setCosignedTreeHead() {
