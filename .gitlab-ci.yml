@@ -1,6 +1,6 @@
 image: docker.io/library/golang:1.18
 variables:
-  FF_NETWORK_PER_BUILD: true
+  FF_NETWORK_PER_BUILD: "true"
 
 stages:
 # - build
