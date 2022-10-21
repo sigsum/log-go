@@ -14,6 +14,7 @@
 set -eu
 shopt -s nullglob
 # trap cleanup EXIT
+trap ps EXIT
 
 declare g_offline_mode=1
 
