@@ -21,7 +21,7 @@ stages:
 integration:
   stage: integration
   services:
-  - alias: trilliandb
+  - alias: mysql
     name: gitlab.glasklarteknik.se:5050/gregoire/images/db:x
     variables:
       MYSQL_DATABASE: test
@@ -29,7 +29,7 @@ integration:
       MYSQL_PASSWORD: test
       MYSQL_RANDOM_ROOT_PASSWORD: 1
   variables:
-    MYSQL_URI: test:test@tcp(trilliandb:3306)/test
+    MYSQL_URI: test:test@tcp(mysql:3306)/test
   script:
   - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
   - go install sigsum.org/sigsum-go/cmd/sigsum-debug
