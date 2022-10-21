@@ -37,4 +37,4 @@ integration:
   - echo $GOPATH
   - ls $GOPATH/bin
   - cd integration
-  - ./test.sh
+  - bash -x ./test.sh
