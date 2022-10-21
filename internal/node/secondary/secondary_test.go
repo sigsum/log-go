@@ -14,10 +14,10 @@ import (
 
 var (
 	testConfig = Config{
-		LogID:    fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
-		TreeID:   0,
-		Prefix:   "testonly",
-		Deadline: 10,
+		LogID:   fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
+		TreeID:  0,
+		Prefix:  "testonly",
+		Timeout: 10,
 	}
 )
 

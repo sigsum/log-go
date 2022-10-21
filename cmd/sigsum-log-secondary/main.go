@@ -29,7 +29,7 @@ var (
 	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
 	prefix           = flag.String("url-prefix", "", "a prefix that preceeds /<endpoint>")
 	trillianID       = flag.Int64("tree-id", 0, "log identifier in the Trillian database")
-	deadline         = flag.Duration("deadline", time.Second*10, "deadline for backend requests")
+	timeout          = flag.Duration("timeout", time.Second*10, "timeout for backend requests")
 	key              = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
 	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the node's STH")
 	testMode         = flag.Bool("test-mode", false, "run in test mode (Default: false)")
@@ -121,11 +121,11 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	}
 	s.Config.TreeID = *trillianID
 	s.Config.Prefix = *prefix
-	s.Config.Deadline = *deadline
+	s.Config.Timeout = *timeout
 	s.Config.Interval = *interval
 
 	// Setup trillian client.
-	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(s.Config.Deadline)}
+	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(s.Config.Timeout)}
 	conn, err := grpc.Dial(*rpcBackend, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %v", err)
