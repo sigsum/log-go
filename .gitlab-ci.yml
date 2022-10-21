@@ -1,6 +1,6 @@
 image: docker.io/library/golang:1.18
 variables:
-  FF_NETWORK_PER_BUILD: 1
+  FF_NETWORK_PER_BUILD: true
 
 stages:
 # - build
@@ -29,6 +29,7 @@ integration:
       MYSQL_PASSWORD: zaphod
       MYSQL_RANDOM_ROOT_PASSWORD: 1
   script:
+  - env
   - sleep 30
   - cat  /etc/hosts
   - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
