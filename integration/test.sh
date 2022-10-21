@@ -24,7 +24,7 @@ declare -r loga=conf/primary.config
 declare -r logb=conf/secondary.config
 declare -r logc=conf/logc.config
 declare -r client=conf/client.config
-declare -r mysql_uri='sigsum_test:zaphod@tcp(database:3306)/sigsum_test'
+declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(localhost:3306)/sigsum_test}"
 
 function main() {
 	local testflavour=basic
