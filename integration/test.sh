@@ -459,7 +459,8 @@ function test_signed_tree_head() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-tree-head-to-cosign (tree size $tree_size)"
 
-	curl -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head-to-cosign
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head-to-cosign \
+	     >$log_dir/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
 		fail "$desc: http status code $(status_code $pri)"
