@@ -35,4 +35,4 @@ integration:
   - go install sigsum.org/sigsum-go/cmd/sigsum-debug
   - go install ./...
   - cd integration
-  - bash -x ./test.sh
+  - bash ./test.sh
