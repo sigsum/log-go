@@ -29,13 +29,8 @@ integration:
       MYSQL_PASSWORD: zaphod
       MYSQL_RANDOM_ROOT_PASSWORD: 1
   script:
-  - env
-  - sleep 30
-  - cat  /etc/hosts
   - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
   - go install sigsum.org/sigsum-go/cmd/sigsum-debug
   - go install ./...
-  - echo $GOPATH
-  - ls $GOPATH/bin
   - cd integration
   - bash -x ./test.sh

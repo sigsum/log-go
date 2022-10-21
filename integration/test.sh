@@ -294,7 +294,7 @@ function sigsum_start() {
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
 		go build -o $binary ../cmd/$binary/main.go
-		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]})
+		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) &
 		nvars[$i:ssrv_pid]=$!
 
 		info "started Sigsum log server on ${nvars[$i:ssrv_endpoint]} / ${nvars[$i:ssrv_internal]} (pid ${nvars[$i:ssrv_pid]})"
