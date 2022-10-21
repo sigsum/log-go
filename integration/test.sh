@@ -45,6 +45,7 @@ function main() {
 
 	client_setup $client
 	check_setup $loga $logb
+        sleep 10
 	run_tests $loga $logb 0 5
 	run_tests $loga $logb 5 1
 

@@ -32,7 +32,7 @@ integration:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script:
   - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
-  - go install sigsum.org/sigsum-go/cmd/sigsum-debug
-  - go install ./...
+  # - go install sigsum.org/sigsum-go/cmd/sigsum-debug
+  # - go install ./...
   - cd integration
   - bash ./test.sh
