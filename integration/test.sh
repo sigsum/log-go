@@ -13,8 +13,7 @@
 
 set -eu
 shopt -s nullglob
-# trap cleanup EXIT
-trap ps EXIT
+trap cleanup EXIT
 
 declare g_offline_mode=1
 
@@ -24,7 +23,7 @@ declare -r loga=conf/primary.config
 declare -r logb=conf/secondary.config
 declare -r logc=conf/logc.config
 declare -r client=conf/client.config
-declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(localhost:3306)/sigsum_test}"
+declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test}"
 
 function main() {
 	local testflavour=basic
@@ -159,11 +158,11 @@ function node_promote() {
 
 	# NOTE: updatetree doesn't seem to exit with !=0 when failing
 	# TODO: try combining the first two invocations into one
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr) == FROZEN ]] || \
+	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to freeze tree $tree_id"
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr) == FROZEN ]] || \
+	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to change tree type to LOG for tree $tree_id"
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr) == ACTIVE ]] || \
+	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr 2>/dev/null) == ACTIVE ]] || \
 		die "unable to unfreeze tree $tree_id"
 	info "tree $tree_id type changed from PREORDERED_LOG to LOG"
 
@@ -201,8 +200,7 @@ function trillian_start_server() {
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tsrv_rpc]}\
 			-http_endpoint=${nvars[$i:tsrv_http]}\
-                        -logtostderr &
-			# -log_dir=${nvars[$i:log_dir]} &
+			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
 		nvars[$i:tsrv_pid]=$!
 		info "started Trillian log server (pid ${nvars[$i:tsrv_pid]})"
 	done
@@ -219,8 +217,7 @@ function trillian_start_sequencer() {
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
 			-http_endpoint=${nvars[$i:tseq_http]}\
-                        -logtostderr &
-			# -log_dir=${nvars[$i:log_dir]} &
+			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
 		nvars[$i:tseq_pid]=$!
 		info "started Trillian log sequencer (pid ${nvars[$i:tseq_pid]})"
 	done
@@ -231,7 +228,7 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		nvars[$i:ssrv_tree_id]=$(createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr)
+		nvars[$i:ssrv_tree_id]=$(createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
 		info "provisioned Merkle tree with id ${nvars[$i:ssrv_tree_id]}"
@@ -295,7 +292,8 @@ function sigsum_start() {
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
 		go build -o $binary ../cmd/$binary/main.go
-		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) &
+		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) \
+			2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 		nvars[$i:ssrv_pid]=$!
 
 		info "started Sigsum log server on ${nvars[$i:ssrv_endpoint]} / ${nvars[$i:ssrv_internal]} (pid ${nvars[$i:ssrv_pid]})"
@@ -310,7 +308,7 @@ function node_stop() {
 # Delete log tree for, requires trillian server ("backend") to be running
 function node_destroy() {
 	for i in $@; do
-		if ! deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr; then
+		if ! deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
 			warn "failed deleting provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
 		else
 			info "deleted provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
