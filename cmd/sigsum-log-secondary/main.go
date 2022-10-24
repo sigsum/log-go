@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
@@ -113,12 +115,13 @@ func main() {
 func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
-
+	var publicKey *types.PublicKey
 	// Setup logging configuration.
-	s.Signer, s.Config.LogID, err = utils.NewLogIdentity(*key)
+	s.Signer, publicKey, err = utils.ReadKeyFile(*key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
+	s.Config.LogID = hex.EncodeToString(publicKey[:])
 	s.Config.TreeID = *trillianID
 	s.Config.Prefix = *prefix
 	s.Config.Timeout = *timeout
