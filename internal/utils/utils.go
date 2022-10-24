@@ -38,15 +38,17 @@ func PubkeyFromHexString(pkhex string) (*types.PublicKey, error) {
 	return &pk, nil
 }
 
-func NewLogIdentity(keyFile string) (crypto.Signer, string, error) {
+func ReadKeyFile(keyFile string) (crypto.Signer, *types.PublicKey, error) {
 	buf, err := ioutil.ReadFile(keyFile)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 	if buf, err = hex.DecodeString(strings.TrimSpace(string(buf))); err != nil {
-		return nil, "", fmt.Errorf("DecodeString: %v", err)
+		return nil, nil, fmt.Errorf("DecodeString: %v", err)
 	}
 	sk := crypto.Signer(ed25519.NewKeyFromSeed(buf))
 	vk := sk.Public().(ed25519.PublicKey)
-	return sk, hex.EncodeToString([]byte(vk[:])), nil
+	var pub types.PublicKey
+	copy(pub[:], vk)
+	return sk, &pub, nil
 }
