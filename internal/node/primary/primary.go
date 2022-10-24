@@ -9,7 +9,7 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/client"
-	"sigsum.org/sigsum-go/pkg/dns"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -21,7 +21,6 @@ type Config struct {
 	MaxRange   int64         // Maximum number of leaves per get-leaves request
 	Timeout    time.Duration // Timeout used for gRPC requests
 	Interval   time.Duration // Cosigning frequency
-	ShardStart uint64        // Shard interval start (num seconds since UNIX epoch)
 }
 
 // Primary is an instance of the log's primary node
@@ -32,7 +31,7 @@ type Primary struct {
 	TrillianClient  db.Client          // provides access to the Trillian backend
 	Signer          crypto.Signer      // provides access to Ed25519 private key
 	Stateman        state.StateManager // coordinates access to (co)signed tree heads
-	DNS             dns.Verifier       // checks if domain name knows a public key
+	TokenVerifier   token.Verifier     // checks if domain name knows a public key
 	Secondary       client.Client
 }
 

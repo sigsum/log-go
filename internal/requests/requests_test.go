@@ -9,19 +9,32 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
-	"time"
 
-	mocksDNS "sigsum.org/log-go/internal/mocks/dns"
+	"github.com/golang/mock/gomock"
+	mocksToken "sigsum.org/log-go/internal/mocks/submit-token"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/mock/gomock"
 )
 
+type HasPrefix struct {
+	prefix string
+}
+
+func (m HasPrefix) Matches(x interface{}) bool {
+	if s, ok := x.(string); ok {
+		return strings.HasPrefix(s, m.prefix)
+	}
+	return false
+}
+
+func (m HasPrefix) String() string {
+	return fmt.Sprintf("string with prefix %q", m.prefix)
+}
+
 func TestLeafRequestFromHTTP(t *testing.T) {
-	st := uint64(10)
-	dh := "_sigsum_v0.example.org"
 	msg := merkle.Hash{}
 	var pub types.PublicKey
 	b, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -30,57 +43,60 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 	}
 	copy(pub[:], b)
 
-	sign := func(sh uint64, msg merkle.Hash) *types.Signature {
-		stm := types.Statement{sh, *merkle.HashFn(msg[:])}
-		sig, err := stm.Sign(priv)
+	sign := func(msg merkle.Hash) *types.Signature {
+		sig, err := types.SignLeafMessage(priv, msg[:])
 		if err != nil {
 			t.Fatalf("must sign: %v", err)
 		}
 		return sig
 	}
-	input := func(sh uint64, msg merkle.Hash, badSig bool) io.Reader {
-		sig := sign(sh, msg)[:]
+	input := func(msg merkle.Hash, badSig bool) io.Reader {
+		sig := sign(msg)[:]
 		if badSig {
 			msg[0] += 1 // use a different message
 		}
-		str := fmt.Sprintf("shard_hint=%d\n", sh)
-		str += fmt.Sprintf("message=%x\n", msg[:])
+		str := fmt.Sprintf("message=%x\n", msg[:])
 		str += fmt.Sprintf("signature=%x\n", sig[:])
 		str += fmt.Sprintf("public_key=%x\n", pub[:])
-		str += fmt.Sprintf("domain_hint=%s\n", dh)
 		return bytes.NewBufferString(str)
 	}
 
+	type token struct {
+		domain    string
+		signature string
+	}
 	for _, table := range []struct {
-		desc      string
-		params    io.Reader
-		dnsExpect bool
-		dnsErr    error
-		wantRsp   *sigsumreq.Leaf
+		desc       string
+		params     io.Reader
+		token      *token
+		tokenErr   error
+		wantRsp    *sigsumreq.Leaf
+		wantDomain bool
 	}{
-		{"invalid: parse ascii", bytes.NewBufferString("a=b"), false, nil, nil},
-		{"invalid: signature", input(st, msg, true), false, nil, nil},
-		{"invalid: shard start", input(st-1, msg, false), false, nil, nil},
-		{"invalid: shard end", input(uint64(time.Now().Unix())+1024, msg, false), false, nil, nil},
-		{"invalid: mocked dns error", input(st, msg, false), true, fmt.Errorf("mocked dns error"), nil},
-		{"valid", input(st, msg, false), true, nil, &sigsumreq.Leaf{st, msg, *sign(st, msg), pub, dh}},
+		{"invalid: parse ascii", bytes.NewBufferString("a=b"), nil, nil, nil, false},
+		{"invalid: signature", input(msg, true), nil, nil, nil, false},
+		{"invalid: mocked token error", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
+		{"valid", input(msg, false), nil, nil, &sigsumreq.Leaf{msg, *sign(msg), pub}, false},
+		{"valid with domain", input(msg, false), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, *sign(msg), pub}, true},
+		{"valid leaf, invalid domain", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
 	} {
 		func() {
+			fmt.Println(table.desc)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			vf := mocksDNS.NewMockVerifier(ctrl)
-			if table.dnsExpect {
-				vf.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.dnsErr)
-			}
-
+			vf := mocksToken.NewMockVerifier(ctrl)
 			url := types.EndpointAddLeaf.Path("http://example.org/sigsum")
 			req, err := http.NewRequest(http.MethodPost, url, table.params)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
+			if table.token != nil {
+				vf.EXPECT().Verify(gomock.Any(), table.token.domain, table.token.signature).Return(table.tokenErr)
+				req.Header.Add("sigsum-token", table.token.domain+" "+table.token.signature)
+			}
 
-			parsedReq, err := LeafRequestFromHTTP(req, st, context.Background(), vf)
-			if got, want := err != nil, table.desc != "valid"; got != want {
+			parsedReq, domain, err := LeafRequestFromHTTP(context.Background(), req, vf)
+			if got, want := err != nil, table.wantRsp == nil; got != want {
 				t.Errorf("%s: got error %v but wanted %v: %v", table.desc, got, want, err)
 			}
 			if err != nil {
@@ -89,6 +105,13 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 			if got, want := parsedReq, table.wantRsp; !reflect.DeepEqual(got, want) {
 				t.Errorf("%s: got request %v but wanted %v", table.desc, got, want)
 			}
+			if got, want := domain != nil, table.wantDomain; got != want {
+				t.Errorf("%s: got domain %v but wanted %v: %v", table.desc, got, want, domain)
+			}
+			if table.wantDomain && *domain != table.token.domain {
+				t.Errorf("%s: got domain %v but wanted %v", table.desc, table.token.domain, table.wantDomain)
+			}
+
 		}()
 	}
 }

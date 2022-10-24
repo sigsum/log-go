@@ -28,10 +28,7 @@ type TrillianClient struct {
 // been sequenced into the tree of size treeSize.
 func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSize uint64) (AddLeafStatus, error) {
 	leaf := types.Leaf{
-		Statement: types.Statement{
-			ShardHint: req.ShardHint,
-			Checksum:  *merkle.HashFn(req.Message[:]),
-		},
+		Checksum:  *merkle.HashFn(req.Message[:]),
 		Signature: req.Signature,
 		KeyHash:   *merkle.HashFn(req.PublicKey[:]),
 	}

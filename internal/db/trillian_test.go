@@ -21,11 +21,9 @@ import (
 
 func TestAddLeaf(t *testing.T) {
 	req := &requests.Leaf{
-		ShardHint:  0,
-		Message:    merkle.Hash{},
-		Signature:  types.Signature{},
-		PublicKey:  types.PublicKey{},
-		DomainHint: "example.com",
+		Message:   merkle.Hash{},
+		Signature: types.Signature{},
+		PublicKey: types.PublicKey{},
 	}
 	for _, table := range []struct {
 		description       string
@@ -412,18 +410,12 @@ func TestGetLeaves(t *testing.T) {
 		EndSize:   2,
 	}
 	firstLeaf := &types.Leaf{
-		Statement: types.Statement{
-			ShardHint: 0,
-			Checksum:  merkle.Hash{},
-		},
+		Checksum:  merkle.Hash{},
 		Signature: types.Signature{},
 		KeyHash:   merkle.Hash{},
 	}
 	secondLeaf := &types.Leaf{
-		Statement: types.Statement{
-			ShardHint: 0,
-			Checksum:  merkle.Hash{},
-		},
+		Checksum:  merkle.Hash{},
 		Signature: types.Signature{},
 		KeyHash:   merkle.Hash{},
 	}

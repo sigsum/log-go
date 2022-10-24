@@ -10,10 +10,8 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"time"
 
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	mocksDNS "sigsum.org/log-go/internal/mocks/dns"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
@@ -46,8 +44,8 @@ func TestAddLeaf(t *testing.T) {
 		ascii          io.Reader // buffer used to populate HTTP request
 		expectTrillian bool      // expect Trillian client code path
 		errTrillian    error     // error from Trillian client
-		expectDNS      bool      // expect DNS verifier code path
-		errDNS         error     // error from DNS verifier
+		expectToken    bool      // expect token verifier code path
+		errToken       error     // error from token verifier
 		wantCode       int       // HTTP status ok
 		expectStateman bool
 		leafStatus     db.AddLeafStatus // return value from db.AddLeaf()
@@ -60,30 +58,12 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafBuffer(t, 10, merkle.Hash{}, false),
-			wantCode:    http.StatusBadRequest,
-		},
-		{
-			description: "invalid: bad request (shard hint is before shard start)",
-			ascii:       mustLeafBuffer(t, 9, merkle.Hash{}, true),
-			wantCode:    http.StatusBadRequest,
-		},
-		{
-			description: "invalid: bad request (shard hint is after shard end)",
-			ascii:       mustLeafBuffer(t, uint64(time.Now().Unix())+1024, merkle.Hash{}, true),
-			wantCode:    http.StatusBadRequest,
-		},
-		{
-			description: "invalid: failed verifying domain hint",
-			ascii:       mustLeafBuffer(t, 10, merkle.Hash{}, true),
-			expectDNS:   true,
-			errDNS:      fmt.Errorf("something went wrong"),
+			ascii:       mustLeafBuffer(t, merkle.Hash{}, false),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description:    "invalid: backend failure",
-			ascii:          mustLeafBuffer(t, 10, merkle.Hash{}, true),
-			expectDNS:      true,
+			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -92,8 +72,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid: 202",
-			ascii:          mustLeafBuffer(t, 10, merkle.Hash{}, true),
-			expectDNS:      true,
+			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -101,8 +80,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid: 200",
-			ascii:          mustLeafBuffer(t, 10, merkle.Hash{}, true),
-			expectDNS:      true,
+			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -114,10 +92,6 @@ func TestAddLeaf(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			dns := mocksDNS.NewMockVerifier(ctrl)
-			if table.expectDNS {
-				dns.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.errDNS)
-			}
 			client := mocksDB.NewMockClient(ctrl)
 			if table.expectTrillian {
 				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian)
@@ -130,12 +104,12 @@ func TestAddLeaf(t *testing.T) {
 				Config:         testConfig,
 				TrillianClient: client,
 				Stateman:       stateman,
-				DNS:            dns,
 			}
 
 			// Create HTTP request
 			url := types.EndpointAddLeaf.Path("http://example.com", node.Prefix())
 			req, err := http.NewRequest("POST", url, table.ascii)
+			fmt.Printf("ascii: %q\n", table.ascii)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
@@ -529,10 +503,7 @@ func TestGetLeaves(t *testing.T) {
 				var list types.Leaves
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
-						Statement: types.Statement{
-							ShardHint: 0,
-							Checksum:  merkle.Hash{},
-						},
+						Checksum:  merkle.Hash{},
 						Signature: types.Signature{},
 						KeyHash:   merkle.Hash{},
 					})
@@ -550,10 +521,7 @@ func TestGetLeaves(t *testing.T) {
 				var list types.Leaves
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
-						Statement: types.Statement{
-							ShardHint: 0,
-							Checksum:  merkle.Hash{},
-						},
+						Checksum:  merkle.Hash{},
 						Signature: types.Signature{},
 						KeyHash:   merkle.Hash{},
 					})
@@ -621,27 +589,25 @@ func mustHandlePublic(t *testing.T, p Primary, e types.Endpoint) handler.Handler
 	return handler.Handler{}
 }
 
-func mustLeafBuffer(t *testing.T, shardHint uint64, message merkle.Hash, wantSig bool) io.Reader {
+func mustLeafBuffer(t *testing.T, message merkle.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatalf("must generate ed25519 keys: %v", err)
 	}
-	msg := types.Statement{
-		ShardHint: shardHint,
-		Checksum:  *merkle.HashFn(message[:]),
+	sig, err := types.SignLeafMessage(sk, message[:])
+	if err != nil {
+		t.Fatalf("must have an ed25519 signature: %v", err)
 	}
-	sig := ed25519.Sign(sk, msg.ToBinary())
+	fmt.Printf("sig: %x\n", sig)
 	if !wantSig {
 		sig[0] += 1
 	}
 	return bytes.NewBufferString(fmt.Sprintf(
-		"%s=%d\n"+"%s=%x\n"+"%s=%x\n"+"%s=%x\n"+"%s=%s\n",
-		"shard_hint", shardHint,
+		"%s=%x\n"+"%s=%x\n"+"%s=%x\n",
 		"message", message[:],
-		"signature", sig,
+		"signature", *sig,
 		"public_key", vk,
-		"domain_hint", "example.com",
 	))
 }

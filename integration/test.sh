@@ -244,7 +244,6 @@ function sigsum_setup() {
 		nvars[$i:ssrv_endpoint]=$ssrv_endpoint
 		nvars[$i:ssrv_internal]=$ssrv_internal
 		nvars[$i:ssrv_prefix]=$ssrv_prefix
-		nvars[$i:ssrv_shard_start]=$ssrv_shard_start
 		nvars[$i:ssrv_interval]=$ssrv_interval_sec
 
 
@@ -273,7 +272,6 @@ function sigsum_start() {
 
 		if [[ $role = primary ]]; then
 			extra_args+=" -witnesses=${nvars[$i:ssrv_witnesses]}"
-			extra_args+=" -shard-interval-start=${nvars[$i:ssrv_shard_start]}"
 			extra_args+=" -sth-path=${nvars[$i:log_dir]}/sth-store"
 		else
 			binary=sigsum-log-secondary
@@ -287,7 +285,6 @@ function sigsum_start() {
 		      -interval=${nvars[$i:ssrv_interval]}s \
 		      -external-endpoint=${nvars[$i:ssrv_endpoint]} \
 		      -internal-endpoint=${nvars[$i:ssrv_internal]} \
-		      -test-mode=true \
 		      -log-level=debug \
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
@@ -572,8 +569,8 @@ function test_inclusion_proof() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (tree_size $tree_size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $cli_priv -h ${nvars[$pri:ssrv_shard_start]})
-	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k $cli_key_hash -s $signature -h ${nvars[$pri:ssrv_shard_start]})
+	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $cli_priv)
+	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k $cli_key_hash -s $signature)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${tree_size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -630,13 +627,8 @@ function test_get_leaf() {
 		return
 	fi
 
-	if ! keys $pri "shard_hint" "checksum" "signature" "key_hash"; then
+	if ! keys $pri "checksum" "signature" "key_hash"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
-		return
-	fi
-
-	if [[ $(value_of $pri shard_hint) != ${nvars[$pri:ssrv_shard_start]} ]]; then
-		fail "$desc: wrong shard hint $(value_of $pri shard_hint)"
 		return
 	fi
 
@@ -708,12 +700,10 @@ function add_leaf() {
 	local data="$1"; shift
 	local log_dir=${nvars[$s:log_dir]}
 
-	echo "shard_hint=${nvars[$s:ssrv_shard_start]}" > $log_dir/req
-	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" >> $log_dir/req
+	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
 	echo "signature=$(echo $data |
-		./sigsum-debug leaf sign -k $cli_priv -h ${nvars[$s:ssrv_shard_start]})" >> $log_dir/req
+		./sigsum-debug leaf sign -k $cli_priv)" >> $log_dir/req
 	echo "public_key=$cli_pub" >> $log_dir/req
-	echo "domain_hint=$cli_domain_hint" >> $log_dir/req
 
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$s:log_url]}/add-leaf \

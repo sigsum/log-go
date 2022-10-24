@@ -15,7 +15,8 @@ import (
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling add-leaf request")
-	req, err := requests.LeafRequestFromHTTP(r, p.Config.ShardStart, ctx, p.DNS)
+	// TODO: Ignores returned domain, should be used for rate limit.
+	req, _, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
