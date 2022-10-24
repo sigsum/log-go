@@ -116,6 +116,7 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
 	var publicKey *types.PublicKey
+
 	// Setup logging configuration.
 	s.Signer, publicKey, err = utils.ReadKeyFile(*key)
 	if err != nil {
