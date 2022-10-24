@@ -127,13 +127,15 @@ func main() {
 func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	var p primary.Primary
 	var err error
+	var publicKey *types.PublicKey
 
 	// Setup logging configuration.
-	p.Signer, p.Config.LogID, err = utils.NewLogIdentity(*key)
+	p.Signer, publicKey, err = utils.ReadKeyFile(*key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 
+	p.Config.LogID = hex.EncodeToString(publicKey[:])
 	p.Config.TreeID = *trillianID
 	p.Config.Prefix = *prefix
 	p.Config.MaxRange = *maxRange
