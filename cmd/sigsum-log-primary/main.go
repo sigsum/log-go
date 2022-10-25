@@ -23,9 +23,9 @@ import (
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
-	"sigsum.org/sigsum-go/pkg/dns"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -40,8 +40,6 @@ var (
 	witnesses        = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange         = flag.Int64("max-range", 10, "maximum number of entries that can be retrived in a single request")
 	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
-	shardStart       = flag.Int64("shard-interval-start", 0, "start of shard interval since the UNIX epoch in seconds")
-	testMode         = flag.Bool("test-mode", false, "run in test mode (Default: false)")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
 	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
@@ -141,10 +139,6 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	p.Config.MaxRange = *maxRange
 	p.Config.Timeout = *timeout
 	p.Config.Interval = *interval
-	p.Config.ShardStart = uint64(*shardStart)
-	if *shardStart < 0 {
-		return nil, fmt.Errorf("shard start must be larger than zero")
-	}
 	witnessMap, err := newWitnessMap(*witnesses)
 	if err != nil {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)
@@ -181,11 +175,8 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
-	if *testMode == false {
-		p.DNS = dns.NewDefaultResolver()
-	} else {
-		p.DNS = dns.NewDummyResolver()
-	}
+
+	p.TokenVerifier = token.NewDnsVerifier(publicKey)
 
 	// TODO: verify that GRPC.TreeType() == LOG.
 

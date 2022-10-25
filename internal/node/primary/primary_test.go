@@ -17,7 +17,6 @@ var (
 		MaxRange:   3,
 		Timeout:    10,
 		Interval:   10,
-		ShardStart: 10,
 	}
 )
 

@@ -4,37 +4,36 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
+	"strings"
 
-	"sigsum.org/sigsum-go/pkg/dns"
-	"sigsum.org/sigsum-go/pkg/merkle"
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func LeafRequestFromHTTP(r *http.Request, shardStart uint64, ctx context.Context, vf dns.Verifier) (*sigsumreq.Leaf, error) {
+// The string return value, if non-nil, is the verified submitter domain.
+func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier) (*sigsumreq.Leaf, *string, error) {
 	var req sigsumreq.Leaf
 	if err := req.FromASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("parse ascii: %w", err)
+		return nil, nil, fmt.Errorf("parse ascii: %w", err)
 	}
-	stmt := types.Statement{
-		ShardHint: req.ShardHint,
-		Checksum:  *merkle.HashFn(req.Message[:]),
+
+	var domain *string
+	if headerValue := r.Header.Get("Sigsum-Token"); len(headerValue) > 0 {
+		parts := strings.Split(headerValue, " ")
+		if len(parts) != 2 {
+			return nil, nil, fmt.Errorf("invalid Sigsum-Token value: %q\n", headerValue)
+		}
+		if err := vf.Verify(ctx, parts[0], parts[1]); err != nil {
+			return nil, nil, err
+		}
+		s := string(parts[0])
+		domain = &s
 	}
-	if !stmt.Verify(&req.PublicKey, &req.Signature) {
-		return nil, fmt.Errorf("invalid signature")
+	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
+		return nil, nil, fmt.Errorf("invalid signature")
 	}
-	shardEnd := uint64(time.Now().Unix())
-	if req.ShardHint < shardStart {
-		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, shardStart, shardEnd)
-	}
-	if req.ShardHint > shardEnd {
-		return nil, fmt.Errorf("invalid shard hint: %d not in [%d, %d]", req.ShardHint, shardStart, shardEnd)
-	}
-	if err := vf.Verify(ctx, req.DomainHint, &req.PublicKey); err != nil {
-		return nil, fmt.Errorf("invalid domain hint: %v", err)
-	}
-	return &req, nil
+	return &req, domain, nil
 }
 
 func CosignatureRequestFromHTTP(r *http.Request) (*sigsumreq.Cosignature, error) {
