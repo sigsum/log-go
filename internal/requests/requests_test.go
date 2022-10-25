@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -18,21 +17,6 @@ import (
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
-
-type HasPrefix struct {
-	prefix string
-}
-
-func (m HasPrefix) Matches(x interface{}) bool {
-	if s, ok := x.(string); ok {
-		return strings.HasPrefix(s, m.prefix)
-	}
-	return false
-}
-
-func (m HasPrefix) String() string {
-	return fmt.Sprintf("string with prefix %q", m.prefix)
-}
 
 func TestLeafRequestFromHTTP(t *testing.T) {
 	msg := merkle.Hash{}
