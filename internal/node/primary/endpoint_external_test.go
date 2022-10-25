@@ -11,13 +11,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"sigsum.org/log-go/internal/db"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
-	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/mock/gomock"
 )
 
 var (
@@ -491,13 +491,13 @@ func TestGetLeaves(t *testing.T) {
 		{
 			description: "invalid: empty tree",
 			params:      "0/0",
-		        sth:         &sth0,
+			sth:         &sth0,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid: three middle elements",
 			params:      "1/3",
-		        sth:         &sth5,
+			sth:         &sth5,
 			expect:      true,
 			rsp: func() *types.Leaves {
 				var list types.Leaves

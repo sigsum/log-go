@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/google/trillian"
+	ttypes "github.com/google/trillian/types"
 	mocksTrillian "sigsum.org/log-go/internal/mocks/trillian"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/mock/gomock"
-	"github.com/google/trillian"
-	ttypes "github.com/google/trillian/types"
 )
 
 // TODO: Add TestAddSequencedLeaves

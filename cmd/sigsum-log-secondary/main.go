@@ -47,7 +47,7 @@ func main() {
 	flag.Parse()
 
 	if err := utils.LogToFile(*logFile); err != nil {
-		log.Fatal("open log file failed: %v", err);
+		log.Fatal("open log file failed: %v", err)
 	}
 	if err := log.SetLevelFromString(*logLevel); err != nil {
 		log.Fatal("setup logging: %v", err)

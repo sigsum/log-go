@@ -15,12 +15,12 @@ import (
 
 // Config is a collection of log parameters
 type Config struct {
-	LogID      string        // Hex-encoded public key, used as id for metrics
-	TreeID     int64         // Merkle tree identifier used by Trillian
-	Prefix     string        // The portion between base URL and /<endpoint> (may be "")
-	MaxRange   int64         // Maximum number of leaves per get-leaves request
-	Timeout    time.Duration // Timeout used for gRPC requests
-	Interval   time.Duration // Cosigning frequency
+	LogID    string        // Hex-encoded public key, used as id for metrics
+	TreeID   int64         // Merkle tree identifier used by Trillian
+	Prefix   string        // The portion between base URL and /<endpoint> (may be "")
+	MaxRange int64         // Maximum number of leaves per get-leaves request
+	Timeout  time.Duration // Timeout used for gRPC requests
+	Interval time.Duration // Cosigning frequency
 }
 
 // Primary is an instance of the log's primary node

@@ -11,12 +11,12 @@ import (
 var (
 	testWitVK  = types.PublicKey{}
 	testConfig = Config{
-		LogID:      fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
-		TreeID:     0,
-		Prefix:     "testonly",
-		MaxRange:   3,
-		Timeout:    10,
-		Interval:   10,
+		LogID:    fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
+		TreeID:   0,
+		Prefix:   "testonly",
+		MaxRange: 3,
+		Timeout:  10,
+		Interval: 10,
 	}
 )
 

@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	requests "sigsum.org/sigsum-go/pkg/requests"
 	types "sigsum.org/sigsum-go/pkg/types"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.

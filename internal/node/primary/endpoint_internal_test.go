@@ -6,11 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/mock/gomock"
 )
 
 var (

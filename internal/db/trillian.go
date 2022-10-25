@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/merkle"
-	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
 	"github.com/google/trillian"
 	trillianTypes "github.com/google/trillian/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // TrillianClient implements the Client interface for Trillian's gRPC backend

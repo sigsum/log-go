@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
-	"github.com/golang/mock/gomock"
 )
 
 // TestSigner implements the signer interface.  It can be used to mock
