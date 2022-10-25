@@ -23,7 +23,7 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 		return http.StatusBadRequest, err
 	}
 	relax := p.RateLimiter.AccessAllowed(domain, &req.PublicKey, time.Now())
-	if (relax == nil) {
+	if relax == nil {
 		if domain == nil {
 			return http.StatusForbidden, fmt.Errorf("rate-limit for unknown domain exceeded")
 		} else {

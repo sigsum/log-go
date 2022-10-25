@@ -13,7 +13,6 @@ import (
 	"sigsum.org/log-go/internal/db"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
-	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/sigsum-go/pkg/types"

@@ -30,4 +30,3 @@ func TestAccessAllowed(t *testing.T) {
 	checkCount("bar", 0)
 	checkAccess("other domain", "bar", 2, true)
 }
-

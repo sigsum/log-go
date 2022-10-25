@@ -3,18 +3,18 @@ package rateLimit
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"strconv"
-	"fmt"
-	"encoding/hex"
-	 "strings"
+	"strings"
 )
 
 type Config struct {
 	// Allowlists, and their daily request limit.
-	AllowedKeys map[string] int // map key is the binary key hash.
-	AllowedDomains map[string] int // map key lowercase domain.
-	AllowPublic int
+	AllowedKeys      map[string]int // map key is the binary key hash.
+	AllowedDomains   map[string]int // map key lowercase domain.
+	AllowPublic      int
 	PublicSuffixFile string
 }
 
@@ -25,6 +25,7 @@ type Config struct {
 
 // The type of config lines. None represent an empty or comment-only line.
 type configToken int
+
 const (
 	configNone configToken = iota
 	configKey
@@ -44,7 +45,7 @@ func parseToken(s []byte) (configToken, error) {
 		return configNone, fmt.Errorf("unknown config keyword %q", s)
 	}
 }
-		
+
 func parseLimit(s []byte) (int, error) {
 	// Use ParseUint, to not accept leading +/-.
 	i, err := strconv.ParseUint(string(s), 10, 32)
@@ -53,7 +54,7 @@ func parseLimit(s []byte) (int, error) {
 	}
 	// Limit to 32-bit, so we can always use int.
 	if i >= (1 << 31) {
-		return 0, fmt.Errorf("limit %q is too large", s);
+		return 0, fmt.Errorf("limit %q is too large", s)
 	}
 	return int(i), nil
 }
@@ -82,7 +83,7 @@ func parseLine(line []byte) (configToken, string, int, error) {
 	}
 
 	item := string(fields[2])
-	
+
 	// Validate item format.
 	switch token {
 	case configKey:
@@ -106,10 +107,10 @@ func parseLine(line []byte) (configToken, string, int, error) {
 	return token, item, limit, nil
 }
 
-func ParseConfig ( file io.Reader) (Config, error) {
+func ParseConfig(file io.Reader) (Config, error) {
 	config := Config{
-		AllowedKeys: make(map[string] int), 
-		AllowedDomains: make(map[string] int),
+		AllowedKeys:    make(map[string]int),
+		AllowedDomains: make(map[string]int),
 	}
 	publicSeen := false
 	for scanner := bufio.NewScanner(file); scanner.Scan(); {
