@@ -103,8 +103,12 @@ func TestToCosignTreeHead(t *testing.T) {
 
 func TestCosignedTreeHead(t *testing.T) {
 	want := &types.CosignedTreeHead{
-		Cosignature: make([]crypto.Signature, 1),
-		KeyHash:     make([]crypto.Hash, 1),
+		Cosignatures: []types.Cosignature{
+			types.Cosignature{
+				Signature: crypto.Signature{},
+				KeyHash:     crypto.Hash{},
+			}
+		},
 	}
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
