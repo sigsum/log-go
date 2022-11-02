@@ -8,13 +8,13 @@ import (
 	"github.com/golang/mock/gomock"
 	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
 	testConfig = Config{
-		LogID:   fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
+		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
 		TreeID:  0,
 		Prefix:  "testonly",
 		Timeout: 10,

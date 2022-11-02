@@ -3,7 +3,7 @@ package state
 import (
 	"bytes"
 	"context"
-	"crypto"
+	stdcrypto "crypto"
 	"crypto/ed25519"
 	"fmt"
 	"os"
@@ -12,8 +12,8 @@ import (
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -21,8 +21,8 @@ import (
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
 	client    db.Client
-	signer    crypto.Signer
-	namespace merkle.Hash
+	signer    stdcrypto.Signer
+	namespace crypto.Hash
 	interval  time.Duration
 	// Timeout for interaction with the secondary.
 	timeout   time.Duration
@@ -30,7 +30,7 @@ type StateManagerSingle struct {
 	sthFile   *os.File
 
 	// Witnesses map trusted witness identifiers to public keys
-	witnesses map[merkle.Hash]types.PublicKey
+	witnesses map[crypto.Hash]crypto.PublicKey
 
 	// Lock-protected access to pointers. The pointed-to values
 	// must be treated as immutable. All endpoints are readers.
@@ -39,18 +39,18 @@ type StateManagerSingle struct {
 	cosignedTreeHead *types.CosignedTreeHead
 
 	// Syncronized and deduplicated witness cosignatures for signedTreeHead
-	cosignatures map[merkle.Hash]*types.Signature
+	cosignatures map[crypto.Hash]*crypto.Signature
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, timeout time.Duration,
-	secondary client.Client, sthFile *os.File, witnesses map[merkle.Hash]types.PublicKey) (*StateManagerSingle, error) {
+func NewStateManagerSingle(dbcli db.Client, signer stdcrypto.Signer, interval, timeout time.Duration,
+	secondary client.Client, sthFile *os.File, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
-		namespace: *merkle.HashFn(signer.Public().(ed25519.PublicKey)),
+		namespace: crypto.HashBytes(signer.Public().(ed25519.PublicKey)),
 		interval:  interval,
 		timeout:   timeout,
 		secondary: secondary,
@@ -88,7 +88,7 @@ func (sm *StateManagerSingle) CosignedTreeHead() (*types.CosignedTreeHead, error
 	return sm.cosignedTreeHead, nil
 }
 
-func (sm *StateManagerSingle) AddCosignature(keyHash *merkle.Hash, sig *types.Signature) error {
+func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.Signature) error {
 	// This mapping is immutable, no lock needed.
 	pub, ok := sm.witnesses[*keyHash]
 	if !ok {
@@ -105,7 +105,7 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *merkle.Hash, sig *types.Si
 	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.namespace) {
 		return fmt.Errorf("invalid cosignature")
 	}
-	sm.cosignatures[*merkle.HashFn(pub[:])] = sig
+	sm.cosignatures[crypto.HashBytes(pub[:])] = sig
 	return nil
 }
 
@@ -231,8 +231,8 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 
 	var cth types.CosignedTreeHead
 	cth.SignedTreeHead = *sm.signedTreeHead
-	cth.Cosignature = make([]types.Signature, 0, n)
-	cth.KeyHash = make([]merkle.Hash, 0, n)
+	cth.Cosignature = make([]crypto.Signature, 0, n)
+	cth.KeyHash = make([]crypto.Hash, 0, n)
 	for keyHash, cosignature := range sm.cosignatures {
 		cth.KeyHash = append(cth.KeyHash, keyHash)
 		cth.Cosignature = append(cth.Cosignature, *cosignature)
@@ -241,7 +241,7 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 }
 
 func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead) {
-	sm.cosignatures = make(map[merkle.Hash]*types.Signature)
+	sm.cosignatures = make(map[crypto.Hash]*crypto.Signature)
 	sm.signedTreeHead = nextSTH
 }
 
@@ -284,7 +284,7 @@ func (sm *StateManagerSingle) storeSTH(sth *types.SignedTreeHead) error {
 }
 
 func zeroTreeHead() *types.TreeHead {
-	return refreshTreeHead(types.TreeHead{RootHash: *merkle.HashFn([]byte(""))})
+	return refreshTreeHead(types.TreeHead{RootHash: crypto.HashBytes([]byte(""))})
 }
 
 func refreshTreeHead(th types.TreeHead) *types.TreeHead {

@@ -9,6 +9,7 @@ import (
 	trillianTypes "github.com/google/trillian/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/requests"
@@ -28,9 +29,9 @@ type TrillianClient struct {
 // been sequenced into the tree of size treeSize.
 func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSize uint64) (AddLeafStatus, error) {
 	leaf := types.Leaf{
-		Checksum:  *merkle.HashFn(req.Message[:]),
+		Checksum:  crypto.HashBytes(req.Message[:]),
 		Signature: req.Signature,
-		KeyHash:   *merkle.HashFn(req.PublicKey[:]),
+		KeyHash:   crypto.HashBytes(req.PublicKey[:]),
 	}
 	serialized := leaf.ToBinary()
 
@@ -51,7 +52,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSi
 		log.Warning("gRPC error: %v", err)
 		return AddLeafStatus{}, fmt.Errorf("back-end failure")
 	}
-	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, *merkle.HashLeafNode(serialized)})
+	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, merkle.HashLeafNode(serialized)})
 	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: err == nil}, nil
 }
 
@@ -113,7 +114,7 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (*types.TreeHead, erro
 	if err := r.UnmarshalBinary(rsp.SignedLogRoot.LogRoot); err != nil {
 		return nil, fmt.Errorf("no log root: unmarshal failed: %v", err)
 	}
-	if len(r.RootHash) != merkle.HashSize {
+	if len(r.RootHash) != crypto.HashSize {
 		return nil, fmt.Errorf("unexpected hash length: %d", len(r.RootHash))
 	}
 	return treeHeadFromLogRoot(&r), nil
@@ -219,10 +220,10 @@ func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) *types.TreeHead {
 	return &th
 }
 
-func nodePathFromHashes(hashes [][]byte) ([]merkle.Hash, error) {
-	path := make([]merkle.Hash, len(hashes))
+func nodePathFromHashes(hashes [][]byte) ([]crypto.Hash, error) {
+	path := make([]crypto.Hash, len(hashes))
 	for i := 0; i < len(hashes); i++ {
-		if len(hashes[i]) != merkle.HashSize {
+		if len(hashes[i]) != crypto.HashSize {
 			return nil, fmt.Errorf("unexpected hash length: %v", len(hashes[i]))
 		}
 

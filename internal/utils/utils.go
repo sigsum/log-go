@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"crypto"
+	stdcrypto "crypto"
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
 )
 
 func LogToFile(logFile string) error {
@@ -24,21 +24,7 @@ func LogToFile(logFile string) error {
 	return nil
 }
 
-func PubkeyFromHexString(pkhex string) (*types.PublicKey, error) {
-	pkbuf, err := hex.DecodeString(pkhex)
-	if err != nil {
-		return nil, fmt.Errorf("DecodeString: %v", err)
-	}
-
-	var pk types.PublicKey
-	if n := copy(pk[:], pkbuf); n != types.PublicKeySize {
-		return nil, fmt.Errorf("invalid pubkey size: %v", n)
-	}
-
-	return &pk, nil
-}
-
-func ReadKeyFile(keyFile string) (crypto.Signer, *types.PublicKey, error) {
+func ReadKeyFile(keyFile string) (stdcrypto.Signer, *crypto.PublicKey, error) {
 	buf, err := ioutil.ReadFile(keyFile)
 	if err != nil {
 		return nil, nil, err
@@ -46,9 +32,9 @@ func ReadKeyFile(keyFile string) (crypto.Signer, *types.PublicKey, error) {
 	if buf, err = hex.DecodeString(strings.TrimSpace(string(buf))); err != nil {
 		return nil, nil, fmt.Errorf("DecodeString: %v", err)
 	}
-	sk := crypto.Signer(ed25519.NewKeyFromSeed(buf))
+	sk := stdcrypto.Signer(ed25519.NewKeyFromSeed(buf))
 	vk := sk.Public().(ed25519.PublicKey)
-	var pub types.PublicKey
+	var pub crypto.PublicKey
 	copy(pub[:], vk)
 	return sk, &pub, nil
 }

@@ -23,10 +23,9 @@ import (
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/submit-token"
-	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
@@ -125,7 +124,7 @@ func main() {
 func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	var p primary.Primary
 	var err error
-	var publicKey *types.PublicKey
+	var publicKey *crypto.PublicKey
 
 	// Setup logging configuration.
 	p.Signer, publicKey, err = utils.ReadKeyFile(*key)
@@ -157,13 +156,13 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 
 	// Setup secondary node configuration.
 	if *secondaryURL != "" && *secondaryPubkey != "" {
-		pubkey, err := utils.PubkeyFromHexString(*secondaryPubkey)
+		pubkey, err := crypto.PublicKeyFromHex(*secondaryPubkey)
 		if err != nil {
 			return nil, fmt.Errorf("invalid secondary node pubkey: %v", err)
 		}
 		p.Secondary = client.New(client.Config{
 			LogURL: *secondaryURL,
-			LogPub: *pubkey,
+			LogPub: pubkey,
 		})
 	} else {
 		p.Secondary = client.New(client.Config{})
@@ -202,8 +201,8 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 }
 
 // newWitnessMap creates a new map of trusted witnesses
-func newWitnessMap(witnesses string) (map[merkle.Hash]types.PublicKey, error) {
-	w := make(map[merkle.Hash]types.PublicKey)
+func newWitnessMap(witnesses string) (map[crypto.Hash]crypto.PublicKey, error) {
+	w := make(map[crypto.Hash]crypto.PublicKey)
 	if len(witnesses) > 0 {
 		for _, witness := range strings.Split(witnesses, ",") {
 			b, err := hex.DecodeString(witness)
@@ -211,11 +210,11 @@ func newWitnessMap(witnesses string) (map[merkle.Hash]types.PublicKey, error) {
 				return nil, fmt.Errorf("DecodeString: %v", err)
 			}
 
-			var vk types.PublicKey
-			if n := copy(vk[:], b); n != types.PublicKeySize {
+			var vk crypto.PublicKey
+			if n := copy(vk[:], b); n != crypto.PublicKeySize {
 				return nil, fmt.Errorf("Invalid public key size: %v", n)
 			}
-			w[*merkle.HashFn(vk[:])] = vk
+			w[crypto.HashBytes(vk[:])] = vk
 		}
 	}
 	return w, nil

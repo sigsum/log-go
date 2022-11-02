@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/merkle"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -25,8 +25,8 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 		if err != nil {
 			return nil, fmt.Errorf("getting tree head: %w", err)
 		}
-		namespace := merkle.HashFn(s.Signer.Public().(ed25519.PublicKey))
-		sth, err := th.Sign(s.Signer, namespace)
+		keyHash := crypto.HashBytes(s.Signer.Public().(ed25519.PublicKey))
+		sth, err := th.Sign(s.Signer, &keyHash)
 		if err != nil {
 			return nil, fmt.Errorf("signing tree head: %w", err)
 		}

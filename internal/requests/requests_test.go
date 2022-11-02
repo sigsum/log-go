@@ -13,35 +13,35 @@ import (
 
 	"github.com/golang/mock/gomock"
 	mocksToken "sigsum.org/log-go/internal/mocks/submit-token"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func TestLeafRequestFromHTTP(t *testing.T) {
-	msg := merkle.Hash{}
-	var pub types.PublicKey
+	msg := crypto.Hash{}
+	var pub crypto.PublicKey
 	b, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatalf("must generate key pair: %v", err)
 	}
 	copy(pub[:], b)
 
-	sign := func(msg merkle.Hash) *types.Signature {
+	sign := func(msg crypto.Hash) crypto.Signature {
 		sig, err := types.SignLeafMessage(priv, msg[:])
 		if err != nil {
 			t.Fatalf("must sign: %v", err)
 		}
 		return sig
 	}
-	input := func(msg merkle.Hash, badSig bool) io.Reader {
-		sig := sign(msg)[:]
+	input := func(msg crypto.Hash, badSig bool) io.Reader {
+		sig := sign(msg)
 		if badSig {
 			msg[0] += 1 // use a different message
 		}
-		str := fmt.Sprintf("message=%x\n", msg[:])
-		str += fmt.Sprintf("signature=%x\n", sig[:])
-		str += fmt.Sprintf("public_key=%x\n", pub[:])
+		str := fmt.Sprintf("message=%x\n", msg)
+		str += fmt.Sprintf("signature=%x\n", sig)
+		str += fmt.Sprintf("public_key=%x\n", pub)
 		return bytes.NewBufferString(str)
 	}
 
@@ -60,8 +60,8 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		{"invalid: parse ascii", bytes.NewBufferString("a=b"), nil, nil, nil, false},
 		{"invalid: signature", input(msg, true), nil, nil, nil, false},
 		{"invalid: mocked token error", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
-		{"valid", input(msg, false), nil, nil, &sigsumreq.Leaf{msg, *sign(msg), pub}, false},
-		{"valid with domain", input(msg, false), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, *sign(msg), pub}, true},
+		{"valid", input(msg, false), nil, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, false},
+		{"valid with domain", input(msg, false), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, true},
 		{"valid leaf, invalid domain", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
 	} {
 		func() {
@@ -101,8 +101,8 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 }
 
 func TestCosignatureRequestFromHTTP(t *testing.T) {
-	input := func(h merkle.Hash) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x\nkey_hash=%x\n", types.Signature{}, h))
+	input := func(h crypto.Hash) io.Reader {
+		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x\nkey_hash=%x\n", crypto.Signature{}, h))
 	}
 	for _, table := range []struct {
 		desc    string
@@ -110,7 +110,7 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 		wantRsp *sigsumreq.Cosignature
 	}{
 		{"invalid: parser error", bytes.NewBufferString("abcd"), nil},
-		{"valid", input(*merkle.HashFn([]byte("w1"))), &sigsumreq.Cosignature{types.Signature{}, *merkle.HashFn([]byte("w1"))}},
+		{"valid", input(crypto.HashBytes([]byte("w1"))), &sigsumreq.Cosignature{crypto.Signature{}, crypto.HashBytes([]byte("w1"))}},
 	} {
 		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
 		req, err := http.NewRequest(http.MethodPost, url, table.params)
@@ -169,7 +169,7 @@ func TestInclusionProofRequestFromHTTP(t *testing.T) {
 	}{
 		{"invalid: bad request (parser error)", "a/0000000000000000000000000000000000000000000000000000000000000000", nil},
 		{"invalid: bad request (out of range)", "1/0000000000000000000000000000000000000000000000000000000000000000", nil},
-		{"valid", "2/0000000000000000000000000000000000000000000000000000000000000000", &sigsumreq.InclusionProof{2, merkle.Hash{}}},
+		{"valid", "2/0000000000000000000000000000000000000000000000000000000000000000", &sigsumreq.InclusionProof{2, crypto.Hash{}}},
 	} {
 		url := types.EndpointGetInclusionProof.Path("http://example.org/sigsum/")
 		req, err := http.NewRequest(http.MethodGet, url+table.params, nil)

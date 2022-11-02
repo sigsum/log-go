@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/log-go/internal/node/handler"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -17,7 +17,7 @@ var (
 	testTH = &types.TreeHead{
 		Timestamp: 0,
 		TreeSize:  0,
-		RootHash:  *merkle.HashFn([]byte("root hash")),
+		RootHash:  crypto.HashBytes([]byte("root hash")),
 	}
 )
 
