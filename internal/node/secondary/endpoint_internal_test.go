@@ -1,10 +1,7 @@
 package secondary
 
 import (
-	stdcrypto "crypto"
-	"crypto/ed25519"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,12 +23,12 @@ type TestSigner struct {
 	Error     error
 }
 
-func (ts *TestSigner) Public() stdcrypto.PublicKey {
-	return ed25519.PublicKey(ts.PublicKey[:])
+func (ts *TestSigner) Public() crypto.PublicKey {
+	return ts.PublicKey
 }
 
-func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts stdcrypto.SignerOpts) ([]byte, error) {
-	return ts.Signature[:], ts.Error
+func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
+	return ts.Signature, ts.Error
 }
 
 var (
@@ -49,7 +46,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 		desc          string
 		trillianTHErr error
 		trillianTHRet *types.TreeHead
-		signer        stdcrypto.Signer
+		signer        crypto.Signer
 		httpStatus    int
 	}{
 		{

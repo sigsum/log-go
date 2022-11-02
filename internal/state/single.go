@@ -3,8 +3,6 @@ package state
 import (
 	"bytes"
 	"context"
-	stdcrypto "crypto"
-	"crypto/ed25519"
 	"fmt"
 	"os"
 	"sync"
@@ -21,7 +19,7 @@ import (
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
 	client   db.Client
-	signer   stdcrypto.Signer
+	signer   crypto.Signer
 	keyHash  crypto.Hash
 	interval time.Duration
 	// Timeout for interaction with the secondary.
@@ -45,12 +43,13 @@ type StateManagerSingle struct {
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer stdcrypto.Signer, interval, timeout time.Duration,
+func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, timeout time.Duration,
 	secondary client.Client, sthFile *os.File, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
+	pub := signer.Public()
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
-		keyHash:   crypto.HashBytes(signer.Public().(ed25519.PublicKey)),
+		keyHash:   crypto.HashBytes(pub[:]),
 		interval:  interval,
 		timeout:   timeout,
 		secondary: secondary,

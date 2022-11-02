@@ -4,7 +4,6 @@ package secondary
 
 import (
 	"context"
-	"crypto/ed25519"
 	"fmt"
 	"net/http"
 
@@ -25,7 +24,8 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 		if err != nil {
 			return nil, fmt.Errorf("getting tree head: %w", err)
 		}
-		keyHash := crypto.HashBytes(s.Signer.Public().(ed25519.PublicKey))
+		pub := s.Signer.Public()
+		keyHash := crypto.HashBytes(pub[:])
 		sth, err := th.Sign(s.Signer, &keyHash)
 		if err != nil {
 			return nil, fmt.Errorf("signing tree head: %w", err)

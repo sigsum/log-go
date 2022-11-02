@@ -2,12 +2,8 @@ package state
 
 import (
 	"bytes"
-	stdcrypto "crypto"
-	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -30,12 +26,12 @@ type TestSigner struct {
 	Error     error
 }
 
-func (ts *TestSigner) Public() stdcrypto.PublicKey {
-	return ed25519.PublicKey(ts.PublicKey[:])
+func (ts *TestSigner) Public() crypto.PublicKey {
+	return ts.PublicKey
 }
 
-func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts stdcrypto.SignerOpts) ([]byte, error) {
-	return ts.Signature[:], ts.Error
+func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
+	return ts.Signature, ts.Error
 }
 
 func TestNewStateManagerSingle(t *testing.T) {
@@ -43,7 +39,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 	signerErr := &TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("err")}
 	for _, table := range []struct {
 		description string
-		signer      stdcrypto.Signer
+		signer      crypto.Signer
 		thExp       bool
 		thErr       error
 		th          types.TreeHead
@@ -135,7 +131,7 @@ func TestAddCosignature(t *testing.T) {
 
 	for _, table := range []struct {
 		desc    string
-		signer  stdcrypto.Signer
+		signer  crypto.Signer
 		vk      crypto.PublicKey
 		wantErr bool
 	}{
@@ -170,18 +166,16 @@ func TestAddCosignature(t *testing.T) {
 	}
 }
 
-func mustKeyPair(t *testing.T) (crypto.PublicKey, stdcrypto.Signer) {
+func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 	t.Helper()
-	vk, sk, err := ed25519.GenerateKey(rand.Reader)
+	pub, signer, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
-	var pub crypto.PublicKey
-	copy(pub[:], vk[:])
-	return pub, sk
+	return pub, signer
 }
 
-func mustSign(t *testing.T, s stdcrypto.Signer, th *types.TreeHead, kh *crypto.Hash) *types.SignedTreeHead {
+func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) *types.SignedTreeHead {
 	t.Helper()
 	sth, err := th.Sign(s, kh)
 	if err != nil {

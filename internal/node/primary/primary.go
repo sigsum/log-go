@@ -1,7 +1,6 @@
 package primary
 
 import (
-	"crypto"
 	"net/http"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
