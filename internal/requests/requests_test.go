@@ -3,8 +3,6 @@ package requests
 import (
 	"bytes"
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,12 +18,10 @@ import (
 
 func TestLeafRequestFromHTTP(t *testing.T) {
 	msg := crypto.Hash{}
-	var pub crypto.PublicKey
-	b, priv, err := ed25519.GenerateKey(rand.Reader)
+	pub, priv, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatalf("must generate key pair: %v", err)
 	}
-	copy(pub[:], b)
 
 	sign := func(msg crypto.Hash) crypto.Signature {
 		sig, err := types.SignLeafMessage(priv, msg[:])

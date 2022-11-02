@@ -2,8 +2,6 @@ package primary
 
 import (
 	"bytes"
-	"crypto/ed25519"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -592,7 +590,7 @@ func mustHandlePublic(t *testing.T, p Primary, e types.Endpoint) handler.Handler
 func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
-	vk, sk, err := ed25519.GenerateKey(rand.Reader)
+	vk, sk, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatalf("must generate ed25519 keys: %v", err)
 	}
