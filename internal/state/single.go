@@ -230,11 +230,11 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 
 	var cth types.CosignedTreeHead
 	cth.SignedTreeHead = *sm.signedTreeHead
-	cth.Cosignature = make([]crypto.Signature, 0, n)
-	cth.KeyHash = make([]crypto.Hash, 0, n)
+	cth.Cosignatures = make([]types.Cosignature, 0, n)
 	for keyHash, cosignature := range sm.cosignatures {
-		cth.KeyHash = append(cth.KeyHash, keyHash)
-		cth.Cosignature = append(cth.Cosignature, *cosignature)
+		cth.Cosignatures = append(cth.Cosignatures,
+			types.Cosignature{KeyHash: keyHash,
+				Signature: *cosignature})
 	}
 	sm.cosignedTreeHead = &cth
 }
