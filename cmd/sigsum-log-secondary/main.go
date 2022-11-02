@@ -115,10 +115,10 @@ func main() {
 func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
-	var publicKey *crypto.PublicKey
+	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	s.Signer, publicKey, err = utils.ReadKeyFile(*key)
+	publicKey, s.Signer, err = utils.ReadKeyFile(*key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}

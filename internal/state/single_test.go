@@ -131,7 +131,7 @@ func TestCosignedTreeHead(t *testing.T) {
 }
 
 func TestAddCosignature(t *testing.T) {
-	secret, public := mustKeyPair(t)
+	public, secret := mustKeyPair(t)
 
 	for _, table := range []struct {
 		desc    string
@@ -152,13 +152,13 @@ func TestAddCosignature(t *testing.T) {
 		},
 	} {
 		sm := &StateManagerSingle{
-			namespace:      crypto.HashBytes(nil),
+			keyHash:        crypto.HashBytes(nil),
 			signedTreeHead: &types.SignedTreeHead{},
 			witnesses:      map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(public[:]): public},
 			cosignatures:   make(map[crypto.Hash]*crypto.Signature),
 		}
 
-		sth := mustSign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.namespace)
+		sth := mustSign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.keyHash)
 		keyHash := crypto.HashBytes(table.vk[:])
 		err := sm.AddCosignature(&keyHash, &sth.Signature)
 		if got, want := err != nil, table.wantErr; got != want {
@@ -170,7 +170,7 @@ func TestAddCosignature(t *testing.T) {
 	}
 }
 
-func mustKeyPair(t *testing.T) (stdcrypto.Signer, crypto.PublicKey) {
+func mustKeyPair(t *testing.T) (crypto.PublicKey, stdcrypto.Signer) {
 	t.Helper()
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -178,7 +178,7 @@ func mustKeyPair(t *testing.T) (stdcrypto.Signer, crypto.PublicKey) {
 	}
 	var pub crypto.PublicKey
 	copy(pub[:], vk[:])
-	return sk, pub
+	return pub, sk
 }
 
 func mustSign(t *testing.T, s stdcrypto.Signer, th *types.TreeHead, kh *crypto.Hash) *types.SignedTreeHead {
