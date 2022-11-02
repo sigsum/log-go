@@ -106,8 +106,8 @@ func TestCosignedTreeHead(t *testing.T) {
 		Cosignatures: []types.Cosignature{
 			types.Cosignature{
 				Signature: crypto.Signature{},
-				KeyHash:     crypto.Hash{},
-			}
+				KeyHash:   crypto.Hash{},
+			},
 		},
 	}
 	sm := StateManagerSingle{

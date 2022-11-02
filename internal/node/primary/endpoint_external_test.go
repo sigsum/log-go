@@ -25,8 +25,12 @@ var (
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
-		Cosignature:    []crypto.Signature{crypto.Signature{}},
-		KeyHash:        []crypto.Hash{crypto.Hash{}},
+		Cosignatures: []types.Cosignature{
+			types.Cosignature{
+				Signature: crypto.Signature{},
+				KeyHash:   crypto.Hash{},
+			},
+		},
 	}
 	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
 	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
@@ -124,9 +128,10 @@ func TestAddLeaf(t *testing.T) {
 
 func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
-			"cosignature", crypto.Signature{},
-			"key_hash", crypto.HashBytes(testWitVK[:]),
+		return bytes.NewBufferString(fmt.Sprintf("%s=%x %x\n",
+			"cosignature",
+			crypto.HashBytes(testWitVK[:]),
+			crypto.Signature{},
 		))
 	}
 	for _, table := range []struct {

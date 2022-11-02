@@ -98,7 +98,7 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 
 func TestCosignatureRequestFromHTTP(t *testing.T) {
 	input := func(h crypto.Hash) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x\nkey_hash=%x\n", crypto.Signature{}, h))
+		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x %x\n", h, crypto.Signature{}))
 	}
 	for _, table := range []struct {
 		desc    string
