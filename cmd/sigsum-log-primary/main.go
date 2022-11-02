@@ -124,10 +124,10 @@ func main() {
 func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	var p primary.Primary
 	var err error
-	var publicKey *crypto.PublicKey
+	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	p.Signer, publicKey, err = utils.ReadKeyFile(*key)
+	publicKey, p.Signer, err = utils.ReadKeyFile(*key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -175,7 +175,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
-	p.TokenVerifier = token.NewDnsVerifier(publicKey)
+	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
 
 	// TODO: verify that GRPC.TreeType() == LOG.
 

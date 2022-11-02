@@ -24,17 +24,17 @@ func LogToFile(logFile string) error {
 	return nil
 }
 
-func ReadKeyFile(keyFile string) (stdcrypto.Signer, *crypto.PublicKey, error) {
+func ReadKeyFile(keyFile string) (crypto.PublicKey, stdcrypto.Signer, error) {
 	buf, err := ioutil.ReadFile(keyFile)
 	if err != nil {
-		return nil, nil, err
+		return crypto.PublicKey{}, nil, err
 	}
 	if buf, err = hex.DecodeString(strings.TrimSpace(string(buf))); err != nil {
-		return nil, nil, fmt.Errorf("DecodeString: %v", err)
+		return crypto.PublicKey{}, nil, fmt.Errorf("DecodeString: %v", err)
 	}
 	sk := stdcrypto.Signer(ed25519.NewKeyFromSeed(buf))
 	vk := sk.Public().(ed25519.PublicKey)
 	var pub crypto.PublicKey
 	copy(pub[:], vk)
-	return sk, &pub, nil
+	return pub, sk, nil
 }

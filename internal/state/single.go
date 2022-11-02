@@ -20,10 +20,10 @@ import (
 
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
-	client    db.Client
-	signer    stdcrypto.Signer
-	namespace crypto.Hash
-	interval  time.Duration
+	client   db.Client
+	signer   stdcrypto.Signer
+	keyHash  crypto.Hash
+	interval time.Duration
 	// Timeout for interaction with the secondary.
 	timeout   time.Duration
 	secondary client.Client
@@ -50,7 +50,7 @@ func NewStateManagerSingle(dbcli db.Client, signer stdcrypto.Signer, interval, t
 	sm := &StateManagerSingle{
 		client:    dbcli,
 		signer:    signer,
-		namespace: crypto.HashBytes(signer.Public().(ed25519.PublicKey)),
+		keyHash:   crypto.HashBytes(signer.Public().(ed25519.PublicKey)),
 		interval:  interval,
 		timeout:   timeout,
 		secondary: secondary,
@@ -102,7 +102,7 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.S
 	sm.Lock()
 	defer sm.Unlock()
 
-	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.namespace) {
+	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.keyHash) {
 		return fmt.Errorf("invalid cosignature")
 	}
 	sm.cosignatures[crypto.HashBytes(pub[:])] = sig
@@ -132,7 +132,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get tree head: %v", err)
 	}
-	nextSTH, err := sm.chooseTree(ctx, th).Sign(sm.signer, &sm.namespace)
+	nextSTH, err := sm.chooseTree(ctx, th).Sign(sm.signer, &sm.keyHash)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
@@ -263,7 +263,7 @@ func (sm *StateManagerSingle) restoreSTH() (*types.SignedTreeHead, error) {
 		th = *zeroTreeHead()
 	}
 	th = *refreshTreeHead(th)
-	return th.Sign(sm.signer, &sm.namespace)
+	return th.Sign(sm.signer, &sm.keyHash)
 }
 
 func (sm *StateManagerSingle) storeSTH(sth *types.SignedTreeHead) error {
