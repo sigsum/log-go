@@ -15,24 +15,36 @@ type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
 	// resources were consumed. Otherwise, returns nil.
-	AccessAllowed(domain *string, pub *types.PublicKey, now time.Time) func()
+	AccessAllowed(domain *string, pub *types.PublicKey) func()
 }
 
 type NoLimit struct{}
 
-func (l NoLimit) AccessAllowed(_ *string, _ *types.PublicKey, _ time.Time) func() {
+func (l NoLimit) AccessAllowed(_ *string, _ *types.PublicKey) func() {
 	return func() {}
 }
 
 var schedulePeriod = 24 * time.Hour
 var limitPerPeriod = 50
 
+type clocker interface {
+	Now() time.Time
+}
+
+type wallTime struct {}
+
+func (_ wallTime) Now() time.Time {
+	return time.Now()
+}
+
 type schedule struct {
+	clock clocker
 	sync.Mutex
 	next time.Time
 }
 
-func (s *schedule) IsTime(now time.Time) bool {
+func (s *schedule) IsTime() bool {
+	now := s.clock.Now()
 	s.Lock()
 	defer s.Unlock()
 	if now.Before(s.next) {
@@ -70,8 +82,8 @@ func (l *limiter) domainAllowed(domain string) (func(), bool) {
 	}
 }
 
-func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey, now time.Time) func() {
-	if l.resetSchedule.IsTime(now) {
+func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey) func() {
+	if l.resetSchedule.IsTime() {
 		l.keyCounts.Reset()
 		l.domainCounts.Reset()
 		l.publicCounts.Reset()
@@ -102,7 +114,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey, now 
 	return l.publicCounts.AccessAllowed(domain, l.allowPublic)
 }
 
-func NewLimiter(configFile io.Reader, now time.Time) (Limiter, error) {
+func newLimiter(configFile io.Reader, clock clocker) (Limiter, error) {
 	config, err := ParseConfig(configFile)
 	if err != nil {
 		return nil, err
@@ -124,7 +136,10 @@ func NewLimiter(configFile io.Reader, now time.Time) (Limiter, error) {
 		allowedDomains: config.AllowedDomains,
 		allowPublic:    config.AllowPublic,
 		domainDb:       db,
-		resetSchedule:  schedule{next: now.Add(schedulePeriod)},
+		resetSchedule:  schedule{
+			clock: clock,
+			next: clock.Now().Add(schedulePeriod),
+		},
 	}
 
 	// Initialize the mappings.
@@ -133,4 +148,8 @@ func NewLimiter(configFile io.Reader, now time.Time) (Limiter, error) {
 	l.publicCounts.Reset()
 
 	return &l, nil
+}
+
+func NewLimiter(configFile io.Reader) (Limiter, error) {
+	return newLimiter(configFile, wallTime{})
 }

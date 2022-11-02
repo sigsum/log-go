@@ -183,7 +183,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		if err != nil {
 			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}
-		p.RateLimiter, err = rateLimit.NewLimiter(f, time.Now())
+		p.RateLimiter, err = rateLimit.NewLimiter(f)
 		if err != nil {
 			return nil, fmt.Errorf("initializing rate limiter failed: %v", err)
 		}

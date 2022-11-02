@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
@@ -22,12 +21,12 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	relax := p.RateLimiter.AccessAllowed(domain, &req.PublicKey, time.Now())
+	relax := p.RateLimiter.AccessAllowed(domain, &req.PublicKey)
 	if relax == nil {
 		if domain == nil {
-			return http.StatusForbidden, fmt.Errorf("rate-limit for unknown domain exceeded")
+			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
 		} else {
-			return http.StatusForbidden, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 		}
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
