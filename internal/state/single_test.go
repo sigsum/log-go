@@ -2,7 +2,7 @@ package state
 
 import (
 	"bytes"
-	"crypto"
+	stdcrypto "crypto"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -16,7 +16,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -25,25 +25,25 @@ import (
 // signature, and error.
 // NOTE: Code duplication with internal/node/secondary/endpoint_internal_test.go
 type TestSigner struct {
-	PublicKey [ed25519.PublicKeySize]byte
-	Signature [ed25519.SignatureSize]byte
+	PublicKey crypto.PublicKey
+	Signature crypto.Signature
 	Error     error
 }
 
-func (ts *TestSigner) Public() crypto.PublicKey {
+func (ts *TestSigner) Public() stdcrypto.PublicKey {
 	return ed25519.PublicKey(ts.PublicKey[:])
 }
 
-func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts stdcrypto.SignerOpts) ([]byte, error) {
 	return ts.Signature[:], ts.Error
 }
 
 func TestNewStateManagerSingle(t *testing.T) {
-	signerOk := &TestSigner{types.PublicKey{}, types.Signature{}, nil}
-	signerErr := &TestSigner{types.PublicKey{}, types.Signature{}, fmt.Errorf("err")}
+	signerOk := &TestSigner{crypto.PublicKey{}, crypto.Signature{}, nil}
+	signerErr := &TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("err")}
 	for _, table := range []struct {
 		description string
-		signer      crypto.Signer
+		signer      stdcrypto.Signer
 		thExp       bool
 		thErr       error
 		th          types.TreeHead
@@ -107,8 +107,8 @@ func TestToCosignTreeHead(t *testing.T) {
 
 func TestCosignedTreeHead(t *testing.T) {
 	want := &types.CosignedTreeHead{
-		Cosignature: make([]types.Signature, 1),
-		KeyHash:     make([]merkle.Hash, 1),
+		Cosignature: make([]crypto.Signature, 1),
+		KeyHash:     make([]crypto.Hash, 1),
 	}
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
@@ -135,14 +135,14 @@ func TestAddCosignature(t *testing.T) {
 
 	for _, table := range []struct {
 		desc    string
-		signer  crypto.Signer
-		vk      types.PublicKey
+		signer  stdcrypto.Signer
+		vk      crypto.PublicKey
 		wantErr bool
 	}{
 		{
 			desc:    "invalid: wrong public key",
 			signer:  secret,
-			vk:      types.PublicKey{},
+			vk:      crypto.PublicKey{},
 			wantErr: true,
 		},
 		{
@@ -152,14 +152,15 @@ func TestAddCosignature(t *testing.T) {
 		},
 	} {
 		sm := &StateManagerSingle{
-			namespace:      *merkle.HashFn(nil),
+			namespace:      crypto.HashBytes(nil),
 			signedTreeHead: &types.SignedTreeHead{},
-			witnesses:      map[merkle.Hash]types.PublicKey{*merkle.HashFn(public[:]): public},
-			cosignatures:   make(map[merkle.Hash]*types.Signature),
+			witnesses:      map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(public[:]): public},
+			cosignatures:   make(map[crypto.Hash]*crypto.Signature),
 		}
 
 		sth := mustSign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.namespace)
-		err := sm.AddCosignature(merkle.HashFn(table.vk[:]), &sth.Signature)
+		keyHash := crypto.HashBytes(table.vk[:])
+		err := sm.AddCosignature(&keyHash, &sth.Signature)
 		if got, want := err != nil, table.wantErr; got != want {
 			t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.desc, err)
 		}
@@ -169,18 +170,18 @@ func TestAddCosignature(t *testing.T) {
 	}
 }
 
-func mustKeyPair(t *testing.T) (crypto.Signer, types.PublicKey) {
+func mustKeyPair(t *testing.T) (stdcrypto.Signer, crypto.PublicKey) {
 	t.Helper()
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var pub types.PublicKey
+	var pub crypto.PublicKey
 	copy(pub[:], vk[:])
 	return sk, pub
 }
 
-func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *merkle.Hash) *types.SignedTreeHead {
+func mustSign(t *testing.T, s stdcrypto.Signer, th *types.TreeHead, kh *crypto.Hash) *types.SignedTreeHead {
 	t.Helper()
 	sth, err := th.Sign(s, kh)
 	if err != nil {
@@ -189,10 +190,10 @@ func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *merkle.Hash
 	return sth
 }
 
-func newHashBufferInc(t *testing.T) *merkle.Hash {
+func newHashBufferInc(t *testing.T) *crypto.Hash {
 	t.Helper()
 
-	var buf merkle.Hash
+	var buf crypto.Hash
 	for i := 0; i < len(buf); i++ {
 		buf[i] = byte(i)
 	}
@@ -214,7 +215,7 @@ func validConsistencyProof_5_10(t *testing.T) *types.ConsistencyProof {
 	return &proof
 }
 
-func hashFromString(t *testing.T, s string) (h merkle.Hash) {
+func hashFromString(t *testing.T, s string) (h crypto.Hash) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatal(err)

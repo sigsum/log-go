@@ -21,8 +21,8 @@ import (
 	"sigsum.org/log-go/internal/node/secondary"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
@@ -115,7 +115,7 @@ func main() {
 func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
-	var publicKey *types.PublicKey
+	var publicKey *crypto.PublicKey
 
 	// Setup logging configuration.
 	s.Signer, publicKey, err = utils.ReadKeyFile(*key)
@@ -140,13 +140,13 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	}
 
 	// Setup primary node configuration.
-	pubkey, err := utils.PubkeyFromHexString(*primaryPubkey)
+	pubkey, err := crypto.PublicKeyFromHex(*primaryPubkey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid primary node pubkey: %v", err)
 	}
 	s.Primary = client.New(client.Config{
 		LogURL: *primaryURL,
-		LogPub: *pubkey,
+		LogPub: pubkey,
 	})
 
 	// TODO: verify that GRPC.TreeType() == PREORDERED_LOG.

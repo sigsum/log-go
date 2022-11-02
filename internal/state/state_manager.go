@@ -3,7 +3,7 @@ package state
 import (
 	"context"
 
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -17,7 +17,7 @@ type StateManager interface {
 
 	// AddCosignature verifies that a cosignature is valid for the to-cosign
 	// tree head before adding it
-	AddCosignature(*merkle.Hash, *types.Signature) error
+	AddCosignature(*crypto.Hash, *crypto.Signature) error
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
 	Run(context.Context)

@@ -12,7 +12,7 @@ import (
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"
 	mocksTrillian "sigsum.org/log-go/internal/mocks/trillian"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -21,9 +21,9 @@ import (
 
 func TestAddLeaf(t *testing.T) {
 	req := &requests.Leaf{
-		Message:   merkle.Hash{},
-		Signature: types.Signature{},
-		PublicKey: types.PublicKey{},
+		Message:   crypto.Hash{},
+		Signature: crypto.Signature{},
+		PublicKey: crypto.PublicKey{},
 	}
 	for _, table := range []struct {
 		description       string
@@ -67,7 +67,7 @@ func TestAddLeaf(t *testing.T) {
 				grpc.EXPECT().GetInclusionProofByHash(gomock.Any(), gomock.Any()).Return(
 					// returns a fake inclusion proof just to pass validation in GetInclusionProof
 					&trillian.GetInclusionProofByHashResponse{
-						Proof: []*trillian.Proof{{LeafIndex: 1, Hashes: [][]byte{make([]byte, merkle.HashSize)}}},
+						Proof: []*trillian.Proof{{LeafIndex: 1, Hashes: [][]byte{make([]byte, crypto.HashSize)}}},
 					},
 					table.inclusionProofErr,
 				)
@@ -92,7 +92,7 @@ func TestGetTreeHead(t *testing.T) {
 	// valid root
 	root := &ttypes.LogRootV1{
 		TreeSize:       0,
-		RootHash:       make([]byte, merkle.HashSize),
+		RootHash:       make([]byte, crypto.HashSize),
 		TimestampNanos: 1622585623133599429,
 	}
 	buf, err := root.MarshalBinary()
@@ -100,7 +100,7 @@ func TestGetTreeHead(t *testing.T) {
 		t.Fatalf("must marshal log root: %v", err)
 	}
 	// invalid root
-	root.RootHash = make([]byte, merkle.HashSize+1)
+	root.RootHash = make([]byte, crypto.HashSize+1)
 	bufBadHash, err := root.MarshalBinary()
 	if err != nil {
 		t.Fatalf("must marshal log root: %v", err)
@@ -162,7 +162,7 @@ func TestGetTreeHead(t *testing.T) {
 			wantTh: &types.TreeHead{
 				Timestamp: 1622585623,
 				TreeSize:  0,
-				RootHash:  merkle.Hash{},
+				RootHash:  crypto.Hash{},
 			},
 		},
 	} {
@@ -244,8 +244,8 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &trillian.GetConsistencyProofResponse{
 				Proof: &trillian.Proof{
 					Hashes: [][]byte{
-						make([]byte, merkle.HashSize),
-						make([]byte, merkle.HashSize+1),
+						make([]byte, crypto.HashSize),
+						make([]byte, crypto.HashSize+1),
 					},
 				},
 			},
@@ -257,17 +257,17 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &trillian.GetConsistencyProofResponse{
 				Proof: &trillian.Proof{
 					Hashes: [][]byte{
-						make([]byte, merkle.HashSize),
-						make([]byte, merkle.HashSize),
+						make([]byte, crypto.HashSize),
+						make([]byte, crypto.HashSize),
 					},
 				},
 			},
 			wantProof: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 3,
-				Path: []merkle.Hash{
-					merkle.Hash{},
-					merkle.Hash{},
+				Path: []crypto.Hash{
+					crypto.Hash{},
+					crypto.Hash{},
 				},
 			},
 		},
@@ -297,7 +297,7 @@ func TestGetConsistencyProof(t *testing.T) {
 func TestGetInclusionProof(t *testing.T) {
 	req := &requests.InclusionProof{
 		TreeSize: 4,
-		LeafHash: merkle.Hash{},
+		LeafHash: crypto.Hash{},
 	}
 	for _, table := range []struct {
 		description string
@@ -350,8 +350,8 @@ func TestGetInclusionProof(t *testing.T) {
 					&trillian.Proof{
 						LeafIndex: 1,
 						Hashes: [][]byte{
-							make([]byte, merkle.HashSize),
-							make([]byte, merkle.HashSize+1),
+							make([]byte, crypto.HashSize),
+							make([]byte, crypto.HashSize+1),
 						},
 					},
 				},
@@ -366,8 +366,8 @@ func TestGetInclusionProof(t *testing.T) {
 					&trillian.Proof{
 						LeafIndex: 1,
 						Hashes: [][]byte{
-							make([]byte, merkle.HashSize),
-							make([]byte, merkle.HashSize),
+							make([]byte, crypto.HashSize),
+							make([]byte, crypto.HashSize),
 						},
 					},
 				},
@@ -375,9 +375,9 @@ func TestGetInclusionProof(t *testing.T) {
 			wantProof: &types.InclusionProof{
 				TreeSize:  4,
 				LeafIndex: 1,
-				Path: []merkle.Hash{
-					merkle.Hash{},
-					merkle.Hash{},
+				Path: []crypto.Hash{
+					crypto.Hash{},
+					crypto.Hash{},
 				},
 			},
 		},
@@ -410,14 +410,14 @@ func TestGetLeaves(t *testing.T) {
 		EndSize:   2,
 	}
 	firstLeaf := &types.Leaf{
-		Checksum:  merkle.Hash{},
-		Signature: types.Signature{},
-		KeyHash:   merkle.Hash{},
+		Checksum:  crypto.Hash{},
+		Signature: crypto.Signature{},
+		KeyHash:   crypto.Hash{},
 	}
 	secondLeaf := &types.Leaf{
-		Checksum:  merkle.Hash{},
-		Signature: types.Signature{},
-		KeyHash:   merkle.Hash{},
+		Checksum:  crypto.Hash{},
+		Signature: crypto.Signature{},
+		KeyHash:   crypto.Hash{},
 	}
 
 	for _, table := range []struct {

@@ -1,7 +1,7 @@
 package secondary
 
 import (
-	"crypto"
+	stdcrypto "crypto"
 	"crypto/ed25519"
 	"fmt"
 	"io"
@@ -12,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/log-go/internal/node/handler"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -21,16 +21,16 @@ import (
 // signature, and error.
 // NOTE: Code duplication with internal/state/single_test.go
 type TestSigner struct {
-	PublicKey [ed25519.PublicKeySize]byte
-	Signature [ed25519.SignatureSize]byte
+	PublicKey crypto.PublicKey
+	Signature crypto.Signature
 	Error     error
 }
 
-func (ts *TestSigner) Public() crypto.PublicKey {
+func (ts *TestSigner) Public() stdcrypto.PublicKey {
 	return ed25519.PublicKey(ts.PublicKey[:])
 }
 
-func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+func (ts *TestSigner) Sign(rand io.Reader, digest []byte, opts stdcrypto.SignerOpts) ([]byte, error) {
 	return ts.Signature[:], ts.Error
 }
 
@@ -38,10 +38,10 @@ var (
 	testTH = types.TreeHead{
 		Timestamp: 0,
 		TreeSize:  0,
-		RootHash:  *merkle.HashFn([]byte("root hash")),
+		RootHash:  crypto.HashBytes([]byte("root hash")),
 	}
-	testSignerFailing    = TestSigner{types.PublicKey{}, types.Signature{}, fmt.Errorf("mocked error")}
-	testSignerSucceeding = TestSigner{types.PublicKey{}, types.Signature{}, nil}
+	testSignerFailing    = TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("mocked error")}
+	testSignerSucceeding = TestSigner{crypto.PublicKey{}, crypto.Signature{}, nil}
 )
 
 func TestGetTreeHeadToCosign(t *testing.T) {
@@ -49,7 +49,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 		desc          string
 		trillianTHErr error
 		trillianTHRet *types.TreeHead
-		signer        crypto.Signer
+		signer        stdcrypto.Signer
 		httpStatus    int
 	}{
 		{

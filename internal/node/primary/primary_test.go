@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
-	testWitVK  = types.PublicKey{}
+	testWitVK  = crypto.PublicKey{}
 	testConfig = Config{
-		LogID:    fmt.Sprintf("%x", merkle.HashFn([]byte("logid"))[:]),
+		LogID:    fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
 		TreeID:   0,
 		Prefix:   "testonly",
 		MaxRange: 3,

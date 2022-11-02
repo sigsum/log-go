@@ -16,19 +16,19 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/node/handler"
-	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
 	testSTH = &types.SignedTreeHead{
 		TreeHead:  *testTH,
-		Signature: types.Signature{},
+		Signature: crypto.Signature{},
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
-		Cosignature:    []types.Signature{types.Signature{}},
-		KeyHash:        []merkle.Hash{merkle.Hash{}},
+		Cosignature:    []crypto.Signature{crypto.Signature{}},
+		KeyHash:        []crypto.Hash{crypto.Hash{}},
 	}
 	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
 	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
@@ -58,12 +58,12 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafBuffer(t, merkle.Hash{}, false),
+			ascii:       mustLeafBuffer(t, crypto.Hash{}, false),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description:    "invalid: backend failure",
-			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
+			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -72,7 +72,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid: 202",
-			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
+			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -80,7 +80,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:    "valid: 200",
-			ascii:          mustLeafBuffer(t, merkle.Hash{}, true),
+			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
 			sthStateman:    testSTH,
 			expectTrillian: true,
@@ -127,8 +127,8 @@ func TestAddLeaf(t *testing.T) {
 func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
 		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
-			"cosignature", types.Signature{},
-			"key_hash", *merkle.HashFn(testWitVK[:]),
+			"cosignature", crypto.Signature{},
+			"key_hash", crypto.HashBytes(testWitVK[:]),
 		))
 	}
 	for _, table := range []struct {
@@ -330,8 +330,8 @@ func TestGetConsistencyProof(t *testing.T) {
 			rsp: &types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 2,
-				Path: []merkle.Hash{
-					*merkle.HashFn([]byte{}),
+				Path: []crypto.Hash{
+					crypto.HashBytes([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -414,8 +414,8 @@ func TestGetInclusionProof(t *testing.T) {
 			rsp: &types.InclusionProof{
 				TreeSize:  2,
 				LeafIndex: 0,
-				Path: []merkle.Hash{
-					*merkle.HashFn([]byte{}),
+				Path: []crypto.Hash{
+					crypto.HashBytes([]byte{}),
 				},
 			},
 			wantCode: http.StatusOK,
@@ -503,9 +503,9 @@ func TestGetLeaves(t *testing.T) {
 				var list types.Leaves
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
-						Checksum:  merkle.Hash{},
-						Signature: types.Signature{},
-						KeyHash:   merkle.Hash{},
+						Checksum:  crypto.Hash{},
+						Signature: crypto.Signature{},
+						KeyHash:   crypto.Hash{},
 					})
 				}
 				return &list
@@ -521,9 +521,9 @@ func TestGetLeaves(t *testing.T) {
 				var list types.Leaves
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
-						Checksum:  merkle.Hash{},
-						Signature: types.Signature{},
-						KeyHash:   merkle.Hash{},
+						Checksum:  crypto.Hash{},
+						Signature: crypto.Signature{},
+						KeyHash:   crypto.Hash{},
 					})
 				}
 				return &list
@@ -589,7 +589,7 @@ func mustHandlePublic(t *testing.T, p Primary, e types.Endpoint) handler.Handler
 	return handler.Handler{}
 }
 
-func mustLeafBuffer(t *testing.T, message merkle.Hash, wantSig bool) io.Reader {
+func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {
 	t.Helper()
 
 	vk, sk, err := ed25519.GenerateKey(rand.Reader)
@@ -607,7 +607,7 @@ func mustLeafBuffer(t *testing.T, message merkle.Hash, wantSig bool) io.Reader {
 	return bytes.NewBufferString(fmt.Sprintf(
 		"%s=%x\n"+"%s=%x\n"+"%s=%x\n",
 		"message", message[:],
-		"signature", *sig,
+		"signature", sig,
 		"public_key", vk,
 	))
 }

@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	merkle "sigsum.org/sigsum-go/pkg/merkle"
+	crypto "sigsum.org/sigsum-go/pkg/crypto"
 	types "sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -37,7 +37,7 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 }
 
 // AddCosignature mocks base method.
-func (m *MockStateManager) AddCosignature(arg0 *merkle.Hash, arg1 *types.Signature) error {
+func (m *MockStateManager) AddCosignature(arg0 *crypto.Hash, arg1 *crypto.Signature) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1)
 	ret0, _ := ret[0].(error)
