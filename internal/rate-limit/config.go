@@ -122,8 +122,10 @@ func ParseConfig(file io.Reader) (Config, error) {
 		case configNone:
 			// Do nothing
 		case configKey:
+			// TODO: XXX reject duplicates.
 			config.AllowedKeys[item] = limit
 		case configDomain:
+			// TODO: XXX reject duplicates.
 			config.AllowedDomains[item] = limit
 		case configPublic:
 			if publicSeen {
