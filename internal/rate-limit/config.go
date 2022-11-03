@@ -19,9 +19,10 @@ type Config struct {
 }
 
 // Config file syntax is
-// key <hash> <limit>
-// domain <name> <limit>
-// public <suffix file> <limit>
+//   key <hash> <limit>
+//   domain <name> <limit>
+//   public <suffix file> <limit>
+// with # used for comments.
 
 // The type of config lines. None represent an empty or comment-only line.
 type configToken int
@@ -60,15 +61,15 @@ func parseLimit(s []byte) (int, error) {
 }
 
 func parseLine(line []byte) (configToken, string, int, error) {
-	line = bytes.TrimSpace(line)
 	if comment := bytes.Index(line, []byte{'#'}); comment >= 0 {
 		line = line[:comment]
 	}
-	if len(line) == 0 {
-		return configNone, "", 0, nil
-	}
 	// TODO: Support quoted file name for public.
 	fields := bytes.Fields(line)
+	if len(fields) == 0 {
+		return configNone, "", 0, nil
+	}
+
 	if len(fields) != 3 {
 		return 0, "", 0, fmt.Errorf("invalid config line %q", line)
 	}
@@ -82,7 +83,7 @@ func parseLine(line []byte) (configToken, string, int, error) {
 		return 0, "", 0, err
 	}
 
-	item := string(fields[2])
+	item := string(fields[1])
 
 	// Validate item format.
 	switch token {
@@ -102,6 +103,8 @@ func parseLine(line []byte) (configToken, string, int, error) {
 		   (to have an easy way distinguish it from a literal
 		   IPv4 address, but haven't found any authoritative
 		   reference for that. */
+		/* TODO: Also perform dns-specific normalization, see
+		   RFC 3491 and RFC 3454. */
 		item = strings.ToLower(item)
 	}
 	return token, item, limit, nil
@@ -122,10 +125,14 @@ func ParseConfig(file io.Reader) (Config, error) {
 		case configNone:
 			// Do nothing
 		case configKey:
-			// TODO: XXX reject duplicates.
+			if _, ok := config.AllowedKeys[item]; ok {
+				return Config{}, fmt.Errorf("invalid multiple key %x", item)
+			}
 			config.AllowedKeys[item] = limit
 		case configDomain:
-			// TODO: XXX reject duplicates.
+			if _, ok := config.AllowedDomains[item]; ok {
+				return Config{}, fmt.Errorf("invalid multiple domain %s", item)
+			}
 			config.AllowedDomains[item] = limit
 		case configPublic:
 			if publicSeen {
