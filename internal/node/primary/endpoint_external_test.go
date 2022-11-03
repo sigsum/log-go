@@ -465,7 +465,7 @@ func TestGetLeaves(t *testing.T) {
 		params      string // params is the query's url params
 		sth         *types.SignedTreeHead
 		expect      bool          // set if a mock answer is expected
-		rsp         *types.Leaves // list of leaves from Trillian client
+		rsp         *[]types.Leaf // list of leaves from Trillian client
 		err         error         // error from Trillian client
 		wantCode    int           // HTTP status ok
 	}{
@@ -502,8 +502,8 @@ func TestGetLeaves(t *testing.T) {
 			params:      "1/3",
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *types.Leaves {
-				var list types.Leaves
+			rsp: func() *[]types.Leaf {
+				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
@@ -520,8 +520,8 @@ func TestGetLeaves(t *testing.T) {
 			params:      fmt.Sprintf("%d/%d", 0, testConfig.MaxRange), // query will be pruned
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *types.Leaves {
-				var list types.Leaves
+			rsp: func() *[]types.Leaf {
+				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
@@ -571,8 +571,8 @@ func TestGetLeaves(t *testing.T) {
 				return
 			}
 
-			list := types.Leaves{}
-			if err := list.FromASCII(w.Body); err != nil {
+			list, err := types.LeavesFromASCII(w.Body)
+			if err != nil {
 				t.Fatalf("must unmarshal leaf list: %v", err)
 			}
 			if got, want := &list, table.rsp; !reflect.DeepEqual(got, want) {

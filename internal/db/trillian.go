@@ -57,7 +57,7 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSi
 }
 
 // AddSequencedLeaves adds a set of already sequenced leaves to the tree.
-func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves types.Leaves, index int64) error {
+func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves []types.Leaf, index int64) error {
 	trilLeaves := make([]*trillian.LogLeaf, len(leaves))
 	for i, leaf := range leaves {
 		trilLeaves[i] = &trillian.LogLeaf{
@@ -180,7 +180,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 	}, nil
 }
 
-func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*types.Leaves, error) {
+func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*[]types.Leaf, error) {
 	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
 		LogId:      c.TreeID,
 		StartIndex: int64(req.StartSize),
@@ -195,7 +195,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*
 	if got, want := len(rsp.Leaves), int(req.EndSize-req.StartSize+1); got != want {
 		return nil, fmt.Errorf("unexpected number of leaves: %d", got)
 	}
-	var list types.Leaves = make([]types.Leaf, 0, len(rsp.Leaves))
+	list := make([]types.Leaf, 0, len(rsp.Leaves))
 	for i, leaf := range rsp.Leaves {
 		leafIndex := int64(req.StartSize + uint64(i))
 		if leafIndex != leaf.LeafIndex {

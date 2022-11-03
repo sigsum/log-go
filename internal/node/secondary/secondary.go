@@ -80,7 +80,7 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 		log.Warning("unable to get tree head from trillian: %v", err)
 		return
 	}
-	var leaves types.Leaves
+	var leaves []types.Leaf
 	for index := int64(curTH.TreeSize); index < int64(prim.TreeSize); index += int64(len(leaves)) {
 		req := requests.Leaves{
 			StartSize: uint64(index),

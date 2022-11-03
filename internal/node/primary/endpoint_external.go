@@ -10,6 +10,7 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
@@ -137,7 +138,7 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	if err = leaves.ToASCII(w); err != nil {
+	if err = types.LeavesToASCII(w, *leaves); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
