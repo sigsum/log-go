@@ -20,6 +20,13 @@ there are no rate-limits (appropriate only if access to the server is
 restricted by other emans). The config file specifies allow lists of
 various kinds, and corresponding limits.
 
+## Config file syntax
+
+The config file is line based, where each line consits of items
+separated by white space. Comments are written with "#" and extend to
+the end of the line. International domain names are written in utf8
+(no punycode).
+
 ## Allow lists
 
 The rate limit is based on counts of added leafs per 24 hours. Adding
