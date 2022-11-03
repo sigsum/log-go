@@ -15,6 +15,7 @@ import (
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 

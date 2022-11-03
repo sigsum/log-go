@@ -7,20 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"sigsum.org/sigsum-go/pkg/merkle"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
 )
 
 type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
 	// resources were consumed. Otherwise, returns nil.
-	AccessAllowed(domain *string, pub *types.PublicKey) func()
+	AccessAllowed(domain *string, pub *crypto.PublicKey) func()
 }
 
 type NoLimit struct{}
 
-func (l NoLimit) AccessAllowed(_ *string, _ *types.PublicKey) func() {
+func (l NoLimit) AccessAllowed(_ *string, _ *crypto.PublicKey) func() {
 	return func() {}
 }
 
@@ -31,7 +30,7 @@ type clocker interface {
 	Now() time.Time
 }
 
-type wallTime struct {}
+type wallTime struct{}
 
 func (_ wallTime) Now() time.Time {
 	return time.Now()
@@ -82,7 +81,12 @@ func (l *limiter) domainAllowed(domain string) (func(), bool) {
 	}
 }
 
-func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey) func() {
+func publicKeyHashAsString(pub *crypto.PublicKey) string {
+	keyHash := crypto.HashBytes((*pub)[:])
+	return string(keyHash[:])
+}
+
+func (l *limiter) AccessAllowed(submitDomain *string, pub *crypto.PublicKey) func() {
 	if l.resetSchedule.IsTime() {
 		l.keyCounts.Reset()
 		l.domainCounts.Reset()
@@ -90,7 +94,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, pub *types.PublicKey) func
 	}
 
 	// TODO: Avoid conversion to string.
-	keyHash := string((*merkle.HashFn((*pub)[:]))[:])
+	keyHash := publicKeyHashAsString(pub)
 	if limit, ok := l.allowedKeys[keyHash]; ok {
 		return l.keyCounts.AccessAllowed(keyHash, limit)
 	}
@@ -136,9 +140,9 @@ func newLimiter(configFile io.Reader, clock clocker) (Limiter, error) {
 		allowedDomains: config.AllowedDomains,
 		allowPublic:    config.AllowPublic,
 		domainDb:       db,
-		resetSchedule:  schedule{
+		resetSchedule: schedule{
 			clock: clock,
-			next: clock.Now().Add(schedulePeriod),
+			next:  clock.Now().Add(schedulePeriod),
 		},
 	}
 
