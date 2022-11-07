@@ -117,6 +117,5 @@ func TestParseBadConfig(t *testing.T) {
 		if err == nil {
 			t.Errorf("parsing accepted bad input:\n---%s---", badConfig)
 		}
-		fmt.Printf("expected err: %v\n", err)
 	}
 }

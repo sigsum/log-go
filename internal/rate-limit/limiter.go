@@ -14,12 +14,12 @@ type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
 	// resources were consumed. Otherwise, returns nil.
-	AccessAllowed(domain *string, pub *crypto.PublicKey) func()
+	AccessAllowed(domain *string, keyHash *crypto.Hash) func()
 }
 
 type NoLimit struct{}
 
-func (l NoLimit) AccessAllowed(_ *string, _ *crypto.PublicKey) func() {
+func (l NoLimit) AccessAllowed(_ *string, _ *crypto.Hash) func() {
 	return func() {}
 }
 
@@ -81,12 +81,7 @@ func (l *limiter) domainAllowed(domain string) (func(), bool) {
 	}
 }
 
-func publicKeyHashAsString(pub *crypto.PublicKey) string {
-	keyHash := crypto.HashBytes((*pub)[:])
-	return string(keyHash[:])
-}
-
-func (l *limiter) AccessAllowed(submitDomain *string, pub *crypto.PublicKey) func() {
+func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func() {
 	if l.resetSchedule.IsTime() {
 		l.keyCounts.Reset()
 		l.domainCounts.Reset()
@@ -94,14 +89,16 @@ func (l *limiter) AccessAllowed(submitDomain *string, pub *crypto.PublicKey) fun
 	}
 
 	// TODO: Avoid conversion to string.
-	keyHash := publicKeyHashAsString(pub)
-	if limit, ok := l.allowedKeys[keyHash]; ok {
-		return l.keyCounts.AccessAllowed(keyHash, limit)
+	keyHashString := string(keyHash[:])
+	if limit, ok := l.allowedKeys[keyHashString]; ok {
+		return l.keyCounts.AccessAllowed(keyHashString, limit)
 	}
 	if submitDomain == nil {
 		// Skip all domain-based checks.
 		return nil
 	}
+	/* TODO: Also perform dns-specific normalization, see
+	   RFC 3491 and RFC 3454. */
 	domain := strings.ToLower(*submitDomain)
 	if relax, ok := l.domainAllowed(domain); ok {
 		return relax
