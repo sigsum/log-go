@@ -3,13 +3,27 @@ image: docker.io/library/golang:1.18
 stages:
 - build
 - test
+- integration
 
-# go-build builds all packages
+# go-build builds all packages.
 go-build:
   stage: build
   script: go build ./...
 
-# go-test runs tests with the data-race detector enabled
+# go-test runs tests with the data-race detector enabled.
 go-test:
   stage: test
   script: go test -race ./...
+
+# integration runs the integration test.
+integration:
+  stage: integration
+  services:
+  - alias: mysql
+    name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
+  variables:
+    MYSQL_URI: test:test@tcp(mysql:3306)/test
+  script:
+  - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
+  - cd integration
+  - bash ./test.sh

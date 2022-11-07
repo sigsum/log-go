@@ -23,7 +23,7 @@ declare -r loga=conf/primary.config
 declare -r logb=conf/secondary.config
 declare -r logc=conf/logc.config
 declare -r client=conf/client.config
-declare -r mysql_uri='sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test'
+declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test}"
 
 function main() {
 	local testflavour=basic
@@ -42,6 +42,9 @@ function main() {
 	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
 	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=${nvars[$loga:ssrv_pub]}"
 	node_start $logb
+
+        # Wait a bit to give time to the logs to be ready
+        sleep 10
 
 	client_setup $client
 	check_setup $loga $logb
@@ -454,6 +457,7 @@ function test_signed_tree_head() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-tree-head-to-cosign (tree size $tree_size)"
 
+	now=$(date +%s)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head-to-cosign \
 	     >$log_dir/rsp
 
@@ -467,7 +471,6 @@ function test_signed_tree_head() {
 		return
 	fi
 
-	now=$(date +%s)
 	if [[ $(value_of $pri "timestamp") -gt $now ]]; then
 		fail "$desc: timestamp $(value_of $pri "timestamp") is too high"
 		return
