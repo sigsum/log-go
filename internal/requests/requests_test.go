@@ -106,7 +106,11 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 		wantRsp *sigsumreq.Cosignature
 	}{
 		{"invalid: parser error", bytes.NewBufferString("abcd"), nil},
-		{"valid", input(crypto.HashBytes([]byte("w1"))), &sigsumreq.Cosignature{Signature: crypto.Signature{}, KeyHash: crypto.HashBytes([]byte("w1"))}},
+		{"valid", input(crypto.HashBytes([]byte("w1"))),
+			&sigsumreq.Cosignature{
+				Signature: crypto.Signature{},
+				KeyHash:   crypto.HashBytes([]byte("w1")),
+			}},
 	} {
 		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
 		req, err := http.NewRequest(http.MethodPost, url, table.params)

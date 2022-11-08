@@ -232,9 +232,9 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 	cth.SignedTreeHead = *sm.signedTreeHead
 	cth.Cosignatures = make([]types.Cosignature, 0, n)
 	for keyHash, cosignature := range sm.cosignatures {
-		cth.Cosignatures = append(cth.Cosignatures,
-			types.Cosignature{KeyHash: keyHash,
-				Signature: *cosignature})
+		cth.Cosignatures = append(cth.Cosignatures, types.Cosignature{
+			KeyHash:   keyHash,
+			Signature: *cosignature})
 	}
 	sm.cosignedTreeHead = &cth
 }
