@@ -111,10 +111,10 @@ func (mr *MockClientMockRecorder) GetInclusionProof(arg0, arg1 interface{}) *gom
 }
 
 // GetLeaves mocks base method.
-func (m *MockClient) GetLeaves(arg0 context.Context, arg1 requests.Leaves) (types.Leaves, error) {
+func (m *MockClient) GetLeaves(arg0 context.Context, arg1 requests.Leaves) ([]types.Leaf, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLeaves", arg0, arg1)
-	ret0, _ := ret[0].(types.Leaves)
+	ret0, _ := ret[0].([]types.Leaf)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
