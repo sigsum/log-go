@@ -10,6 +10,12 @@ import (
 	"sigsum.org/sigsum-go/pkg/crypto"
 )
 
+// This domain has the following registered rate limit key pair
+//   private: 0000000000000000000000000000000000000000000000000000000000000001
+//   public:  4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29
+// for test purposes.
+const testDomain = "test.sigsum.org"
+
 type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
@@ -115,7 +121,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 	return l.publicCounts.AccessAllowed(domain, l.allowPublic)
 }
 
-func newLimiter(configFile io.Reader, clock clocker) (Limiter, error) {
+func newLimiter(configFile io.Reader, allowTestDomain bool, clock clocker) (Limiter, error) {
 	config, err := ParseConfig(configFile)
 	if err != nil {
 		return nil, err
@@ -131,7 +137,10 @@ func newLimiter(configFile io.Reader, clock clocker) (Limiter, error) {
 			return nil, err
 		}
 	}
-
+	
+	if !allowTestDomain {
+		config.AllowedDomains[strings.ToLower(testDomain)] = 0
+	}
 	l := limiter{
 		allowedKeys:    config.AllowedKeys,
 		allowedDomains: config.AllowedDomains,
@@ -151,6 +160,7 @@ func newLimiter(configFile io.Reader, clock clocker) (Limiter, error) {
 	return &l, nil
 }
 
-func NewLimiter(configFile io.Reader) (Limiter, error) {
-	return newLimiter(configFile, wallTime{})
+func NewLimiter(configFile io.Reader, allowTestDomain bool) (Limiter, error) {
+	return newLimiter(configFile, allowTestDomain, wallTime{})
 }
+

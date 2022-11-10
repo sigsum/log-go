@@ -28,7 +28,7 @@ func (c *fakeClock) Advance(delta time.Duration) {
 }
 
 func newTestLimiter(config string, clock clocker) (Limiter, error) {
-	return newLimiter(bytes.NewBuffer([]byte(config)), clock)
+	return newLimiter(bytes.NewBuffer([]byte(config)), false, clock)
 }
 
 type request struct {
@@ -162,4 +162,9 @@ func TestPublicLimit(t *testing.T) {
 		}); got != 100 {
 		t.Errorf("should sustain one request per hour, when alternating public suffix, but failed after %d requests", got)
 	}
+	if got := repeatedAccess(t, config, 100,
+		[]request{request{domain: A("test.sigsum.org"), keyHash: &key, delay: time.Hour}}); got != 0 {
+		t.Errorf("test domain should be rejected, but failed after %d requests", got)
+	}
+
 }
