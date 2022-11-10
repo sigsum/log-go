@@ -525,7 +525,7 @@ function test_cosigned_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "timestamp" "tree_size" "root_hash" "signature" "cosignature" "key_hash"; then
+	if ! keys $pri "timestamp" "tree_size" "root_hash" "signature" "cosignature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
@@ -545,7 +545,7 @@ function test_cosigned_tree_head() {
 		return
 	fi
 
-	for got in $(value_of $pri key_hash); do
+	for got in $(value_of $pri cosignature | cut -d' ' -f1) ; do
 		found=""
 		for want in ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:wit2_key_hash]}; do
 			if [[ $got == $want ]]; then
@@ -630,19 +630,19 @@ function test_get_leaf() {
 		return
 	fi
 
-	if ! keys $pri "checksum" "signature" "key_hash"; then
+	if ! keys $pri "leaf"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
 
 	local message=$(openssl dgst -binary <(echo $data) | b16encode)
 	local checksum=$(openssl dgst -binary <(echo $message | b16decode) | b16encode)
-	if [[ $(value_of $pri checksum) != $checksum ]]; then
+	if [[ $(value_of $pri leaf | cut -d' ' -f1) != $checksum ]]; then
 		fail "$desc: wrong checksum $(value_of $pri checksum)"
 		return
 	fi
 
-	if [[ $(value_of $pri key_hash) != $cli_key_hash ]]; then
+	if [[ $(value_of $pri leaf | cut -d' ' -f3) != $cli_key_hash ]]; then
 		fail "$desc: wrong key hash $(value_of $pri key_hash)"
 	fi
 
@@ -720,9 +720,8 @@ function test_cosignature() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="POST add-cosignature (witness $1)"
 
-	echo "key_hash=$1" > $log_dir/req
-	echo "cosignature=$(curl -s ${nvars[$pri:log_url]}/get-tree-head-to-cosign |
-		./sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" >> $log_dir/req
+	echo "cosignature=$1 $(curl -s ${nvars[$pri:log_url]}/get-tree-head-to-cosign |
+		./sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp

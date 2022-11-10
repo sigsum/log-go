@@ -426,7 +426,7 @@ func TestGetLeaves(t *testing.T) {
 		rsp         *trillian.GetLeavesByRangeResponse
 		err         error
 		wantErr     bool
-		wantLeaves  *types.Leaves
+		wantLeaves  *[]types.Leaf
 	}{
 		{
 			description: "invalid: backend failure",
@@ -501,7 +501,7 @@ func TestGetLeaves(t *testing.T) {
 					},
 				},
 			},
-			wantLeaves: &types.Leaves{
+			wantLeaves: &[]types.Leaf{
 				*firstLeaf,
 				*secondLeaf,
 			},

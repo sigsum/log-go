@@ -98,7 +98,7 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 
 func TestCosignatureRequestFromHTTP(t *testing.T) {
 	input := func(h crypto.Hash) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x\nkey_hash=%x\n", crypto.Signature{}, h))
+		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x %x\n", h, crypto.Signature{}))
 	}
 	for _, table := range []struct {
 		desc    string
@@ -106,7 +106,11 @@ func TestCosignatureRequestFromHTTP(t *testing.T) {
 		wantRsp *sigsumreq.Cosignature
 	}{
 		{"invalid: parser error", bytes.NewBufferString("abcd"), nil},
-		{"valid", input(crypto.HashBytes([]byte("w1"))), &sigsumreq.Cosignature{crypto.Signature{}, crypto.HashBytes([]byte("w1"))}},
+		{"valid", input(crypto.HashBytes([]byte("w1"))),
+			&sigsumreq.Cosignature{
+				Signature: crypto.Signature{},
+				KeyHash:   crypto.HashBytes([]byte("w1")),
+			}},
 	} {
 		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
 		req, err := http.NewRequest(http.MethodPost, url, table.params)

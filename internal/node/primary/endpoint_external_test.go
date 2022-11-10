@@ -25,8 +25,7 @@ var (
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
-		Cosignature:    []crypto.Signature{crypto.Signature{}},
-		KeyHash:        []crypto.Hash{crypto.Hash{}},
+		Cosignatures: make([]types.Cosignature, 1),
 	}
 	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
 	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
@@ -124,9 +123,10 @@ func TestAddLeaf(t *testing.T) {
 
 func TestAddCosignature(t *testing.T) {
 	buf := func() io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%x\n%s=%x\n",
-			"cosignature", crypto.Signature{},
-			"key_hash", crypto.HashBytes(testWitVK[:]),
+		return bytes.NewBufferString(fmt.Sprintf("%s=%x %x\n",
+			"cosignature",
+			crypto.HashBytes(testWitVK[:]),
+			crypto.Signature{},
 		))
 	}
 	for _, table := range []struct {
@@ -460,7 +460,7 @@ func TestGetLeaves(t *testing.T) {
 		params      string // params is the query's url params
 		sth         *types.SignedTreeHead
 		expect      bool          // set if a mock answer is expected
-		rsp         *types.Leaves // list of leaves from Trillian client
+		rsp         *[]types.Leaf // list of leaves from Trillian client
 		err         error         // error from Trillian client
 		wantCode    int           // HTTP status ok
 	}{
@@ -497,8 +497,8 @@ func TestGetLeaves(t *testing.T) {
 			params:      "1/3",
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *types.Leaves {
-				var list types.Leaves
+			rsp: func() *[]types.Leaf {
+				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
@@ -515,8 +515,8 @@ func TestGetLeaves(t *testing.T) {
 			params:      fmt.Sprintf("%d/%d", 0, testConfig.MaxRange), // query will be pruned
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *types.Leaves {
-				var list types.Leaves
+			rsp: func() *[]types.Leaf {
+				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
@@ -566,8 +566,8 @@ func TestGetLeaves(t *testing.T) {
 				return
 			}
 
-			list := types.Leaves{}
-			if err := list.FromASCII(w.Body); err != nil {
+			list, err := types.LeavesFromASCII(w.Body)
+			if err != nil {
 				t.Fatalf("must unmarshal leaf list: %v", err)
 			}
 			if got, want := &list, table.rsp; !reflect.DeepEqual(got, want) {

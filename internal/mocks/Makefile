@@ -1,6 +1,6 @@
 # Makefile to regenerate mock files.
 
-all: db/db.go state/state.go submit-token/verifier.go
+all: db/db.go state/state.go submit-token/verifier.go client/client.go
 .PHONY: all
 
 db/db.go: ../db/client.go
@@ -13,4 +13,8 @@ state/state.go: ../state/state_manager.go
 submit-token/verifier.go:
 	mockgen --destination $@ --package token sigsum.org/sigsum-go/pkg/submit-token Verifier
 
-.PHONY: submit-token/verifier.go
+# Cross-repo dependency not declared.
+client/client.go:
+	mockgen --destination $@ --package client sigsum.org/sigsum-go/pkg/client Client
+
+.PHONY: submit-token/verifier.go client/client.go

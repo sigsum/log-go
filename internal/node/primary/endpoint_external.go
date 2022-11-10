@@ -10,6 +10,7 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
@@ -40,7 +41,7 @@ func addCosignature(_ context.Context, c handler.Config, w http.ResponseWriter, 
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Cosignature); err != nil {
+	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err != nil {
 		return http.StatusBadRequest, err
 	}
 	return http.StatusOK, nil
@@ -137,10 +138,8 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	for _, leaf := range *leaves {
-		if err := leaf.ToASCII(w); err != nil {
-			return http.StatusInternalServerError, err
-		}
+	if err = types.LeavesToASCII(w, *leaves); err != nil {
+		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
 }

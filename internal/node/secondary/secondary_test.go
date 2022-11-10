@@ -52,7 +52,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		trillianTHRet *types.TreeHead
 		trillianTHErr error
 		// client.GetLeaves()
-		primaryGetLeavesRet types.Leaves
+		primaryGetLeavesRet []types.Leaf
 		primaryGetLeavesErr error
 		// db.AddSequencedLeaves()
 		trillianAddLeavesExp bool
@@ -77,7 +77,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			desc:          "error adding leaves",
 			primaryTHRet:  types.TreeHead{TreeSize: 6},
 			trillianTHRet: &types.TreeHead{TreeSize: 5}, // 6-5 => 1 expected GetLeaves
-			primaryGetLeavesRet: types.Leaves{
+			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
 			trillianAddLeavesErr: fmt.Errorf("mocked error"),
@@ -86,7 +86,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			desc:          "success",
 			primaryTHRet:  types.TreeHead{TreeSize: 10},
 			trillianTHRet: &types.TreeHead{TreeSize: 5},
-			primaryGetLeavesRet: types.Leaves{
+			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
 			trillianAddLeavesExp: true,
