@@ -25,7 +25,7 @@ var (
 	}
 	testCTH = &types.CosignedTreeHead{
 		SignedTreeHead: *testSTH,
-		Cosignatures: make([]types.Cosignature, 1),
+		Cosignatures:   make([]types.Cosignature, 1),
 	}
 	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
 	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}

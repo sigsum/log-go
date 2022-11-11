@@ -20,14 +20,14 @@ import (
 // TODO: Add TestAddSequencedLeaves
 
 func TestAddLeaf(t *testing.T) {
-	req := &requests.Leaf{
-		Message:   crypto.Hash{},
+	leaf := &types.Leaf{
+		Checksum:  crypto.Hash{},
 		Signature: crypto.Signature{},
-		PublicKey: crypto.PublicKey{},
+		KeyHash:   crypto.Hash{},
 	}
 	for _, table := range []struct {
 		description       string
-		req               *requests.Leaf
+		leaf              *types.Leaf
 		rsp               *trillian.QueueLeafResponse
 		queueLeafErr      error
 		inclusionProofErr error
@@ -36,13 +36,13 @@ func TestAddLeaf(t *testing.T) {
 	}{
 		{
 			description:  "invalid: backend failure",
-			req:          req,
+			leaf:         leaf,
 			queueLeafErr: fmt.Errorf("something went wrong"),
 			wantErr:      true,
 		},
 		{
 			description:       "unsequenced",
-			req:               req,
+			leaf:              leaf,
 			queueLeafErr:      nil,
 			inclusionProofErr: fmt.Errorf("not found"),
 			wantErr:           false,
@@ -50,7 +50,7 @@ func TestAddLeaf(t *testing.T) {
 		},
 		{
 			description:       "sequenced",
-			req:               req,
+			leaf:              leaf,
 			queueLeafErr:      nil,
 			inclusionProofErr: nil,
 			wantErr:           false,
@@ -74,7 +74,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 			client := TrillianClient{GRPC: grpc}
 
-			status, err := client.AddLeaf(context.Background(), table.req, 0)
+			status, err := client.AddLeaf(context.Background(), table.leaf, 0)
 			if got, want := err != nil, table.wantErr; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
