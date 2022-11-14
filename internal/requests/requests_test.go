@@ -30,11 +30,8 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		}
 		return sig
 	}
-	input := func(msg crypto.Hash, badSig bool) io.Reader {
+	input := func(msg crypto.Hash) io.Reader {
 		sig := sign(msg)
-		if badSig {
-			msg[0] += 1 // use a different message
-		}
 		str := fmt.Sprintf("message=%x\n", msg)
 		str += fmt.Sprintf("signature=%x\n", sig)
 		str += fmt.Sprintf("public_key=%x\n", pub)
@@ -54,11 +51,10 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		wantDomain bool
 	}{
 		{"invalid: parse ascii", bytes.NewBufferString("a=b"), nil, nil, nil, false},
-		{"invalid: signature", input(msg, true), nil, nil, nil, false},
-		{"invalid: mocked token error", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
-		{"valid", input(msg, false), nil, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, false},
-		{"valid with domain", input(msg, false), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, true},
-		{"valid leaf, invalid domain", input(msg, false), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
+		{"invalid: mocked token error", input(msg), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
+		{"valid", input(msg), nil, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, false},
+		{"valid with domain", input(msg), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, true},
+		{"valid leaf, invalid domain", input(msg), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
 	} {
 		func() {
 			fmt.Println(table.desc)

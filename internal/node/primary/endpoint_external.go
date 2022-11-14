@@ -9,6 +9,7 @@ import (
 
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -21,9 +22,19 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
+		return http.StatusBadRequest, fmt.Errorf("invalid signature")
+	}
+
+	leaf := types.Leaf{
+		Checksum:  crypto.HashBytes(req.Message[:]),
+		Signature: req.Signature,
+		KeyHash:   crypto.HashBytes(req.PublicKey[:]),
+	}
 
 	sth := p.Stateman.ToCosignTreeHead()
-	status, err := p.TrillianClient.AddLeaf(ctx, req, sth.TreeSize)
+	status, err := p.TrillianClient.AddLeaf(ctx,
+		&leaf, sth.TreeSize)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}

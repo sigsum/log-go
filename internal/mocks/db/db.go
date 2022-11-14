@@ -38,7 +38,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddLeaf mocks base method.
-func (m *MockClient) AddLeaf(arg0 context.Context, arg1 *requests.Leaf, arg2 uint64) (db.AddLeafStatus, error) {
+func (m *MockClient) AddLeaf(arg0 context.Context, arg1 *types.Leaf, arg2 uint64) (db.AddLeafStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddLeaf", arg0, arg1, arg2)
 	ret0, _ := ret[0].(db.AddLeafStatus)

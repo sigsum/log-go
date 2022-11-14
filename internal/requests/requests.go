@@ -8,7 +8,6 @@ import (
 
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/submit-token"
-	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // The string return value, if non-nil, is the verified submitter domain.
@@ -29,9 +28,6 @@ func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier
 		}
 		s := string(parts[0])
 		domain = &s
-	}
-	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
-		return nil, nil, fmt.Errorf("invalid signature")
 	}
 	return &req, domain, nil
 }

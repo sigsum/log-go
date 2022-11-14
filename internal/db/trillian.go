@@ -27,12 +27,7 @@ type TrillianClient struct {
 
 // AddLeaf adds a leaf to the tree and returns true if the leaf has
 // been sequenced into the tree of size treeSize.
-func (c *TrillianClient) AddLeaf(ctx context.Context, req *requests.Leaf, treeSize uint64) (AddLeafStatus, error) {
-	leaf := types.Leaf{
-		Checksum:  crypto.HashBytes(req.Message[:]),
-		Signature: req.Signature,
-		KeyHash:   crypto.HashBytes(req.PublicKey[:]),
-	}
+func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize uint64) (AddLeafStatus, error) {
 	serialized := leaf.ToBinary()
 
 	log.Debug("queueing leaf request: %x", merkle.HashLeafNode(serialized))
