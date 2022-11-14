@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	testTH = &types.TreeHead{
+	testTH = types.TreeHead{
 		Timestamp: 0,
 		TreeSize:  0,
 		RootHash:  crypto.HashBytes([]byte("root hash")),
@@ -24,10 +24,10 @@ var (
 func TestGetTreeHeadUnsigned(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool            // set if a mock answer is expected
-		rsp         *types.TreeHead // tree head from Trillian client
-		err         error           // error from Trillian client
-		wantCode    int             // HTTP status ok
+		expect      bool           // set if a mock answer is expected
+		rsp         types.TreeHead // tree head from Trillian client
+		err         error          // error from Trillian client
+		wantCode    int            // HTTP status ok
 	}{
 		{
 			description: "invalid: backend failure",

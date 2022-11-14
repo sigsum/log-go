@@ -100,10 +100,10 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 	}
 }
 
-func treeHeadFromTrillian(ctx context.Context, trillianClient db.Client) (*types.TreeHead, error) {
+func treeHeadFromTrillian(ctx context.Context, trillianClient db.Client) (types.TreeHead, error) {
 	th, err := trillianClient.GetTreeHead(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("fetching tree head from trillian: %v", err)
+		return types.TreeHead{}, fmt.Errorf("fetching tree head from trillian: %v", err)
 	}
 	log.Debug("got tree head from trillian, size %d", th.TreeSize)
 	return th, nil

@@ -45,7 +45,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 	for _, tbl := range []struct {
 		desc          string
 		trillianTHErr error
-		trillianTHRet *types.TreeHead
+		trillianTHRet types.TreeHead
 		signer        crypto.Signer
 		httpStatus    int
 	}{
@@ -56,13 +56,13 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 		},
 		{
 			desc:          "signer error",
-			trillianTHRet: &testTH,
+			trillianTHRet: testTH,
 			signer:        &testSignerFailing,
 			httpStatus:    http.StatusInternalServerError,
 		},
 		{
 			desc:          "success",
-			trillianTHRet: &testTH,
+			trillianTHRet: testTH,
 			signer:        &testSignerSucceeding,
 			httpStatus:    http.StatusOK,
 		},

@@ -209,7 +209,7 @@ func TestGetConsistencyProof(t *testing.T) {
 		rsp         *trillian.GetConsistencyProofResponse
 		err         error
 		wantErr     bool
-		wantProof   *types.ConsistencyProof
+		wantProof   types.ConsistencyProof
 	}{
 		{
 			description: "invalid: backend failure",
@@ -262,7 +262,7 @@ func TestGetConsistencyProof(t *testing.T) {
 					},
 				},
 			},
-			wantProof: &types.ConsistencyProof{
+			wantProof: types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 3,
 				Path: []crypto.Hash{
@@ -305,7 +305,7 @@ func TestGetInclusionProof(t *testing.T) {
 		rsp         *trillian.GetInclusionProofByHashResponse
 		err         error
 		wantErr     bool
-		wantProof   *types.InclusionProof
+		wantProof   types.InclusionProof
 	}{
 		{
 			description: "invalid: backend failure",
@@ -372,7 +372,7 @@ func TestGetInclusionProof(t *testing.T) {
 					},
 				},
 			},
-			wantProof: &types.InclusionProof{
+			wantProof: types.InclusionProof{
 				TreeSize:  4,
 				LeafIndex: 1,
 				Path: []crypto.Hash{
@@ -426,7 +426,7 @@ func TestGetLeaves(t *testing.T) {
 		rsp         *trillian.GetLeavesByRangeResponse
 		err         error
 		wantErr     bool
-		wantLeaves  *[]types.Leaf
+		wantLeaves  []types.Leaf
 	}{
 		{
 			description: "invalid: backend failure",
@@ -501,7 +501,7 @@ func TestGetLeaves(t *testing.T) {
 					},
 				},
 			},
-			wantLeaves: &[]types.Leaf{
+			wantLeaves: []types.Leaf{
 				*firstLeaf,
 				*secondLeaf,
 			},

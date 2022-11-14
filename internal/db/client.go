@@ -16,8 +16,8 @@ type AddLeafStatus struct {
 type Client interface {
 	AddLeaf(context.Context, *types.Leaf, uint64) (AddLeafStatus, error)
 	AddSequencedLeaves(ctx context.Context, leaves []types.Leaf, index int64) error
-	GetTreeHead(context.Context) (*types.TreeHead, error)
-	GetConsistencyProof(context.Context, *requests.ConsistencyProof) (*types.ConsistencyProof, error)
-	GetInclusionProof(context.Context, *requests.InclusionProof) (*types.InclusionProof, error)
-	GetLeaves(context.Context, *requests.Leaves) (*[]types.Leaf, error)
+	GetTreeHead(context.Context) (types.TreeHead, error)
+	GetConsistencyProof(context.Context, *requests.ConsistencyProof) (types.ConsistencyProof, error)
+	GetInclusionProof(context.Context, *requests.InclusionProof) (types.InclusionProof, error)
+	GetLeaves(context.Context, *requests.Leaves) ([]types.Leaf, error)
 }

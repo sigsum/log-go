@@ -20,7 +20,7 @@ import (
 
 var (
 	testSTH = &types.SignedTreeHead{
-		TreeHead:  *testTH,
+		TreeHead:  testTH,
 		Signature: crypto.Signature{},
 	}
 	testCTH = &types.CosignedTreeHead{
@@ -286,10 +286,10 @@ func TestGetConsistencyProof(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sth         *types.SignedTreeHead
-		expect      bool                    // set if a mock answer is expected
-		rsp         *types.ConsistencyProof // consistency proof from Trillian client
-		err         error                   // error from Trillian client
-		wantCode    int                     // HTTP status ok
+		expect      bool                   // set if a mock answer is expected
+		rsp         types.ConsistencyProof // consistency proof from Trillian client
+		err         error                  // error from Trillian client
+		wantCode    int                    // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -325,7 +325,7 @@ func TestGetConsistencyProof(t *testing.T) {
 			params:      "1/2",
 			sth:         &sth2,
 			expect:      true,
-			rsp: &types.ConsistencyProof{
+			rsp: types.ConsistencyProof{
 				OldSize: 1,
 				NewSize: 2,
 				Path: []crypto.Hash{
@@ -375,10 +375,10 @@ func TestGetInclusionProof(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sth         *types.SignedTreeHead
-		expect      bool                  // set if a mock answer is expected
-		rsp         *types.InclusionProof // inclusion proof from Trillian client
-		err         error                 // error from Trillian client
-		wantCode    int                   // HTTP status ok
+		expect      bool                 // set if a mock answer is expected
+		rsp         types.InclusionProof // inclusion proof from Trillian client
+		err         error                // error from Trillian client
+		wantCode    int                  // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -409,7 +409,7 @@ func TestGetInclusionProof(t *testing.T) {
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			sth:         &sth2,
 			expect:      true,
-			rsp: &types.InclusionProof{
+			rsp: types.InclusionProof{
 				TreeSize:  2,
 				LeafIndex: 0,
 				Path: []crypto.Hash{
@@ -459,10 +459,10 @@ func TestGetLeaves(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sth         *types.SignedTreeHead
-		expect      bool          // set if a mock answer is expected
-		rsp         *[]types.Leaf // list of leaves from Trillian client
-		err         error         // error from Trillian client
-		wantCode    int           // HTTP status ok
+		expect      bool         // set if a mock answer is expected
+		rsp         []types.Leaf // list of leaves from Trillian client
+		err         error        // error from Trillian client
+		wantCode    int          // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -497,7 +497,7 @@ func TestGetLeaves(t *testing.T) {
 			params:      "1/3",
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *[]types.Leaf {
+			rsp: func() []types.Leaf {
 				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
@@ -506,7 +506,7 @@ func TestGetLeaves(t *testing.T) {
 						KeyHash:   crypto.Hash{},
 					})
 				}
-				return &list
+				return list
 			}(),
 			wantCode: http.StatusOK,
 		},
@@ -515,7 +515,7 @@ func TestGetLeaves(t *testing.T) {
 			params:      fmt.Sprintf("%d/%d", 0, testConfig.MaxRange), // query will be pruned
 			sth:         &sth5,
 			expect:      true,
-			rsp: func() *[]types.Leaf {
+			rsp: func() []types.Leaf {
 				var list []types.Leaf
 				for i := int64(0); i < testConfig.MaxRange; i++ {
 					list = append(list[:], types.Leaf{
@@ -524,7 +524,7 @@ func TestGetLeaves(t *testing.T) {
 						KeyHash:   crypto.Hash{},
 					})
 				}
-				return &list
+				return list
 			}(),
 			wantCode: http.StatusOK,
 		},
@@ -570,7 +570,7 @@ func TestGetLeaves(t *testing.T) {
 			if err != nil {
 				t.Fatalf("must unmarshal leaf list: %v", err)
 			}
-			if got, want := &list, table.rsp; !reflect.DeepEqual(got, want) {
+			if got, want := list, table.rsp; !reflect.DeepEqual(got, want) {
 				t.Errorf("got leaf list\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
 			}
 		}()
