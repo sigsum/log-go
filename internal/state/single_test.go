@@ -54,7 +54,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 			defer ctrl.Finish()
 			trillianClient := mocksDB.NewMockClient(ctrl)
 			if table.thExp {
-				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(&table.th, table.thErr)
+				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, table.thErr)
 			}
 			secondary := mocksClient.NewMockClient(ctrl)
 			if table.secExp {

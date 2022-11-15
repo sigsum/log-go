@@ -149,7 +149,7 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	if err = types.LeavesToASCII(w, *leaves); err != nil {
+	if err = types.LeavesToASCII(w, leaves); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil

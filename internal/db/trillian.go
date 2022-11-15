@@ -89,62 +89,62 @@ func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves []types.
 	return fmt.Errorf("giving up on adding %d leaves", len(trilLeaves))
 }
 
-func (c *TrillianClient) GetTreeHead(ctx context.Context) (*types.TreeHead, error) {
+func (c *TrillianClient) GetTreeHead(ctx context.Context) (types.TreeHead, error) {
 	rsp, err := c.GRPC.GetLatestSignedLogRoot(ctx, &trillian.GetLatestSignedLogRootRequest{
 		LogId: c.TreeID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("backend failure: %v", err)
+		return types.TreeHead{}, fmt.Errorf("backend failure: %v", err)
 	}
 	if rsp == nil {
-		return nil, fmt.Errorf("no response")
+		return types.TreeHead{}, fmt.Errorf("no response")
 	}
 	if rsp.SignedLogRoot == nil {
-		return nil, fmt.Errorf("no signed log root")
+		return types.TreeHead{}, fmt.Errorf("no signed log root")
 	}
 	if rsp.SignedLogRoot.LogRoot == nil {
-		return nil, fmt.Errorf("no log root")
+		return types.TreeHead{}, fmt.Errorf("no log root")
 	}
 	var r trillianTypes.LogRootV1
 	if err := r.UnmarshalBinary(rsp.SignedLogRoot.LogRoot); err != nil {
-		return nil, fmt.Errorf("no log root: unmarshal failed: %v", err)
+		return types.TreeHead{}, fmt.Errorf("no log root: unmarshal failed: %v", err)
 	}
 	if len(r.RootHash) != crypto.HashSize {
-		return nil, fmt.Errorf("unexpected hash length: %d", len(r.RootHash))
+		return types.TreeHead{}, fmt.Errorf("unexpected hash length: %d", len(r.RootHash))
 	}
 	return treeHeadFromLogRoot(&r), nil
 }
 
-func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.ConsistencyProof) (*types.ConsistencyProof, error) {
+func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error) {
 	rsp, err := c.GRPC.GetConsistencyProof(ctx, &trillian.GetConsistencyProofRequest{
 		LogId:          c.TreeID,
 		FirstTreeSize:  int64(req.OldSize),
 		SecondTreeSize: int64(req.NewSize),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("backend failure: %v", err)
+		return types.ConsistencyProof{}, fmt.Errorf("backend failure: %v", err)
 	}
 	if rsp == nil {
-		return nil, fmt.Errorf("no response")
+		return types.ConsistencyProof{}, fmt.Errorf("no response")
 	}
 	if rsp.Proof == nil {
-		return nil, fmt.Errorf("no consistency proof")
+		return types.ConsistencyProof{}, fmt.Errorf("no consistency proof")
 	}
 	if len(rsp.Proof.Hashes) == 0 {
-		return nil, fmt.Errorf("not a consistency proof: empty")
+		return types.ConsistencyProof{}, fmt.Errorf("not a consistency proof: empty")
 	}
 	path, err := nodePathFromHashes(rsp.Proof.Hashes)
 	if err != nil {
-		return nil, fmt.Errorf("not a consistency proof: %v", err)
+		return types.ConsistencyProof{}, fmt.Errorf("not a consistency proof: %v", err)
 	}
-	return &types.ConsistencyProof{
+	return types.ConsistencyProof{
 		OldSize: req.OldSize,
 		NewSize: req.NewSize,
 		Path:    path,
 	}, nil
 }
 
-func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.InclusionProof) (*types.InclusionProof, error) {
+func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.InclusionProof) (types.InclusionProof, error) {
 	rsp, err := c.GRPC.GetInclusionProofByHash(ctx, &trillian.GetInclusionProofByHashRequest{
 		LogId:           c.TreeID,
 		LeafHash:        req.LeafHash[:],
@@ -152,30 +152,30 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 		OrderBySequence: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("backend failure: %v", err)
+		return types.InclusionProof{}, fmt.Errorf("backend failure: %v", err)
 	}
 	if rsp == nil {
-		return nil, fmt.Errorf("no response")
+		return types.InclusionProof{}, fmt.Errorf("no response")
 	}
 	if len(rsp.Proof) != 1 {
-		return nil, fmt.Errorf("bad proof count: %d", len(rsp.Proof))
+		return types.InclusionProof{}, fmt.Errorf("bad proof count: %d", len(rsp.Proof))
 	}
 	proof := rsp.Proof[0]
 	if len(proof.Hashes) == 0 {
-		return nil, fmt.Errorf("not an inclusion proof: empty")
+		return types.InclusionProof{}, fmt.Errorf("not an inclusion proof: empty")
 	}
 	path, err := nodePathFromHashes(proof.Hashes)
 	if err != nil {
-		return nil, fmt.Errorf("not an inclusion proof: %v", err)
+		return types.InclusionProof{}, fmt.Errorf("not an inclusion proof: %v", err)
 	}
-	return &types.InclusionProof{
+	return types.InclusionProof{
 		TreeSize:  req.TreeSize,
 		LeafIndex: uint64(proof.LeafIndex),
 		Path:      path,
 	}, nil
 }
 
-func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*[]types.Leaf, error) {
+func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([]types.Leaf, error) {
 	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
 		LogId:      c.TreeID,
 		StartIndex: int64(req.StartSize),
@@ -203,16 +203,16 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) (*
 		}
 		list = append(list[:], l)
 	}
-	return &list, nil
+	return list, nil
 }
 
-func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) *types.TreeHead {
+func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) types.TreeHead {
 	th := types.TreeHead{
 		Timestamp: uint64(time.Now().Unix()),
 		TreeSize:  uint64(lr.TreeSize),
 	}
 	copy(th.RootHash[:], lr.RootHash)
-	return &th
+	return th
 }
 
 func nodePathFromHashes(hashes [][]byte) ([]crypto.Hash, error) {

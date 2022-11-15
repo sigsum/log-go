@@ -67,10 +67,10 @@ func (mr *MockClientMockRecorder) AddSequencedLeaves(arg0, arg1, arg2 interface{
 }
 
 // GetConsistencyProof mocks base method.
-func (m *MockClient) GetConsistencyProof(arg0 context.Context, arg1 *requests.ConsistencyProof) (*types.ConsistencyProof, error) {
+func (m *MockClient) GetConsistencyProof(arg0 context.Context, arg1 *requests.ConsistencyProof) (types.ConsistencyProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConsistencyProof", arg0, arg1)
-	ret0, _ := ret[0].(*types.ConsistencyProof)
+	ret0, _ := ret[0].(types.ConsistencyProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockClientMockRecorder) GetConsistencyProof(arg0, arg1 interface{}) *g
 }
 
 // GetInclusionProof mocks base method.
-func (m *MockClient) GetInclusionProof(arg0 context.Context, arg1 *requests.InclusionProof) (*types.InclusionProof, error) {
+func (m *MockClient) GetInclusionProof(arg0 context.Context, arg1 *requests.InclusionProof) (types.InclusionProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInclusionProof", arg0, arg1)
-	ret0, _ := ret[0].(*types.InclusionProof)
+	ret0, _ := ret[0].(types.InclusionProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockClientMockRecorder) GetInclusionProof(arg0, arg1 interface{}) *gom
 }
 
 // GetLeaves mocks base method.
-func (m *MockClient) GetLeaves(arg0 context.Context, arg1 *requests.Leaves) (*[]types.Leaf, error) {
+func (m *MockClient) GetLeaves(arg0 context.Context, arg1 *requests.Leaves) ([]types.Leaf, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLeaves", arg0, arg1)
-	ret0, _ := ret[0].(*[]types.Leaf)
+	ret0, _ := ret[0].([]types.Leaf)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockClientMockRecorder) GetLeaves(arg0, arg1 interface{}) *gomock.Call
 }
 
 // GetTreeHead mocks base method.
-func (m *MockClient) GetTreeHead(arg0 context.Context) (*types.TreeHead, error) {
+func (m *MockClient) GetTreeHead(arg0 context.Context) (types.TreeHead, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTreeHead", arg0)
-	ret0, _ := ret[0].(*types.TreeHead)
+	ret0, _ := ret[0].(types.TreeHead)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

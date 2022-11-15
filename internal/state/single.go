@@ -131,7 +131,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get tree head: %v", err)
 	}
-	nextSTH, err := sm.chooseTree(ctx, th).Sign(sm.signer, &sm.keyHash)
+	nextSTH, err := sm.chooseTree(ctx, &th).Sign(sm.signer, &sm.keyHash)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
