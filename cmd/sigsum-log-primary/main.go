@@ -33,6 +33,7 @@ var (
 	externalEndpoint = flag.String("external-endpoint", "localhost:6965", "host:port specification of where sigsum-log-primary serves clients")
 	internalEndpoint = flag.String("internal-endpoint", "localhost:6967", "host:port specification of where sigsum-log-primary serves other log nodes")
 	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
+	ephemeralBackend = flag.Bool("ephemeral-test-backend", false, "if set, enables in-memory backend, with NO persistent storage")
 	prefix           = flag.String("url-prefix", "", "a prefix that precedes /<endpoint>")
 	trillianID       = flag.Int64("tree-id", 0, "tree identifier in the Trillian database")
 	timeout          = flag.Duration("timeout", time.Second*10, "timeout for backend requests")
@@ -145,17 +146,20 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)
 	}
 
-	// Setup trillian client.
-	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Timeout)}
-	conn, err := grpc.Dial(*rpcBackend, dialOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("Dial: %v", err)
+	if *ephemeralBackend {
+		p.DbClient = db.NewMemoryDb()
+	} else {
+		// Setup trillian client.
+		dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Timeout)}
+		conn, err := grpc.Dial(*rpcBackend, dialOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("Dial: %v", err)
+		}
+		p.DbClient = &db.TrillianClient{
+			TreeID: *trillianID,
+			GRPC:   trillian.NewTrillianLogClient(conn),
+		}
 	}
-	p.DbClient = &db.TrillianClient{
-		TreeID: *trillianID,
-		GRPC:   trillian.NewTrillianLogClient(conn),
-	}
-
 	// Setup secondary node configuration.
 	var secondary client.Client
 	if *secondaryURL != "" && *secondaryPubkey != "" {
