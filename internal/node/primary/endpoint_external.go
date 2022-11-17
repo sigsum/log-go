@@ -17,10 +17,17 @@ import (
 func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling add-leaf request")
-	// TODO: Ignores returned domain, should be used for rate limit.
-	req, _, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
+	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
 	if err != nil {
 		return http.StatusBadRequest, err
+	}
+	keyHash := crypto.HashBytes(req.PublicKey[:])
+	relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
+	if relax == nil {
+		if domain == nil {
+			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
+		}
+		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
 		return http.StatusBadRequest, fmt.Errorf("invalid signature")
@@ -37,6 +44,9 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 		&leaf, sth.TreeSize)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	if status.AlreadyExists {
+		relax()
 	}
 	if status.IsSequenced {
 		return http.StatusOK, nil

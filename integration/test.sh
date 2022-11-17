@@ -36,6 +36,8 @@ function main() {
 	# Primary
 	nvars[$loga:ssrv_extra_args]="-secondary-url=http://${nvars[$logb:int_url]}"
 	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logb:ssrv_pub]}"
+	nvars[$loga:ssrv_extra_args]+=" -rate-limit-config=rate-limit.cfg"
+	nvars[$loga:ssrv_extra_args]+=" -allow-test-domain=true"
 	node_start $loga
 
 	# Secondary
@@ -264,6 +266,9 @@ function sigsum_setup() {
 		nvars[$i:ssrv_priv]=$(./sigsum-debug key private)
 		nvars[$i:ssrv_pub]=$(echo ${nvars[$i:ssrv_priv]} | ./sigsum-debug key public)
 		nvars[$i:ssrv_key_hash]=$(echo ${nvars[$i:ssrv_pub]} | ./sigsum-debug key hash)
+		# Use special test.sigsum.org test key to generate token.
+		nvars[$i:token]=$(echo 0000000000000000000000000000000000000000000000000000000000000001 \
+				    | ./sigsum-debug token $(echo ${nvars[$i:ssrv_pub]}))
 	done
 }
 
@@ -709,7 +714,8 @@ function add_leaf() {
 	echo "public_key=$cli_pub" >> $log_dir/req
 
 	cat $log_dir/req |
-		curl -s -w "%{http_code}" --data-binary @- ${nvars[$s:log_url]}/add-leaf \
+		curl -s -w "%{http_code}" -H "sigsum-token: test.sigsum.org ${nvars[$s:token]}" \
+		     --data-binary @- ${nvars[$s:log_url]}/add-leaf \
 		     >$log_dir/rsp
 
 	echo $(status_code $s)

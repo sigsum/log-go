@@ -20,6 +20,7 @@ import (
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/primary"
+	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
@@ -39,6 +40,8 @@ var (
 	witnesses        = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
 	maxRange         = flag.Int64("max-range", 10, "maximum number of entries that can be retrived in a single request")
 	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
+	rateLimitConfig  = flag.String("rate-limit-config", "", "enable rate limiting, based on given config file")
+	allowTestDomain  = flag.Bool("allow-test-domain", false, "allow submit tokens from test.sigsum.org")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
 	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
@@ -176,6 +179,18 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
+	if len(*rateLimitConfig) > 0 {
+		f, err := os.Open(*rateLimitConfig)
+		if err != nil {
+			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
+		}
+		p.RateLimiter, err = rateLimit.NewLimiter(f, *allowTestDomain)
+		if err != nil {
+			return nil, fmt.Errorf("initializing rate limiter failed: %v", err)
+		}
+	} else {
+		p.RateLimiter = rateLimit.NoLimit{}
+	}
 
 	// TODO: verify that GRPC.TreeType() == LOG.
 
