@@ -30,7 +30,6 @@ func (l NoLimit) AccessAllowed(_ *string, _ *crypto.Hash) func() {
 }
 
 var schedulePeriod = 24 * time.Hour
-var limitPerPeriod = 50
 
 type clocker interface {
 	Now() time.Time
@@ -115,7 +114,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 
 	domain, err := l.domainDb.GetRegisteredDomain(domain)
 	if err != nil {
-		// TODO: Log error somehow?
+		// Reject unknown domains.
 		return nil
 	}
 	return l.publicCounts.AccessAllowed(domain, l.allowPublic)
@@ -137,7 +136,7 @@ func newLimiter(configFile io.Reader, allowTestDomain bool, clock clocker) (Limi
 			return nil, err
 		}
 	}
-	
+
 	if !allowTestDomain {
 		config.AllowedDomains[strings.ToLower(testDomain)] = 0
 	}
@@ -163,4 +162,3 @@ func newLimiter(configFile io.Reader, allowTestDomain bool, clock clocker) (Limi
 func NewLimiter(configFile io.Reader, allowTestDomain bool) (Limiter, error) {
 	return newLimiter(configFile, allowTestDomain, wallTime{})
 }
-

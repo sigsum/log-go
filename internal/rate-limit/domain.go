@@ -49,7 +49,7 @@ func (db *DomainDb) GetRegisteredDomain(domain string) (string, error) {
 			domain, suffix))
 	}
 	if domain == suffix {
-		// There is no additional albel, return domain as is.
+		// There is no additional label, return domain as is.
 		return domain, nil
 	}
 	dot := strings.LastIndexByte(domain[:len(domain)-len(suffix)-1], '.')

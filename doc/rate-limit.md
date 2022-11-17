@@ -10,7 +10,7 @@ at which new leaves are added to the log. Note that this does *not*
 provide any protection from more general denial of service attacks.
 Rate-limit applies only to `add-leaf` requests, and the mechanism is
 intended to make it feasible to operate a public log, which anyone can
-submit new leafs to.
+submit new leaves to.
 
 ## Enabling rate limits
 
@@ -38,7 +38,7 @@ limiting purposes, only the first request for each leaf is counted.
 Which counter is used, and what limit it is compared to, depends on
 the configured allow lists. Each entry specifies a limit, an
 unsigned decimal integer specifying the maximum number of leafs that
-may be submitter per 24 hours. A limit of zero means that no leafs can
+may be submitted per 24 hours. A limit of zero means that no leafs can
 be submitted.
 
 ### Allowed keys
@@ -47,7 +47,7 @@ Allowed keys are configured with config lines of the form
 ```
 key <key hash> <limit>
 ```
-The key hash is the hash of the public key used to verify the leaf
+The key hash is the hex-encoded hash of the public key used to verify the leaf
 signature in the request.
 
 ### Allowed domains
@@ -62,7 +62,7 @@ The domain is a DNS domain in standard dotted notation, e.g.,
 a `sigsum-token:` header in the http request, which must be provided by
 the submitter. The header includes a domain name and signature, and it
 is used only if the log can verify the signature using a public key
-retrieved from DNS. (In particular, the submitter's IP adress and any
+retrieved from DNS. (In particular, the submitter's IP address and any
 associated PTR records are not consulted).
 
 Note that all subdomains of the configured domain are allowed, i.e.,
@@ -91,7 +91,7 @@ via the `sigsum-token:` header. The suffix list is used to extract the
 the domain, and one additional label.
 
 The given limit is applied per "registered domain", which means that
-total requests allow by this configuration can be very much higher. It
+total requests allowed by this configuration can be very much higher. It
 is recommended to specify a rather low limit, e.g., 10-100. It is
 deemed impractical for a prospective attacker to get tens of thousands
 of registered domain.
@@ -99,7 +99,7 @@ of registered domain.
 TODO: Also add a limit on the total number of public requests, so one
 could have, e.g., 10 per registered domain but 10000 total for all?
 
-### Rule precendence
+### Rule precedence
 
 The order of the config lines doesn't matter. When determining which
 limit should be applied to an incoming `add-leaf` request, it is

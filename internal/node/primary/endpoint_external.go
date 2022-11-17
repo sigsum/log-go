@@ -26,9 +26,8 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	if relax == nil {
 		if domain == nil {
 			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
-		} else {
-			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 		}
+		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 	}
 	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
 		return http.StatusBadRequest, fmt.Errorf("invalid signature")
