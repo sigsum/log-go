@@ -27,7 +27,7 @@ func (c *fakeClock) Advance(delta time.Duration) {
 	c.now = c.now.Add(delta)
 }
 
-func newTestLimiter(config string, clock clocker) (Limiter, error) {
+func newTestLimiter(config string, clock clock) (Limiter, error) {
 	return newLimiter(bytes.NewBuffer([]byte(config)), false, clock)
 }
 
