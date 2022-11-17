@@ -123,7 +123,6 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 	s.Config.LogID = hex.EncodeToString(publicKey[:])
-	s.Config.TreeID = *trillianID
 	s.Config.Prefix = *prefix
 	s.Config.Timeout = *timeout
 	s.Config.Interval = *interval
@@ -135,7 +134,7 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 		return nil, fmt.Errorf("Dial: %v", err)
 	}
 	s.TrillianClient = &db.TrillianClient{
-		TreeID: s.TreeID,
+		TreeID: *trillianID,
 		GRPC:   trillian.NewTrillianLogClient(conn),
 	}
 

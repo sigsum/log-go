@@ -136,7 +136,6 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	p.Config.LogID = hex.EncodeToString(publicKey[:])
-	p.Config.TreeID = *trillianID
 	p.Config.Prefix = *prefix
 	p.Config.MaxRange = *maxRange
 	p.Config.Timeout = *timeout
@@ -153,7 +152,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		return nil, fmt.Errorf("Dial: %v", err)
 	}
 	p.TrillianClient = &db.TrillianClient{
-		TreeID: p.TreeID,
+		TreeID: *trillianID,
 		GRPC:   trillian.NewTrillianLogClient(conn),
 	}
 
