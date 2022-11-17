@@ -147,7 +147,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 
 // chooseTree picks a tree to publish, taking the state of a possible secondary node into account.
 func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *types.TreeHead) *types.TreeHead {
-	if !sm.secondary.Initiated() {
+	if sm.secondary == nil {
 		return proposedTreeHead
 	}
 
