@@ -50,8 +50,8 @@ func TestGetTreeHeadUnsigned(t *testing.T) {
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(table.rsp, table.err)
 
 			node := Primary{
-				Config:         testConfig,
-				TrillianClient: trillianClient,
+				Config:   testConfig,
+				DbClient: trillianClient,
 			}
 
 			// Create HTTP request

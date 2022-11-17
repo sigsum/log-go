@@ -75,9 +75,9 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
 
 			node := Secondary{
-				Config:         testConfig,
-				TrillianClient: trillianClient,
-				Signer:         tbl.signer,
+				Config:   testConfig,
+				DbClient: trillianClient,
+				Signer:   tbl.signer,
 			}
 
 			// Create HTTP request

@@ -127,9 +127,9 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			}
 
 			node := Secondary{
-				Config:         testConfig,
-				Primary:        primaryClient,
-				TrillianClient: trillianClient,
+				Config:   testConfig,
+				Primary:  primaryClient,
+				DbClient: trillianClient,
 			}
 
 			node.fetchLeavesFromPrimary(context.Background())
