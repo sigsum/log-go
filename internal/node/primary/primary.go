@@ -8,7 +8,6 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
-	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -34,7 +33,6 @@ type Primary struct {
 	Stateman        state.StateManager // coordinates access to (co)signed tree heads
 	TokenVerifier   token.Verifier     // checks if domain name knows a public key
 	RateLimiter     rateLimit.Limiter
-	Secondary       client.Client
 }
 
 // Implementing handler.Config

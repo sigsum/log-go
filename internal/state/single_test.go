@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -43,11 +42,10 @@ func TestNewStateManagerSingle(t *testing.T) {
 		thExp       bool
 		thErr       error
 		th          types.TreeHead
-		secExp      bool
 		wantErr     bool
 	}{
-		{"invalid: signer failure", signerErr, false, nil, types.TreeHead{}, false, true},
-		{"valid", signerOk, true, nil, types.TreeHead{Timestamp: now(t)}, true, false},
+		{"invalid: signer failure", signerErr, false, nil, types.TreeHead{}, true},
+		{"valid", signerOk, true, nil, types.TreeHead{Timestamp: now(t)}, false},
 	} {
 		func() {
 			ctrl := gomock.NewController(t)
@@ -56,17 +54,13 @@ func TestNewStateManagerSingle(t *testing.T) {
 			if table.thExp {
 				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, table.thErr)
 			}
-			secondary := mocksClient.NewMockClient(ctrl)
-			if table.secExp {
-				secondary.EXPECT().Initiated().Return(false)
-			}
-
 			tmpFile, err := os.CreateTemp("", "sigsum-log-test-sth")
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer os.Remove(tmpFile.Name())
-			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), secondary, tmpFile, nil)
+			// This test uses no secondary and no witnesses.
+			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), nil, tmpFile, nil)
 			if got, want := err != nil, table.description != "valid"; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
