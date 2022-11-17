@@ -27,7 +27,7 @@ type Primary struct {
 	Config
 	PublicHTTPMux   *http.ServeMux
 	InternalHTTPMux *http.ServeMux
-	TrillianClient  db.Client          // provides access to the Trillian backend
+	DbClient        db.Client          // provides access to the backend, usually Trillian
 	Signer          crypto.Signer      // provides access to Ed25519 private key
 	Stateman        state.StateManager // coordinates access to (co)signed tree heads
 	TokenVerifier   token.Verifier     // checks if domain name knows a public key

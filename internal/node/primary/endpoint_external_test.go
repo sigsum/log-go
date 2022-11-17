@@ -100,10 +100,10 @@ func TestAddLeaf(t *testing.T) {
 				stateman.EXPECT().ToCosignTreeHead().Return(table.sthStateman)
 			}
 			node := Primary{
-				Config:         testConfig,
-				TrillianClient: client,
-				Stateman:       stateman,
-				RateLimiter:    rateLimit.NoLimit{},
+				Config:      testConfig,
+				DbClient:    client,
+				Stateman:    stateman,
+				RateLimiter: rateLimit.NoLimit{},
 			}
 
 			// Create HTTP request
@@ -351,9 +351,9 @@ func TestGetConsistencyProof(t *testing.T) {
 				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
 			}
 			node := Primary{
-				Config:         testConfig,
-				TrillianClient: client,
-				Stateman:       stateman,
+				Config:   testConfig,
+				DbClient: client,
+				Stateman: stateman,
 			}
 
 			// Create HTTP request
@@ -435,9 +435,9 @@ func TestGetInclusionProof(t *testing.T) {
 				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
 			}
 			node := Primary{
-				Config:         testConfig,
-				TrillianClient: client,
-				Stateman:       stateman,
+				Config:   testConfig,
+				DbClient: client,
+				Stateman: stateman,
 			}
 
 			// Create HTTP request
@@ -547,9 +547,9 @@ func TestGetLeaves(t *testing.T) {
 				stateman.EXPECT().ToCosignTreeHead().Return(&sth2)
 			}
 			node := Primary{
-				Config:         testConfig,
-				TrillianClient: client,
-				Stateman:       stateman,
+				Config:   testConfig,
+				DbClient: client,
+				Stateman: stateman,
 			}
 
 			// Create HTTP request

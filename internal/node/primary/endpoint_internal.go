@@ -15,7 +15,7 @@ import (
 func getTreeHeadUnsigned(ctx context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling %s request", types.EndpointGetTreeHeadUnsigned)
 	p := c.(Primary)
-	th, err := p.TrillianClient.GetTreeHead(ctx)
+	th, err := p.DbClient.GetTreeHead(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed getting tree head: %v", err)
 	}

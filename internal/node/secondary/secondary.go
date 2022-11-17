@@ -28,7 +28,7 @@ type Secondary struct {
 	Config
 	PublicHTTPMux   *http.ServeMux
 	InternalHTTPMux *http.ServeMux
-	TrillianClient  db.Client     // provides access to the Trillian backend
+	DbClient        db.Client     // provides access to the backend, usually Trillian
 	Signer          crypto.Signer // provides access to Ed25519 private key
 	Primary         client.Client
 }
@@ -74,7 +74,7 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 	}
 	log.Debug("got tree head from primary, size %d", prim.TreeSize)
 
-	curTH, err := treeHeadFromTrillian(ctx, s.TrillianClient)
+	curTH, err := treeHeadFromTrillian(ctx, s.DbClient)
 	if err != nil {
 		log.Warning("unable to get tree head from trillian: %v", err)
 		return
@@ -92,7 +92,7 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 			return
 		}
 		log.Debug("got %d leaves from primary when asking for [%d..%d]", len(leaves), req.StartSize, req.EndSize)
-		if err := s.TrillianClient.AddSequencedLeaves(ctx, leaves, index); err != nil {
+		if err := s.DbClient.AddSequencedLeaves(ctx, leaves, index); err != nil {
 			log.Error("AddSequencedLeaves: %v", err)
 			return
 		}

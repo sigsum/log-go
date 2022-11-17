@@ -151,7 +151,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %v", err)
 	}
-	p.TrillianClient = &db.TrillianClient{
+	p.DbClient = &db.TrillianClient{
 		TreeID: *trillianID,
 		GRPC:   trillian.NewTrillianLogClient(conn),
 	}
@@ -170,7 +170,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.TrillianClient, p.Signer, p.Config.Interval, p.Config.Timeout,
+	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, p.Config.Interval, p.Config.Timeout,
 		secondary, sthFile, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)

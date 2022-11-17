@@ -40,7 +40,7 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	}
 
 	sth := p.Stateman.ToCosignTreeHead()
-	status, err := p.TrillianClient.AddLeaf(ctx,
+	status, err := p.DbClient.AddLeaf(ctx,
 		&leaf, sth.TreeSize)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -101,10 +101,11 @@ func getConsistencyProof(ctx context.Context, c handler.Config, w http.ResponseW
 
 	curTree := p.Stateman.ToCosignTreeHead()
 	if req.NewSize > curTree.TreeHead.TreeSize {
-		return http.StatusBadRequest, fmt.Errorf("new_size outside of current tree")
+		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
+			req.NewSize, curTree.TreeHead.TreeSize)
 	}
 
-	proof, err := p.TrillianClient.GetConsistencyProof(ctx, req)
+	proof, err := p.DbClient.GetConsistencyProof(ctx, req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -127,7 +128,7 @@ func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWri
 		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
 	}
 
-	proof, err := p.TrillianClient.GetInclusionProof(ctx, req)
+	proof, err := p.DbClient.GetInclusionProof(ctx, req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -155,7 +156,7 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 		return http.StatusBadRequest, err
 	}
 
-	leaves, err := p.TrillianClient.GetLeaves(ctx, req)
+	leaves, err := p.DbClient.GetLeaves(ctx, req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}

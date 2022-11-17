@@ -133,7 +133,7 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %v", err)
 	}
-	s.TrillianClient = &db.TrillianClient{
+	s.DbClient = &db.TrillianClient{
 		TreeID: *trillianID,
 		GRPC:   trillian.NewTrillianLogClient(conn),
 	}
