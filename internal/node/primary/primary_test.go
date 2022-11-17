@@ -12,7 +12,6 @@ var (
 	testWitVK  = crypto.PublicKey{}
 	testConfig = Config{
 		LogID:    fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
-		TreeID:   0,
 		Prefix:   "testonly",
 		MaxRange: 3,
 		Timeout:  10,

@@ -18,7 +18,6 @@ import (
 // Config is a collection of log parameters
 type Config struct {
 	LogID    string        // H(public key), then hex-encoded
-	TreeID   int64         // Merkle tree identifier used by Trillian
 	Prefix   string        // The portion between base URL and st/v0 (may be "")
 	Timeout  time.Duration // Timeout used for gRPC requests
 	Interval time.Duration // Signing frequency
