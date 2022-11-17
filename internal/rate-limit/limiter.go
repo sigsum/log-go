@@ -31,7 +31,7 @@ func (l NoLimit) AccessAllowed(_ *string, _ *crypto.Hash) func() {
 
 var schedulePeriod = 24 * time.Hour
 
-type clocker interface {
+type clock interface {
 	Now() time.Time
 }
 
@@ -42,7 +42,7 @@ func (_ wallTime) Now() time.Time {
 }
 
 type schedule struct {
-	clock clocker
+	clock clock
 	sync.Mutex
 	next time.Time
 }
@@ -120,7 +120,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 	return l.publicCounts.AccessAllowed(domain, l.allowPublic)
 }
 
-func newLimiter(configFile io.Reader, allowTestDomain bool, clock clocker) (Limiter, error) {
+func newLimiter(configFile io.Reader, allowTestDomain bool, clock clock) (Limiter, error) {
 	config, err := ParseConfig(configFile)
 	if err != nil {
 		return nil, err
