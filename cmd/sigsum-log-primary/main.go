@@ -161,21 +161,21 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		}
 	}
 	// Setup secondary node configuration.
-	var secondary client.Client
+	var secondaries []client.Client
 	if *secondaryURL != "" && *secondaryPubkey != "" {
 		pubkey, err := crypto.PublicKeyFromHex(*secondaryPubkey)
 		if err != nil {
 			return nil, fmt.Errorf("invalid secondary node pubkey: %v", err)
 		}
-		secondary = client.New(client.Config{
+		secondaries = append(secondaries, client.New(client.Config{
 			LogURL: *secondaryURL,
 			LogPub: pubkey,
-		})
+		}))
 	}
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, p.Config.Interval, p.Config.Timeout,
-		secondary, sthFile, witnessMap)
+		secondaries, sthFile, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
