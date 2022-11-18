@@ -72,7 +72,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				t.Errorf("%q: got tree size %d but wanted %d", table.description, got, want)
 			}
 			if got, want := sm.signedTreeHead.RootHash[:], table.th.RootHash[:]; !bytes.Equal(got, want) {
-				t.Errorf("%q: got tree size %v but wanted %v", table.description, got, want)
+				t.Errorf("%q: got tree hash %x but wanted %x", table.description, got, want)
 			}
 			if got, want := sm.signedTreeHead.Timestamp, table.th.Timestamp; got < want {
 				t.Errorf("%q: got timestamp %d but wanted at least %d", table.description, got, want)
