@@ -132,15 +132,18 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, sm.timeout)
 	defer cancel()
-	th, err := sm.client.GetTreeHead(ctx)
+
+	replicatedTreeHead, err := replicatedTreeAfter(
+		ctx, sm.signedTreeHead.Size,
+		sm.client, sm.secondary)
 	if err != nil {
-		return fmt.Errorf("get tree head: %v", err)
+		log.Error("no new replicated tree head: %v", err)
+		replicatedTreeHead = &sm.signedTreeHead.TreeHead
 	}
-	nextSTH, err := sm.signTreeHead(sm.chooseTree(ctx, &th))
+	nextSTH, err := sm.signTreeHead(replicatedTreeHead)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
-	log.Debug("wanted to advance to size %d, chose size %d", th.Size, nextSTH.Size)
 
 	if err := sm.sthFile.Store(nextSTH); err != nil {
 		return err
@@ -150,70 +153,55 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	return nil
 }
 
-// chooseTree picks a tree to publish, taking the state of a possible secondary node into account.
-func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *types.TreeHead) *types.TreeHead {
-	if sm.secondary == nil {
-		return proposedTreeHead
+// Identifies the latest tree head replicated by all secondaries, and
+// with size >= after, or fails if some secondary is in a bad or too
+// old state.
+func replicatedTreeAfter(ctx context.Context, after uint64, primary db.Client, secondary client.Client) (*types.TreeHead, error) {
+	primaryTreeHead, err := primary.GetTreeHead(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get primary tree head: %w", err)
+	}
+	if primaryTreeHead.Size < after {
+		return nil, fmt.Errorf("primary is behind(!), %d < %d", primaryTreeHead.Size, after)
+	}
+	if secondary == nil {
+		return &primaryTreeHead, nil
 	}
 
-	secSTH, err := sm.secondary.GetToCosignTreeHead(ctx)
+	secSTH, err := secondary.GetToCosignTreeHead(ctx)
 	if err != nil {
-		log.Warning("failed fetching tree head from secondary: %v", err)
-		return &sm.signedTreeHead.TreeHead
+		return nil, fmt.Errorf("failed fetching tree head from secondary: %w", err)
 	}
-	if secSTH.Size > proposedTreeHead.Size {
-		log.Error("secondary is ahead of us: %d > %d", secSTH.Size, proposedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
+	if secSTH.Size > primaryTreeHead.Size {
+		return nil, fmt.Errorf("secondary is ahead of us: %d > %d", secSTH.Size, primaryTreeHead.Size)
 	}
-	if secSTH.Size == proposedTreeHead.Size {
-		if secSTH.RootHash != proposedTreeHead.RootHash {
-			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.Size)
-			return &sm.signedTreeHead.TreeHead
+	if secSTH.Size < after {
+		return nil, fmt.Errorf("secondary is behind: %d <= %d", secSTH.Size, after)
+	}
+	if secSTH.Size == primaryTreeHead.Size {
+		if secSTH.RootHash != primaryTreeHead.RootHash {
+			return nil, fmt.Errorf("secondary root hash doesn't match our root hash at tree size %d", secSTH.Size)
 		}
-		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.Size)
-		return proposedTreeHead
+		log.Debug("secondary is up-to-date with primary tree head, using primary tree, size %d", primaryTreeHead.Size)
+		return &primaryTreeHead, nil
 	}
 	// We now know that
-	// * the proposed tree is ahead of the secondary (including them not being equal)
-	// * the minimal tree size is 0, so the proposed tree is at tree size 1 or greater
+	// * the primary tree is ahead of the secondary (including them not being equal)
+	// * both trees have size > after >= 0.
 
-	// Consistency proofs can not be produced from a tree of size 0, so don't try when the secondary is at 0.
-	if secSTH.Size == 0 {
-		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
+	req := requests.ConsistencyProof{
+		OldSize: secSTH.Size,
+		NewSize: primaryTreeHead.Size,
 	}
-	if err := sm.verifyConsistency(ctx, &secSTH.TreeHead, proposedTreeHead); err != nil {
-		log.Error("secondary tree not consistent with ours: %v", err)
-		return &sm.signedTreeHead.TreeHead
-	}
-	// We now know that
-	// * we have two candidates: latest published and secondary's tree
-	// * secondary's tree is verified to be consistent with our proposed tree
-
-	// Protect against going backwards by chosing the larger of secondary tree and latest published.
-	if sm.signedTreeHead.Size > secSTH.TreeHead.Size {
-		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
-	}
-
-	log.Debug("using latest tree head from secondary: size %d", secSTH.Size)
-	return &secSTH.TreeHead
-}
-
-func (sm *StateManagerSingle) verifyConsistency(ctx context.Context, from, to *types.TreeHead) error {
-	req := &requests.ConsistencyProof{
-		OldSize: from.Size,
-		NewSize: to.Size,
-	}
-	proof, err := sm.client.GetConsistencyProof(ctx, req)
+	proof, err := primary.GetConsistencyProof(ctx, &req)
 	if err != nil {
-		return fmt.Errorf("unable to get consistency proof from %d to %d: %w", req.OldSize, req.NewSize, err)
+		return nil, fmt.Errorf("unable to get consistency proof from %d to %d: %w", req.OldSize, req.NewSize, err)
 	}
-	if err := proof.Verify(&from.RootHash, &to.RootHash); err != nil {
-		return fmt.Errorf("invalid consistency proof from %d to %d: %v", req.OldSize, req.NewSize, err)
+	if err := proof.Verify(&secSTH.RootHash, &primaryTreeHead.RootHash); err != nil {
+		return nil, fmt.Errorf("invalid consistency proof from %d to %d: %v", req.OldSize, req.NewSize, err)
 	}
-	log.Debug("consistency proof from %d to %d verified", req.OldSize, req.NewSize)
-	return nil
+	log.Debug("using latest tree head from secondary: size %d", secSTH.Size)
+	return &secSTH.TreeHead, nil
 }
 
 func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
