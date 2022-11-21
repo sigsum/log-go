@@ -26,4 +26,4 @@ integration:
   script:
   - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
   - cd integration
-  - bash ./test.sh
+  - bash ./test.sh --extended
