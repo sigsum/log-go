@@ -101,7 +101,7 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.S
 	sm.Lock()
 	defer sm.Unlock()
 
-	if !sm.signedTreeHead.TreeHead.Verify(&pub, sig, &sm.keyHash) {
+	if !sm.signedTreeHead.Verify(&pub, sig, &sm.keyHash) {
 		return fmt.Errorf("invalid cosignature")
 	}
 	sm.cosignatures[crypto.HashBytes(pub[:])] = sig
@@ -131,7 +131,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("get tree head: %v", err)
 	}
-	nextSTH, err := sm.chooseTree(ctx, &th).Sign(sm.signer, &sm.keyHash)
+	nextSTH, err := sm.signTreeHead(sm.chooseTree(ctx, &th))
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
@@ -154,16 +154,16 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	secSTH, err := sm.secondary.GetToCosignTreeHead(ctx)
 	if err != nil {
 		log.Warning("failed fetching tree head from secondary: %v", err)
-		return refreshTreeHead(sm.signedTreeHead.TreeHead)
+		return &sm.signedTreeHead.TreeHead
 	}
 	if secSTH.TreeSize > proposedTreeHead.TreeSize {
 		log.Error("secondary is ahead of us: %d > %d", secSTH.TreeSize, proposedTreeHead.TreeSize)
-		return refreshTreeHead(sm.signedTreeHead.TreeHead)
+		return &sm.signedTreeHead.TreeHead
 	}
 	if secSTH.TreeSize == proposedTreeHead.TreeSize {
 		if secSTH.RootHash != proposedTreeHead.RootHash {
 			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.TreeSize)
-			return refreshTreeHead(sm.signedTreeHead.TreeHead)
+			return &sm.signedTreeHead.TreeHead
 		}
 		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.TreeSize)
 		return proposedTreeHead
@@ -175,11 +175,11 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	// Consistency proofs can not be produced from a tree of size 0, so don't try when the secondary is at 0.
 	if secSTH.TreeSize == 0 {
 		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
-		return refreshTreeHead(sm.signedTreeHead.TreeHead)
+		return &sm.signedTreeHead.TreeHead
 	}
 	if err := sm.verifyConsistency(ctx, &secSTH.TreeHead, proposedTreeHead); err != nil {
 		log.Error("secondary tree not consistent with ours: %v", err)
-		return refreshTreeHead(sm.signedTreeHead.TreeHead)
+		return &sm.signedTreeHead.TreeHead
 	}
 	// We now know that
 	// * we have two candidates: latest published and secondary's tree
@@ -188,11 +188,11 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	// Protect against going backwards by chosing the larger of secondary tree and latest published.
 	if sm.signedTreeHead.TreeSize > secSTH.TreeHead.TreeSize {
 		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
-		return refreshTreeHead(sm.signedTreeHead.TreeHead)
+		return &sm.signedTreeHead.TreeHead
 	}
 
 	log.Debug("using latest tree head from secondary: size %d", secSTH.TreeSize)
-	return refreshTreeHead(secSTH.TreeHead)
+	return &secSTH.TreeHead
 }
 
 func (sm *StateManagerSingle) verifyConsistency(ctx context.Context, from, to *types.TreeHead) error {
@@ -261,8 +261,7 @@ func (sm *StateManagerSingle) restoreSTH() (*types.SignedTreeHead, error) {
 	} else if err := th.FromASCII(bytes.NewBuffer(b[:n])); err != nil {
 		th = *zeroTreeHead()
 	}
-	th = *refreshTreeHead(th)
-	return th.Sign(sm.signer, &sm.keyHash)
+	return sm.signTreeHead(&th)
 }
 
 func (sm *StateManagerSingle) storeSTH(sth *types.SignedTreeHead) error {
@@ -283,10 +282,10 @@ func (sm *StateManagerSingle) storeSTH(sth *types.SignedTreeHead) error {
 }
 
 func zeroTreeHead() *types.TreeHead {
-	return refreshTreeHead(types.TreeHead{RootHash: crypto.HashBytes([]byte(""))})
+	return &types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
 }
 
-func refreshTreeHead(th types.TreeHead) *types.TreeHead {
-	th.Timestamp = uint64(time.Now().Unix())
-	return &th
+// Signs tree head, with current time as timestamp.
+func (sm *StateManagerSingle) signTreeHead(th *types.TreeHead) (*types.SignedTreeHead, error) {
+	return th.Sign(sm.signer, &sm.keyHash, uint64(time.Now().Unix()))
 }

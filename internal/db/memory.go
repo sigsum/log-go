@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/merkle"
@@ -65,9 +64,8 @@ func (db *MemoryDb) GetTreeHead(_ context.Context) (types.TreeHead, error) {
 	defer db.mu.RUnlock()
 
 	return types.TreeHead{
-		Timestamp: uint64(time.Now().Unix()),
-		TreeSize:  uint64(db.tree.Size()),
-		RootHash:  db.tree.GetRootHash(),
+		TreeSize: uint64(db.tree.Size()),
+		RootHash: db.tree.GetRootHash(),
 	}, nil
 }
 

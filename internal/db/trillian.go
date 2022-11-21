@@ -208,8 +208,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 
 func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) types.TreeHead {
 	th := types.TreeHead{
-		Timestamp: uint64(time.Now().Unix()),
-		TreeSize:  uint64(lr.TreeSize),
+		TreeSize: uint64(lr.TreeSize),
 	}
 	copy(th.RootHash[:], lr.RootHash)
 	return th
