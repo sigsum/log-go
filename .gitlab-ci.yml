@@ -15,8 +15,29 @@ go-test:
   stage: test
   script: go test -race ./...
 
-# integration runs the integration test.
-integration:
+# There are three flavours of the integration tests, "default" with
+# primary and secondary, "extended" where secondary is promoted to new
+# primary, and "ephemeral" which runs a simpler backend without mysql
+# and trillian.
+integration-ephemeral:
+  stage: integration
+  script:
+  - cd integration
+  - bash ./test.sh --ephemeral
+
+integration-default:
+  stage: integration
+  services:
+  - alias: mysql
+    name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
+  variables:
+    MYSQL_URI: test:test@tcp(mysql:3306)/test
+  script:
+  - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
+  - cd integration
+  - bash ./test.sh
+
+integration-extended:
   stage: integration
   services:
   - alias: mysql
