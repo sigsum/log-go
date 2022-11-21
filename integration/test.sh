@@ -200,6 +200,7 @@ function node_promote() {
 	nvars[$new_primary:ssrv_priv]=${nvars[$prev_primary:ssrv_priv]}
 	nvars[$new_primary:ssrv_pub]=${nvars[$prev_primary:ssrv_pub]}
 	nvars[$new_primary:ssrv_key_hash]=${nvars[$prev_primary:ssrv_key_hash]}
+	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
 }
 
 function trillian_setup() {
