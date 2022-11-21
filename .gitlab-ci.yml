@@ -15,7 +15,7 @@ go-test:
   stage: test
   script: go test -race ./...
 
-# There are three flavours of the integration tests, "default" with
+# There are three flavors of the integration tests, "default" with
 # primary and secondary, "extended" where secondary is promoted to new
 # primary, and "ephemeral" which runs a simpler backend without mysql
 # and trillian.
