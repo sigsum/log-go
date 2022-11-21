@@ -14,6 +14,10 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
+const (
+	leavesBatchSize = 100
+)
+
 // Secondary is an instance of a secondary node
 type Secondary struct {
 	Config   handler.Config
@@ -49,33 +53,26 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, s.Config.Timeout)
 	defer cancel()
 
-	prim, err := s.Primary.GetUnsignedTreeHead(ctx)
-	if err != nil {
-		log.Warning("unable to get tree head from primary: %v", err)
-		return
-	}
-	log.Debug("got tree head from primary, size %d", prim.Size)
-
-	curTH, err := s.DbClient.GetTreeHead(ctx)
-	if err != nil {
-		log.Warning("unable to get tree head from trillian: %v", err)
-		return
-	}
-	log.Debug("got tree head from trillian, size %d", curTH.Size)
-	var leaves []types.Leaf
-	for index := int64(curTH.Size); index < int64(prim.Size); index += int64(len(leaves)) {
-		req := requests.Leaves{
-			StartIndex: uint64(index),
-			EndIndex:   prim.Size,
+	for {
+		curTH, err := s.DbClient.GetTreeHead(ctx)
+		if err != nil {
+			log.Warning("unable to get tree head from trillian: %v", err)
+			return
 		}
 		// TODO: set context per request
-		leaves, err = s.Primary.GetLeaves(ctx, req)
+		req := requests.Leaves{
+			StartIndex: curTH.Size,
+			EndIndex:   curTH.Size + leavesBatchSize,
+		}
+		leaves, err := s.Primary.GetLeaves(ctx, req)
+		// Can we have a specific HTTP code for the case that StartSize equals size,
+		// which would be the normal way to exit this loop?
 		if err != nil {
 			log.Warning("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
 			return
 		}
 		log.Debug("got %d leaves from primary when asking for [%d:%d]", len(leaves), req.StartIndex, req.EndIndex)
-		if err := s.DbClient.AddSequencedLeaves(ctx, leaves, index); err != nil {
+		if err := s.DbClient.AddSequencedLeaves(ctx, leaves, int64(req.StartIndex)); err != nil {
 			log.Error("AddSequencedLeaves: %v", err)
 			return
 		}
