@@ -81,10 +81,7 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 func getTreeHeadCosigned(_ context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
 	p := c.(Primary)
 	log.Debug("handling get-tree-head-cosigned request")
-	cth, err := p.Stateman.CosignedTreeHead()
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
+	cth := p.Stateman.CosignedTreeHead()
 	if err := cth.ToASCII(w); err != nil {
 		return http.StatusInternalServerError, err
 	}

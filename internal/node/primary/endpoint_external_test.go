@@ -242,12 +242,6 @@ func TestGetTreeCosigned(t *testing.T) {
 		wantCode    int                     // HTTP status ok
 	}{
 		{
-			description: "invalid: no cosigned STH",
-			expect:      true,
-			err:         fmt.Errorf("something went wrong"),
-			wantCode:    http.StatusInternalServerError,
-		},
-		{
 			description: "valid",
 			expect:      true,
 			rsp:         testCTH,
@@ -260,7 +254,7 @@ func TestGetTreeCosigned(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().CosignedTreeHead().Return(table.rsp, table.err)
+				stateman.EXPECT().CosignedTreeHead().Return(table.rsp)
 			}
 			node := Primary{
 				Config:   testConfig,

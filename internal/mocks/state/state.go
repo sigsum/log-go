@@ -51,12 +51,11 @@ func (mr *MockStateManagerMockRecorder) AddCosignature(arg0, arg1 interface{}) *
 }
 
 // CosignedTreeHead mocks base method.
-func (m *MockStateManager) CosignedTreeHead() (*types.CosignedTreeHead, error) {
+func (m *MockStateManager) CosignedTreeHead() *types.CosignedTreeHead {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CosignedTreeHead")
 	ret0, _ := ret[0].(*types.CosignedTreeHead)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // CosignedTreeHead indicates an expected call of CosignedTreeHead.
