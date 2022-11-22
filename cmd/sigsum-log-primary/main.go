@@ -45,14 +45,25 @@ var (
 	allowTestDomain  = flag.Bool("allow-test-domain", false, "allow submit tokens from test.sigsum.org")
 	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
 	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
-	secondaryPubkey  = flag.String("secondary-pubkey", "", "hex-encoded Ed25519 public key for secondary node")
+	secondaryURLs    []string
+	secondaryPubkeys []crypto.PublicKey
 	sthStorePath     = flag.String("sth-path", "/var/lib/sigsum-log/sth", "path to file where latest published STH is being stored")
 
 	gitCommit = "unknown"
 )
 
 func main() {
+	flag.Func("secondary-url", "secondary node endpoint for fetching latest replicated tree head",
+		func(arg string) error { secondaryURLs = append(secondaryURLs, arg); return nil })
+	flag.Func("secondary-pubkey", "hex-encoded Ed25519 public key for secondary node",
+		func(arg string) error {
+			pubkey, err := crypto.PublicKeyFromHex(arg)
+			if err != nil {
+				return fmt.Errorf("invalid --secondary-pubkey argument: %w", err)
+			}
+			secondaryPubkeys = append(secondaryPubkeys, pubkey)
+			return nil
+		})
 	flag.Parse()
 	if err := utils.LogToFile(*logFile); err != nil {
 		log.Fatal("open log file failed: %v", err)
@@ -161,15 +172,15 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 		}
 	}
 	// Setup secondary node configuration.
+	if len(secondaryURLs) != len(secondaryPubkeys) {
+		return nil, fmt.Errorf("inconsistent configuratino of secondaries: %d urls, %d keys",
+			len(secondaryURLs), len(secondaryPubkeys))
+	}
 	var secondaries []client.Client
-	if *secondaryURL != "" && *secondaryPubkey != "" {
-		pubkey, err := crypto.PublicKeyFromHex(*secondaryPubkey)
-		if err != nil {
-			return nil, fmt.Errorf("invalid secondary node pubkey: %v", err)
-		}
+	for i, url := range secondaryURLs {
 		secondaries = append(secondaries, client.New(client.Config{
-			LogURL: *secondaryURL,
-			LogPub: pubkey,
+			LogURL: url,
+			LogPub: secondaryPubkeys[i],
 		}))
 	}
 
