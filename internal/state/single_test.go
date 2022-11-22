@@ -41,18 +41,19 @@ func TestNewStateManagerSingle(t *testing.T) {
 		signer      crypto.Signer
 		thExp       bool
 		thErr       error
-		th          types.TreeHead
+		thTimestamp uint64
 		wantErr     bool
 	}{
-		{"invalid: signer failure", signerErr, false, nil, types.TreeHead{}, true},
-		{"valid", signerOk, true, nil, types.TreeHead{Timestamp: now(t)}, false},
+		{"invalid: signer failure", signerErr, false, nil, 0, true},
+		{"valid", signerOk, true, nil, now(t), false},
 	} {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			trillianClient := mocksDB.NewMockClient(ctrl)
+			th := types.TreeHead{}
 			if table.thExp {
-				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, table.thErr)
+				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(th, table.thErr)
 			}
 			tmpFile, err := os.CreateTemp("", "sigsum-log-test-sth")
 			if err != nil {
@@ -68,13 +69,13 @@ func TestNewStateManagerSingle(t *testing.T) {
 				return
 			}
 
-			if got, want := sm.signedTreeHead.TreeSize, table.th.TreeSize; got != want {
+			if got, want := sm.signedTreeHead.TreeSize, th.TreeSize; got != want {
 				t.Errorf("%q: got tree size %d but wanted %d", table.description, got, want)
 			}
-			if got, want := sm.signedTreeHead.RootHash[:], table.th.RootHash[:]; !bytes.Equal(got, want) {
+			if got, want := sm.signedTreeHead.RootHash[:], th.RootHash[:]; !bytes.Equal(got, want) {
 				t.Errorf("%q: got tree hash %x but wanted %x", table.description, got, want)
 			}
-			if got, want := sm.signedTreeHead.Timestamp, table.th.Timestamp; got < want {
+			if got, want := sm.signedTreeHead.Timestamp, table.thTimestamp; got < want {
 				t.Errorf("%q: got timestamp %d but wanted at least %d", table.description, got, want)
 			}
 			if got := sm.cosignedTreeHead; got != nil {
@@ -170,7 +171,7 @@ func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 
 func mustSign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) *types.SignedTreeHead {
 	t.Helper()
-	sth, err := th.Sign(s, kh)
+	sth, err := th.Sign(s, kh, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

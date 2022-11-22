@@ -15,9 +15,8 @@ import (
 
 var (
 	testTH = types.TreeHead{
-		Timestamp: 0,
-		TreeSize:  0,
-		RootHash:  crypto.HashBytes([]byte("root hash")),
+		TreeSize: 0,
+		RootHash: crypto.HashBytes([]byte("root hash")),
 	}
 )
 

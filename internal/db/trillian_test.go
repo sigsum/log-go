@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/trillian"
@@ -160,9 +159,8 @@ func TestGetTreeHead(t *testing.T) {
 				},
 			},
 			wantTh: &types.TreeHead{
-				Timestamp: 1622585623,
-				TreeSize:  0,
-				RootHash:  crypto.Hash{},
+				TreeSize: 0,
+				RootHash: crypto.Hash{},
 			},
 		},
 	} {
@@ -182,12 +180,6 @@ func TestGetTreeHead(t *testing.T) {
 				return
 			}
 
-			// we would need a clock that can be mocked to make a nicer test
-			now := uint64(time.Now().Unix())
-			if got, wantLow, wantHigh := th.Timestamp, now-5, now+5; got < wantLow || got > wantHigh {
-				t.Errorf("got tree head with timestamp %d but wanted between [%d, %d] in test %q",
-					got, wantLow, wantHigh, table.description)
-			}
 			if got, want := th.TreeSize, table.wantTh.TreeSize; got != want {
 				t.Errorf("got tree head with tree size %d but wanted %d in test %q", got, want, table.description)
 			}

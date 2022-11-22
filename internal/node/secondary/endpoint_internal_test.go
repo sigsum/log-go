@@ -33,9 +33,8 @@ func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
 
 var (
 	testTH = types.TreeHead{
-		Timestamp: 0,
-		TreeSize:  0,
-		RootHash:  crypto.HashBytes([]byte("root hash")),
+		TreeSize: 0,
+		RootHash: crypto.HashBytes([]byte("root hash")),
 	}
 	testSignerFailing    = TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("mocked error")}
 	testSignerSucceeding = TestSigner{crypto.PublicKey{}, crypto.Signature{}, nil}
