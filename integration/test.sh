@@ -26,16 +26,16 @@ declare -r client=conf/client.config
 declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test}"
 
 # Set based on --extended / --ephemeral options
-testflavour=basic
+testflavor=basic
 
 function main() {
 	while [[ $# > 0 ]] ; do
 		case $1 in
 			--extended)
-				testflavour=extended
+				testflavor=extended
 				;;
 			--ephemeral)
-				testflavour=ephemeral
+				testflavor=ephemeral
 				;;
 			*)
 				die "Unknown option: $1"
@@ -52,7 +52,7 @@ function main() {
 	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logb:ssrv_pub]}"
 	nvars[$loga:ssrv_extra_args]+=" -rate-limit-config=rate-limit.cfg"
 	nvars[$loga:ssrv_extra_args]+=" -allow-test-domain=true"
-	if [[ "$testflavour" = ephemeral ]] ; then
+	if [[ "$testflavor" = ephemeral ]] ; then
 		nvars[$loga:ssrv_extra_args]+=" -ephemeral-test-backend"
 	fi
 	node_start $loga
@@ -60,7 +60,7 @@ function main() {
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
 	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=${nvars[$loga:ssrv_pub]}"
-	if [[ "$testflavour" = ephemeral ]] ; then
+	if [[ "$testflavor" = ephemeral ]] ; then
 		nvars[$logb:ssrv_extra_args]+=" -ephemeral-test-backend"
 	fi
 	node_start $logb
@@ -73,7 +73,7 @@ function main() {
 	run_tests $loga $logb 0 5
 	run_tests $loga $logb 5 1
 
-	if [[ $testflavour == extended ]]; then
+	if [[ $testflavor == extended ]]; then
 		# for tree equality tests later on; FIXME: remove
 		test_signed_tree_head $loga 6
 		cp ${nvars[$loga:log_dir]}/rsp ${nvars[$loga:log_dir]}/last_sth
@@ -98,7 +98,7 @@ function main() {
 }
 
 function check_go_deps() {
-	if [[ "$testflavour" != ephemeral ]] ; then
+	if [[ "$testflavor" != ephemeral ]] ; then
 		[[ $(command -v trillian_log_signer)  ]] || die "Hint: go install github.com/google/trillian/cmd/trillian_log_signer"
 		[[ $(command -v trillian_log_server)  ]] || die "Hint: go install github.com/google/trillian/cmd/trillian_log_server"
 		[[ $(command -v createtree)           ]] || die "Hint: go install github.com/google/trillian/cmd/createtree"
@@ -150,7 +150,7 @@ function node_setup() {
 		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
 		info "$i: logging to $dir"
 		nvars[$i:log_dir]=$dir
-		if [[ "$testflavour" != ephemeral ]] ; then
+		if [[ "$testflavor" != ephemeral ]] ; then
 			trillian_setup $i
 		fi
 		sigsum_setup $i
@@ -160,7 +160,7 @@ function node_setup() {
 # node_start starts trillian and sigsum and creates new trees
 function node_start() {
 	for i in $@; do
-		if [[ "$testflavour" != ephemeral ]] ; then
+		if [[ "$testflavor" != ephemeral ]] ; then
 			trillian_start $i
 		fi
 		sigsum_start $i
@@ -169,7 +169,7 @@ function node_start() {
 
 # node_start_* starts sequencer and sigsum but does not create new trees
 function node_start_fe() {
-	if [[ "$testflavour" != ephemeral ]] ; then
+	if [[ "$testflavor" != ephemeral ]] ; then
 		trillian_start_sequencer $@
 	fi
 	sigsum_start $@
@@ -309,7 +309,7 @@ function sigsum_start() {
 		else
 			binary=sigsum-log-secondary
 		fi
-		if [[ "$testflavour" = ephemeral ]] ; then
+		if [[ "$testflavor" = ephemeral ]] ; then
 			extra_args+=" -ephemeral-test-backend"
 		else
 			extra_args+=" -trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
@@ -342,7 +342,7 @@ function node_stop() {
 
 # Delete log tree for, requires trillian server ("backend") to be running
 function node_destroy() {
-	if [[ "$testflavour" != ephemeral ]] ; then
+	if [[ "$testflavor" != ephemeral ]] ; then
 		for i in $@; do
 			if ! deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
 				warn "failed deleting provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
@@ -357,7 +357,7 @@ function node_stop_fe() {
 	for i in $@; do
 
 		[[ -v nvars[$i:ssrv_pid] ]] && pp ${nvars[$i:ssrv_pid]} && kill ${nvars[$i:ssrv_pid]} # FIXME: why is SIGINT (often) not enough?
-		if [[ "$testflavour" != ephemeral ]] ; then
+		if [[ "$testflavor" != ephemeral ]] ; then
 			[[ -v nvars[$i:tseq_pid] ]] && pp ${nvars[$i:tseq_pid]} && kill -2 ${nvars[$i:tseq_pid]}
 			while :; do
 				sleep 1
@@ -375,7 +375,7 @@ function node_stop_fe() {
 }
 
 function node_stop_be() {
-	if [[ "$testflavour" != ephemeral ]] ; then
+	if [[ "$testflavor" != ephemeral ]] ; then
 		for i in $@; do
 			pp ${nvars[$i:tsrv_pid]} && kill ${nvars[$i:tsrv_pid]}
 			while :; do
@@ -431,7 +431,7 @@ function check_setup() {
 	sleep 3
 	for i in $@; do
 		info "checking setup for $i"
-		if [[ "$testflavour" != ephemeral ]] ; then
+		if [[ "$testflavor" != ephemeral ]] ; then
 			if [[ ${nvars[$i:ssrv_role]} == primary ]]; then
 				[[ -v nvars[$i:tseq_pid] ]] && pp ${nvars[$i:tseq_pid]} || die "must have Trillian log sequencer ($i)"
 			fi
