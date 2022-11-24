@@ -194,7 +194,7 @@ func TestGetLeaves(t *testing.T) {
 		wantRsp *sigsumreq.Leaves
 	}{
 		{"invalid: bad request (parser error)", "a/1", nil},
-		{"invalid: bad request (StartSize > EndSize)", "1/0", nil},
+		{"invalid: bad request (StartIndex > EndIndex)", "1/0", nil},
 		{"valid", "0/10", &sigsumreq.Leaves{0, maxRange - 1}},
 	} {
 		url := types.EndpointGetLeaves.Path("http://example.org/sigsum/")
