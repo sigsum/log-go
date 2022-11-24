@@ -13,7 +13,7 @@ type StateManager interface {
 	ToCosignTreeHead() *types.SignedTreeHead
 
 	// CosignedTreeHead returns the node's cosigned tree head
-	CosignedTreeHead() (*types.CosignedTreeHead, error)
+	CosignedTreeHead() *types.CosignedTreeHead
 
 	// AddCosignature verifies that a cosignature is valid for the to-cosign
 	// tree head before adding it

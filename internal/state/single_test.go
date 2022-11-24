@@ -78,8 +78,8 @@ func TestNewStateManagerSingle(t *testing.T) {
 			if got, want := sm.signedTreeHead.Timestamp, table.thTimestamp; got < want {
 				t.Errorf("%q: got timestamp %d but wanted at least %d", table.description, got, want)
 			}
-			if got := sm.cosignedTreeHead; got != nil {
-				t.Errorf("%q: got cosigned tree head but should have none", table.description)
+			if got := len(sm.cosignedTreeHead.Cosignatures); got != 0 {
+				t.Errorf("%q: got %d cosignatures but should have none", table.description, got)
 			}
 		}()
 	}
@@ -103,20 +103,9 @@ func TestCosignedTreeHead(t *testing.T) {
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
 	}
-	cth, err := sm.CosignedTreeHead()
-	if err != nil {
-		t.Errorf("should not fail with error: %v", err)
-		return
-	}
+	cth := sm.CosignedTreeHead()
 	if got := cth; !reflect.DeepEqual(got, want) {
 		t.Errorf("got cosigned tree head\n\t%v\nbut wanted\n\t%v", got, want)
-	}
-
-	sm.cosignedTreeHead = nil
-	cth, err = sm.CosignedTreeHead()
-	if err == nil {
-		t.Errorf("should fail without a cosigned tree head")
-		return
 	}
 }
 

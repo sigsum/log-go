@@ -60,6 +60,9 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, time
 	if sm.signedTreeHead, err = sm.restoreSTH(); err != nil {
 		return nil, err
 	}
+	// No cosignatures available at startup.
+	sm.cosignedTreeHead = &types.CosignedTreeHead{SignedTreeHead: *sm.signedTreeHead}
+
 	ctx := context.Background()
 	for {
 		err := sm.tryRotate(ctx)
@@ -78,13 +81,10 @@ func (sm *StateManagerSingle) ToCosignTreeHead() *types.SignedTreeHead {
 	return sm.signedTreeHead
 }
 
-func (sm *StateManagerSingle) CosignedTreeHead() (*types.CosignedTreeHead, error) {
+func (sm *StateManagerSingle) CosignedTreeHead() *types.CosignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
-	if sm.cosignedTreeHead == nil {
-		return nil, fmt.Errorf("no cosignatures available")
-	}
-	return sm.cosignedTreeHead, nil
+	return sm.cosignedTreeHead
 }
 
 func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.Signature) error {
@@ -222,15 +222,9 @@ func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 }
 
 func (sm *StateManagerSingle) setCosignedTreeHead() {
-	n := len(sm.cosignatures)
-	if n == 0 {
-		sm.cosignedTreeHead = nil
-		return
-	}
-
 	var cth types.CosignedTreeHead
 	cth.SignedTreeHead = *sm.signedTreeHead
-	cth.Cosignatures = make([]types.Cosignature, 0, n)
+	cth.Cosignatures = make([]types.Cosignature, 0, len(sm.cosignatures))
 	for keyHash, cosignature := range sm.cosignatures {
 		cth.Cosignatures = append(cth.Cosignatures, types.Cosignature{
 			KeyHash:   keyHash,
