@@ -398,8 +398,8 @@ func TestGetInclusionProof(t *testing.T) {
 
 func TestGetLeaves(t *testing.T) {
 	req := &requests.Leaves{
-		StartSize: 1,
-		EndSize:   2,
+		StartIndex: 1,
+		EndIndex:   2,
 	}
 	firstLeaf := &types.Leaf{
 		Checksum:  crypto.Hash{},

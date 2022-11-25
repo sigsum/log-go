@@ -178,8 +178,8 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([]types.Leaf, error) {
 	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
 		LogId:      c.TreeID,
-		StartIndex: int64(req.StartSize),
-		Count:      int64(req.EndSize-req.StartSize) + 1,
+		StartIndex: int64(req.StartIndex),
+		Count:      int64(req.EndIndex-req.StartIndex) + 1,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("backend failure: %v", err)
@@ -187,12 +187,12 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 	if rsp == nil {
 		return nil, fmt.Errorf("no response")
 	}
-	if got, want := len(rsp.Leaves), int(req.EndSize-req.StartSize+1); got != want {
+	if got, want := len(rsp.Leaves), int(req.EndIndex-req.StartIndex+1); got != want {
 		return nil, fmt.Errorf("unexpected number of leaves: %d", got)
 	}
 	list := make([]types.Leaf, 0, len(rsp.Leaves))
 	for i, leaf := range rsp.Leaves {
-		leafIndex := int64(req.StartSize + uint64(i))
+		leafIndex := int64(req.StartIndex + uint64(i))
 		if leafIndex != leaf.LeafIndex {
 			return nil, fmt.Errorf("unexpected leaf(%d): got index %d", leafIndex, leaf.LeafIndex)
 		}
