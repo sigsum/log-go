@@ -126,17 +126,17 @@ func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWri
 		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
 	}
 
-	proof, err := p.DbClient.GetInclusionProof(ctx, req)
-	if err == db.ErrNotIncluded {
+	switch proof, err := p.DbClient.GetInclusionProof(ctx, req); err {
+	case db.ErrNotIncluded:
 		return http.StatusNotFound, err
-	}
-	if err != nil {
+	case nil:
+		if err := proof.ToASCII(w); err != nil {
+			return http.StatusInternalServerError, err
+		}
+		return http.StatusOK, nil
+	default:
 		return http.StatusInternalServerError, err
 	}
-	if err := proof.ToASCII(w); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
 }
 
 func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
