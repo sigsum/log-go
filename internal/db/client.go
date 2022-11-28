@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -11,6 +12,8 @@ type AddLeafStatus struct {
 	AlreadyExists bool
 	IsSequenced   bool
 }
+
+var ErrNotIncluded = errors.New("not included")
 
 // Client is an interface that interacts with a log's database backend
 type Client interface {

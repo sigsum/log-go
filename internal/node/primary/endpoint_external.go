@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -126,6 +127,9 @@ func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWri
 	}
 
 	proof, err := p.DbClient.GetInclusionProof(ctx, req)
+	if err == db.ErrNotIncluded {
+		return http.StatusNotFound, err
+	}
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
