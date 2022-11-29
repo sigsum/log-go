@@ -105,11 +105,11 @@ func (db *MemoryDb) GetLeaves(_ context.Context, req *requests.Leaves) ([]types.
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	size := db.tree.Size()
-	if req.StartIndex >= size || req.EndIndex >= size || req.StartIndex > req.EndIndex {
+	if req.StartIndex >= size || req.EndIndex > size || req.StartIndex >= req.EndIndex {
 		return nil, fmt.Errorf("out of range request: start %d, end %d, size %d\n",
 			req.StartIndex, req.EndIndex, size)
 	}
-	list := make([]types.Leaf, req.EndIndex-req.StartIndex+1)
+	list := make([]types.Leaf, req.EndIndex-req.StartIndex)
 	for i, _ := range list {
 		if err := list[i].FromBinary(db.leafs[i+int(req.StartIndex)][:]); err != nil {
 			panic(fmt.Errorf("internal error: %v", err))

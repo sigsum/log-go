@@ -146,7 +146,7 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 		if treeSize == 0 {
 			return http.StatusBadRequest, fmt.Errorf("tree is empty")
 		}
-		maxIndex = treeSize - 1
+		maxIndex = treeSize
 	}
 	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, uint64(p.MaxRange))
 	if err != nil {

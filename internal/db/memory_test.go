@@ -59,7 +59,7 @@ func TestMemoryGetLeaves(t *testing.T) {
 	for start := 0; start <= 5; start++ {
 		for end := 0; start <= 5; start++ {
 			res, err := db.GetLeaves(nil, &requests.Leaves{uint64(start), uint64(end)})
-			if start == 5 || end == 5 || start > end {
+			if start >= end {
 				if err == nil {
 					t.Errorf("no error for invalid range start %d, end %d", start, end)
 				}

@@ -73,14 +73,14 @@ func LeavesRequestFromHTTP(r *http.Request, maxIndex, maxRange uint64) (*sigsumr
 		return nil, fmt.Errorf("parse url: %w", err)
 	}
 
-	if req.StartIndex > req.EndIndex {
-		return nil, fmt.Errorf("start_index(%d) must be less than or equal to end_index(%d)", req.StartIndex, req.EndIndex)
+	if req.StartIndex >= req.EndIndex {
+		return nil, fmt.Errorf("start_index(%d) must be less than end_index(%d)", req.StartIndex, req.EndIndex)
 	}
 	if req.EndIndex > maxIndex {
 		return nil, fmt.Errorf("end_index(%d) outside of current tree", req.EndIndex)
 	}
-	if req.EndIndex-req.StartIndex+1 > maxRange {
-		req.EndIndex = req.StartIndex + maxRange - 1
+	if req.EndIndex-req.StartIndex > maxRange {
+		req.EndIndex = req.StartIndex + maxRange
 	}
 	return &req, nil
 }
