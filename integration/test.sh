@@ -666,7 +666,7 @@ function test_get_leaf() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-leaves (data \"$data\", index $index)"
 
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-leaves/$index/$index >$log_dir/rsp
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-leaves/$index/$((index + 1)) >$log_dir/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
 		fail "$desc: http status code $(status_code $pri)"
