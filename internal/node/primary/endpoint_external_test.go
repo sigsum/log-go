@@ -402,6 +402,14 @@ func TestGetInclusionProof(t *testing.T) {
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
+			description: "invalid: not included",
+			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
+			sth:         &sth2,
+			expect:      true,
+			err:         db.ErrNotIncluded,
+			wantCode:    http.StatusNotFound,
+		},
+		{
 			description: "valid",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			sth:         &sth2,

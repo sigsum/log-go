@@ -155,7 +155,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 		return types.InclusionProof{}, fmt.Errorf("backend failure: %v", err)
 	}
 	if rsp == nil {
-		return types.InclusionProof{}, fmt.Errorf("no response")
+		return types.InclusionProof{}, ErrNotIncluded
 	}
 	if len(rsp.Proof) != 1 {
 		return types.InclusionProof{}, fmt.Errorf("bad proof count: %d", len(rsp.Proof))
