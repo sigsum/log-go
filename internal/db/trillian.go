@@ -179,7 +179,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
 		LogId:      c.TreeID,
 		StartIndex: int64(req.StartIndex),
-		Count:      int64(req.EndIndex-req.StartIndex) + 1,
+		Count:      int64(req.EndIndex - req.StartIndex),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("backend failure: %v", err)
@@ -187,7 +187,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 	if rsp == nil {
 		return nil, fmt.Errorf("no response")
 	}
-	if got, want := len(rsp.Leaves), int(req.EndIndex-req.StartIndex+1); got != want {
+	if got, want := len(rsp.Leaves), int(req.EndIndex-req.StartIndex); got != want {
 		return nil, fmt.Errorf("unexpected number of leaves: %d", got)
 	}
 	list := make([]types.Leaf, 0, len(rsp.Leaves))

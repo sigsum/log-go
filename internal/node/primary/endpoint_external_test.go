@@ -475,31 +475,31 @@ func TestGetLeaves(t *testing.T) {
 			wantCode:    http.StatusBadRequest,
 		},
 		{
-			description: "invalid: bad request (StartIndex > EndIndex)",
-			params:      "1/0",
+			description: "invalid: bad request (StartIndex >= EndIndex)",
+			params:      "1/1",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
-			description: "invalid: bad request (EndIndex >= current tree size)",
-			params:      "0/2",
+			description: "invalid: bad request (EndIndex > current tree size)",
+			params:      "0/3",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			params:      "0/0",
+			params:      "0/1",
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "invalid: empty tree",
-			params:      "0/0",
+			params:      "0/1",
 			sth:         &sth0,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid: three middle elements",
-			params:      "1/3",
+			params:      "1/4",
 			sth:         &sth5,
 			expect:      true,
 			rsp: func() []types.Leaf {

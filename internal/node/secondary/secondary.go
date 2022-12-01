@@ -83,15 +83,15 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 	for index := int64(curTH.TreeSize); index < int64(prim.TreeSize); index += int64(len(leaves)) {
 		req := requests.Leaves{
 			StartIndex: uint64(index),
-			EndIndex:   prim.TreeSize - 1,
+			EndIndex:   prim.TreeSize,
 		}
 		// TODO: set context per request
 		leaves, err = s.Primary.GetLeaves(ctx, req)
 		if err != nil {
-			log.Warning("error fetching leaves [%d..%d] from primary: %v", req.StartIndex, req.EndIndex, err)
+			log.Warning("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
 			return
 		}
-		log.Debug("got %d leaves from primary when asking for [%d..%d]", len(leaves), req.StartIndex, req.EndIndex)
+		log.Debug("got %d leaves from primary when asking for [%d:%d]", len(leaves), req.StartIndex, req.EndIndex)
 		if err := s.DbClient.AddSequencedLeaves(ctx, leaves, index); err != nil {
 			log.Error("AddSequencedLeaves: %v", err)
 			return
