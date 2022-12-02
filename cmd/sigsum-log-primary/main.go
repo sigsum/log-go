@@ -137,7 +137,6 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	p.Config.LogID = hex.EncodeToString(publicKey[:])
-	p.Config.Prefix = *prefix
 	p.Config.MaxRange = *maxRange
 	p.Config.Timeout = *timeout
 	witnessMap, err := newWitnessMap(*witnesses)
@@ -198,15 +197,17 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	// Register HTTP endpoints.
 	mux := http.NewServeMux()
 	for _, h := range p.PublicHTTPHandlers() {
-		log.Debug("adding external handler: %s", h.Path())
-		mux.Handle(h.Path(), h)
+		path := h.Path(*prefix)
+		log.Debug("adding external handler: %s", path)
+		mux.Handle(path, h)
 	}
 	p.PublicHTTPMux = mux
 
 	mux = http.NewServeMux()
 	for _, h := range p.InternalHTTPHandlers() {
-		log.Debug("adding internal handler: %s", h.Path())
-		mux.Handle(h.Path(), h)
+		path := h.Path(*prefix)
+		log.Debug("adding internal handler: %s", path)
+		mux.Handle(path, h)
 	}
 	p.InternalHTTPMux = mux
 

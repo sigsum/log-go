@@ -18,7 +18,6 @@ import (
 // Config is a collection of log parameters
 type Config struct {
 	LogID    string        // H(public key), then hex-encoded
-	Prefix   string        // The portion between base URL and st/v0 (may be "")
 	Timeout  time.Duration // Timeout used for gRPC requests
 	Interval time.Duration // Signing frequency
 }
@@ -34,9 +33,6 @@ type Secondary struct {
 }
 
 // Implementing handler.Config
-func (s Secondary) Prefix() string {
-	return s.Config.Prefix
-}
 func (s Secondary) LogID() string {
 	return s.Config.LogID
 }

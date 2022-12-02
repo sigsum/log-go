@@ -10,11 +10,8 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type dummyConfig struct {
-	prefix string
-}
+type dummyConfig struct{}
 
-func (c dummyConfig) Prefix() string         { return c.prefix }
 func (c dummyConfig) LogID() string          { return "dummyLogID" }
 func (c dummyConfig) Timeout() time.Duration { return time.Nanosecond }
 
@@ -38,11 +35,8 @@ func TestPath(t *testing.T) {
 			want:        "/test-prefix/add-leaf",
 		},
 	} {
-		testConfig := dummyConfig{
-			prefix: table.prefix,
-		}
-		h := Handler{testConfig, testFun, types.EndpointAddLeaf, http.MethodPost}
-		if got, want := h.Path(), table.want; got != want {
+		h := Handler{dummyConfig{}, testFun, types.EndpointAddLeaf, http.MethodPost}
+		if got, want := h.Path(table.prefix), table.want; got != want {
 			t.Errorf("got path %v but wanted %v", got, want)
 		}
 	}
