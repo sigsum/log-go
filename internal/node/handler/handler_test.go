@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,13 +10,37 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type dummyConfig struct {
-	prefix string
-}
+type dummyConfig struct{}
 
-func (c dummyConfig) Prefix() string         { return c.prefix }
 func (c dummyConfig) LogID() string          { return "dummyLogID" }
 func (c dummyConfig) Timeout() time.Duration { return time.Nanosecond }
+
+// TestPath checks that Path works for an endpoint (add-leaf)
+func TestPath(t *testing.T) {
+	testFun := func(_ context.Context, _ Config, _ http.ResponseWriter, _ *http.Request) (int, error) {
+		return 0, nil
+	}
+	for _, table := range []struct {
+		description string
+		prefix      string
+		want        string
+	}{
+		{
+			description: "no prefix",
+			want:        "/add-leaf",
+		},
+		{
+			description: "a prefix",
+			prefix:      "test-prefix",
+			want:        "/test-prefix/add-leaf",
+		},
+	} {
+		h := Handler{dummyConfig{}, testFun, types.EndpointAddLeaf, http.MethodPost}
+		if got, want := h.Path(table.prefix), table.want; got != want {
+			t.Errorf("got path %v but wanted %v", got, want)
+		}
+	}
+}
 
 // func TestServeHTTP(t *testing.T) {
 // 	h.ServeHTTP(w http.ResponseWriter, r *http.Request)
