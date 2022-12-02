@@ -19,7 +19,6 @@ type Config struct {
 	Prefix   string        // The portion between base URL and /<endpoint> (may be "")
 	MaxRange int64         // Maximum number of leaves per get-leaves request
 	Timeout  time.Duration // Timeout used for gRPC requests
-	Interval time.Duration // Cosigning frequency
 }
 
 // Primary is an instance of the log's primary node

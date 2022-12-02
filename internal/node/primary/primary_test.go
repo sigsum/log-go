@@ -15,7 +15,6 @@ var (
 		Prefix:   "testonly",
 		MaxRange: 3,
 		Timeout:  10,
-		Interval: 10,
 	}
 )
 
