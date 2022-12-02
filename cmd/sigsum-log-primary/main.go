@@ -140,7 +140,6 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	p.Config.Prefix = *prefix
 	p.Config.MaxRange = *maxRange
 	p.Config.Timeout = *timeout
-	p.Config.Interval = *interval
 	witnessMap, err := newWitnessMap(*witnesses)
 	if err != nil {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)
@@ -174,7 +173,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, p.Config.Interval, p.Config.Timeout,
+	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, *interval, p.Config.Timeout,
 		secondary, sthFile, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
