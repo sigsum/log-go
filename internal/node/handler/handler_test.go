@@ -17,7 +17,7 @@ func (c dummyConfig) Timeout() time.Duration { return time.Nanosecond }
 
 // TestPath checks that Path works for an endpoint (add-leaf)
 func TestPath(t *testing.T) {
-	testFun := func(_ context.Context, _ Config, _ http.ResponseWriter, _ *http.Request) (int, error) {
+	testFun := func(_ context.Context, _ http.ResponseWriter, _ *http.Request) (int, error) {
 		return 0, nil
 	}
 	for _, table := range []struct {

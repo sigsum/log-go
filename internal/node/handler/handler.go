@@ -18,7 +18,7 @@ type Config interface {
 // Handler implements the http.Handler interface
 type Handler struct {
 	Config
-	Fun      func(context.Context, Config, http.ResponseWriter, *http.Request) (int, error)
+	Fun      func(context.Context, http.ResponseWriter, *http.Request) (int, error)
 	Endpoint types.Endpoint
 	Method   string
 }
@@ -79,7 +79,7 @@ func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.Timeout())
 	defer cancel()
 
-	code, err := h.Fun(ctx, h.Config, w, r)
+	code, err := h.Fun(ctx, w, r)
 	if err != nil {
 		log.Debug("%s (%q): %v", h.Endpoint, r.URL.Path, err)
 		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)

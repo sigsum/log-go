@@ -43,21 +43,21 @@ func (p Primary) Timeout() time.Duration {
 // PublicHTTPHandlers returns all external handlers
 func (p Primary) PublicHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{p, addLeaf, types.EndpointAddLeaf, http.MethodPost},
-		handler.Handler{p, addCosignature, types.EndpointAddCosignature, http.MethodPost},
-		handler.Handler{p, getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
-		handler.Handler{p, getTreeHeadCosigned, types.EndpointGetTreeHeadCosigned, http.MethodGet},
-		handler.Handler{p, getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet},
-		handler.Handler{p, getInclusionProof, types.EndpointGetInclusionProof, http.MethodGet},
-		handler.Handler{p, getLeavesExternal, types.EndpointGetLeaves, http.MethodGet},
+		handler.Handler{p, addLeaf(p), types.EndpointAddLeaf, http.MethodPost},
+		handler.Handler{p, addCosignature(p), types.EndpointAddCosignature, http.MethodPost},
+		handler.Handler{p, getTreeHeadToCosign(p), types.EndpointGetTreeHeadToCosign, http.MethodGet},
+		handler.Handler{p, getTreeHeadCosigned(p), types.EndpointGetTreeHeadCosigned, http.MethodGet},
+		handler.Handler{p, getConsistencyProof(p), types.EndpointGetConsistencyProof, http.MethodGet},
+		handler.Handler{p, getInclusionProof(p), types.EndpointGetInclusionProof, http.MethodGet},
+		handler.Handler{p, getLeavesExternal(p), types.EndpointGetLeaves, http.MethodGet},
 	}
 }
 
 // InternalHTTPHandlers() returns all internal handlers
 func (p Primary) InternalHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{p, getTreeHeadUnsigned, types.EndpointGetTreeHeadUnsigned, http.MethodGet},
-		handler.Handler{p, getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet},
-		handler.Handler{p, getLeavesInternal, types.EndpointGetLeaves, http.MethodGet},
+		handler.Handler{p, getTreeHeadUnsigned(p), types.EndpointGetTreeHeadUnsigned, http.MethodGet},
+		handler.Handler{p, getConsistencyProof(p), types.EndpointGetConsistencyProof, http.MethodGet},
+		handler.Handler{p, getLeavesInternal(p), types.EndpointGetLeaves, http.MethodGet},
 	}
 }
