@@ -124,7 +124,6 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 	s.Config.LogID = hex.EncodeToString(publicKey[:])
-	s.Config.Prefix = *prefix
 	s.Config.Timeout = *timeout
 	s.Config.Interval = *interval
 
@@ -160,8 +159,9 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 
 	mux = http.NewServeMux()
 	for _, h := range s.InternalHTTPHandlers() {
-		log.Debug("adding internal handler: %s", h.Path())
-		mux.Handle(h.Path(), h)
+		path := h.Path(*prefix)
+		log.Debug("adding internal handler: %s", path)
+		mux.Handle(path, h)
 	}
 	s.InternalHTTPMux = mux
 

@@ -11,7 +11,6 @@ import (
 )
 
 type Config interface {
-	Prefix() string
 	LogID() string
 	Timeout() time.Duration
 }
@@ -25,11 +24,11 @@ type Handler struct {
 }
 
 // Path returns a path that should be configured for this handler
-func (h Handler) Path() string {
-	if len(h.Prefix()) == 0 {
+func (h Handler) Path(prefix string) string {
+	if len(prefix) == 0 {
 		return h.Endpoint.Path("")
 	}
-	return h.Endpoint.Path("", h.Prefix())
+	return h.Endpoint.Path("", prefix)
 }
 
 // ServeHTTP is part of the http.Handler interface
@@ -82,7 +81,7 @@ func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
 
 	code, err := h.Fun(ctx, h.Config, w, r)
 	if err != nil {
-		log.Debug("%s/%s: %v", h.Prefix(), h.Endpoint, err)
+		log.Debug("%s (%q): %v", h.Endpoint, r.URL.Path, err)
 		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)
 	} else if code != 200 {
 		w.WriteHeader(code)

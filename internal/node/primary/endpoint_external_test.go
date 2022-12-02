@@ -107,7 +107,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointAddLeaf.Path("http://example.com", node.Prefix())
+			url := types.EndpointAddLeaf.Path("http://example.com")
 			req, err := http.NewRequest("POST", url, table.ascii)
 			fmt.Printf("ascii: %q\n", table.ascii)
 			if err != nil {
@@ -172,7 +172,7 @@ func TestAddCosignature(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointAddCosignature.Path("http://example.com", node.Prefix())
+			url := types.EndpointAddCosignature.Path("http://example.com")
 			req, err := http.NewRequest("POST", url, table.ascii)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -217,7 +217,7 @@ func TestGetTreeToCosign(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadToCosign.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetTreeHeadToCosign.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -262,7 +262,7 @@ func TestGetTreeCosigned(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadCosigned.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetTreeHeadCosigned.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -351,7 +351,7 @@ func TestGetConsistencyProof(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetConsistencyProof.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetConsistencyProof.Path("http://example.com")
 			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -443,7 +443,7 @@ func TestGetInclusionProof(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetInclusionProof.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetInclusionProof.Path("http://example.com")
 			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -555,7 +555,7 @@ func TestGetLeaves(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetLeaves.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetLeaves.Path("http://example.com")
 			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)

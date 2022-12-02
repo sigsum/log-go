@@ -54,7 +54,7 @@ func TestGetTreeHeadUnsigned(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadUnsigned.Path("http://example.com", node.Prefix())
+			url := types.EndpointGetTreeHeadUnsigned.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)

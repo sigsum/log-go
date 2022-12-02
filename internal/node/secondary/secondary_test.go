@@ -15,7 +15,6 @@ import (
 var (
 	testConfig = Config{
 		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
-		Prefix:  "testonly",
 		Timeout: 10,
 	}
 )

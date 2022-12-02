@@ -16,7 +16,6 @@ import (
 // Config is a collection of log parameters
 type Config struct {
 	LogID    string        // Hex-encoded public key, used as id for metrics
-	Prefix   string        // The portion between base URL and /<endpoint> (may be "")
 	MaxRange int64         // Maximum number of leaves per get-leaves request
 	Timeout  time.Duration // Timeout used for gRPC requests
 }
@@ -34,9 +33,6 @@ type Primary struct {
 }
 
 // Implementing handler.Config
-func (p Primary) Prefix() string {
-	return p.Config.Prefix
-}
 func (p Primary) LogID() string {
 	return p.Config.LogID
 }
