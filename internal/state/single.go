@@ -133,8 +133,8 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, sm.timeout)
 	defer cancel()
 
-	nextTH, err := replicatedTreeAfter(
-		ctx, sm.signedTreeHead.TreeSize,
+	nextTH, err := replicatedTreeHead(
+		ctx, sm.signedTreeHead.Size,
 		sm.client, sm.secondary)
 	if err != nil {
 		log.Error("no new replicated tree head: %v", err)
@@ -156,7 +156,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 // Identifies the latest tree head replicated by all secondaries, and
 // with size >= minSize, or fails if some secondary is in a bad or too
 // old state.
-func replicatedTreeAfter(ctx context.Context, minSize uint64, primary db.Client, secondary client.Client) (*types.TreeHead, error) {
+func replicatedTreeHead(ctx context.Context, minSize uint64, primary db.Client, secondary client.Client) (*types.TreeHead, error) {
 	primaryTreeHead, err := primary.GetTreeHead(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get primary tree head: %w", err)
@@ -164,7 +164,7 @@ func replicatedTreeAfter(ctx context.Context, minSize uint64, primary db.Client,
 	if primaryTreeHead.Size < minSize {
 		return nil, fmt.Errorf("primary is behind(!), %d < %d", primaryTreeHead.Size, minSize)
 	}
-	if primaryTreeHead.TreeSize == minSize || secondary == nil {
+	if primaryTreeHead.Size == minSize || secondary == nil {
 		return &primaryTreeHead, nil
 	}
 
