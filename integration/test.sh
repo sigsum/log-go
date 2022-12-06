@@ -481,27 +481,27 @@ function run_tests() {
 run_tests_extended() {
 	local pri=$1; shift
 	local sec=$1; shift
-	local current_tree_size=$1; shift
+	local current_size=$1; shift
 	local old_pri_sth_rsp=$1; shift
 	info "running extended tests"
 
 	info "wait for new primary and secondary to catch up and merge"
 	sleep $(( ${nvars[$pri:ssrv_interval]} + ${nvars[$sec:ssrv_interval]} + 1 ))
 
-	test_signed_tree_head $pri $current_tree_size
+	test_signed_tree_head $pri $current_size
 	test_tree_heads_equal ${nvars[$pri:log_dir]}/rsp $old_pri_sth_rsp
 
-	run_tests $pri $sec $current_tree_size 5
+	run_tests $pri $sec $current_size 5
 }
 
 function test_signed_tree_head() {
 	local pri=$1; shift
-	local tree_size=$1; shift
+	local size=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
-	local desc="GET get-tree-head-to-cosign (tree size $tree_size)"
+	local desc="GET get-next-tree-head (size $size)"
 
 	now=$(date +%s)
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head-to-cosign \
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-next-tree-head \
 	     >$log_dir/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -509,7 +509,7 @@ function test_signed_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "timestamp" "tree_size" "root_hash" "signature"; then
+	if ! keys $pri "timestamp" "size" "root_hash" "signature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
@@ -523,8 +523,8 @@ function test_signed_tree_head() {
 		return
 	fi
 
-	if [[ $(value_of $pri "tree_size") != $tree_size ]]; then
-		fail "$desc: tree size $(value_of $pri "tree_size")"
+	if [[ $(value_of $pri "size") != $size ]]; then
+		fail "$desc: size $(value_of $pri "size")"
 		return
 	fi
 
@@ -537,10 +537,10 @@ function test_tree_heads_equal() {
 	local rsp2=$1; shift
 	local desc="comparing tree heads ($rsp1, $rsp2)"
 
-	n1_tree_size=$(value_of_file $rsp1 "tree_size")
-	n2_tree_size=$(value_of_file $rsp2 "tree_size")
-	if [[ $n1_tree_size -ne $n2_tree_size ]]; then
-		fail "$desc: tree_size: $n1_tree_size != $n2_tree_size"
+	n1_size=$(value_of_file $rsp1 "size")
+	n2_size=$(value_of_file $rsp2 "size")
+	if [[ $n1_size -ne $n2_size ]]; then
+		fail "$desc: size: $n1_size != $n2_size"
 		return
 	fi
 
@@ -556,11 +556,11 @@ function test_tree_heads_equal() {
 
 function test_cosigned_tree_head() {
 	local pri=$1; shift
-	local tree_size=$1; shift
+	local size=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
-	local desc="GET get-tree-head-cosigned (all witnesses), tree_size $tree_size"
+	local desc="GET get-tree-head (all witnesses), size $size"
 
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head-cosigned \
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head \
 	     >$log_dir/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -568,7 +568,7 @@ function test_cosigned_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "timestamp" "tree_size" "root_hash" "signature" "cosignature"; then
+	if ! keys $pri "timestamp" "size" "root_hash" "signature" "cosignature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
@@ -583,8 +583,8 @@ function test_cosigned_tree_head() {
 		return
 	fi
 
-	if [[ $(value_of $pri "tree_size") != $tree_size ]]; then
-		fail "$desc: tree size $(value_of $pri "tree_size")"
+	if [[ $(value_of $pri "size") != $size ]]; then
+		fail "$desc: size $(value_of $pri "size")"
 		return
 	fi
 
@@ -609,22 +609,22 @@ function test_cosigned_tree_head() {
 
 function test_inclusion_proof() {
 	local pri=$1; shift
-	local tree_size=$1; shift
+	local size=$1; shift
 	local data=$1; shift
 	local index=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
-	local desc="GET get-inclusion-proof (tree_size $tree_size, data \"$data\", index $index)"
+	local desc="GET get-inclusion-proof (size $size, data \"$data\", index $index)"
 
 	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $cli_priv)
 	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k $cli_key_hash -s $signature)
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${tree_size}/${leaf_hash} >${log_dir}/rsp
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
 		fail "$desc: http status code $(status_code $pri)"
 		return
 	fi
 
-	if ! keys $pri "leaf_index" "inclusion_path"; then
+	if ! keys $pri "leaf_index" "node_hash"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
@@ -650,7 +650,7 @@ function test_consistency_proof() {
 		return
 	fi
 
-	if ! keys $pri "consistency_path"; then
+	if ! keys $pri "node_hash"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
@@ -764,7 +764,7 @@ function test_cosignature() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="POST add-cosignature (witness $1)"
 
-	echo "cosignature=$1 $(curl -s ${nvars[$pri:log_url]}/get-tree-head-to-cosign |
+	echo "cosignature=$1 $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
 		./sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
