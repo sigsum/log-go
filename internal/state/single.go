@@ -75,7 +75,7 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, time
 	return sm, nil
 }
 
-func (sm *StateManagerSingle) ToCosignTreeHead() *types.SignedTreeHead {
+func (sm *StateManagerSingle) NextTreeHead() *types.SignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
 	return sm.signedTreeHead

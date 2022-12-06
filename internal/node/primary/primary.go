@@ -30,8 +30,8 @@ func (p Primary) PublicHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
 		handler.Handler{p.Config, p.addLeaf, types.EndpointAddLeaf, http.MethodPost},
 		handler.Handler{p.Config, p.addCosignature, types.EndpointAddCosignature, http.MethodPost},
-		handler.Handler{p.Config, p.getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
-		handler.Handler{p.Config, p.getTreeHeadCosigned, types.EndpointGetTreeHeadCosigned, http.MethodGet},
+		handler.Handler{p.Config, p.getNextTreeHead, types.EndpointGetNextTreeHead, http.MethodGet},
+		handler.Handler{p.Config, p.getTreeHead, types.EndpointGetTreeHead, http.MethodGet},
 		handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet},
 		handler.Handler{p.Config, p.getInclusionProof, types.EndpointGetInclusionProof, http.MethodGet},
 		handler.Handler{p.Config, p.getLeavesExternal, types.EndpointGetLeaves, http.MethodGet},

@@ -9,8 +9,8 @@ import (
 
 // StateManager coordinates access to a nodes tree heads and (co)signatures.
 type StateManager interface {
-	// ToCosignTreeHead returns the node's to-cosign tree head
-	ToCosignTreeHead() *types.SignedTreeHead
+	// NextHead returns the node's to-cosign tree head
+	NextTreeHead() *types.SignedTreeHead
 
 	// CosignedTreeHead returns the node's cosigned tree head
 	CosignedTreeHead() *types.CosignedTreeHead

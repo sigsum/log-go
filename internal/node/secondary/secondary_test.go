@@ -23,7 +23,7 @@ var (
 // TestHandlers checks that the expected internal handlers are configured
 func TestIntHandlers(t *testing.T) {
 	endpoints := map[types.Endpoint]bool{
-		types.EndpointGetTreeHeadToCosign: false,
+		types.EndpointGetNextTreeHead: false,
 	}
 	node := Secondary{
 		Config: testConfig,

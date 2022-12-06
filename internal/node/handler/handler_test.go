@@ -48,7 +48,7 @@ func TestVerifyMethod(t *testing.T) {
 			Method:   http.MethodPost,
 		},
 		{
-			Endpoint: types.EndpointGetTreeHeadToCosign,
+			Endpoint: types.EndpointGetNextTreeHead,
 			Method:   http.MethodGet,
 		},
 	} {

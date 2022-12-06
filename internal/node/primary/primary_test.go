@@ -23,8 +23,8 @@ func TestPublicHandlers(t *testing.T) {
 	endpoints := map[types.Endpoint]bool{
 		types.EndpointAddLeaf:             false,
 		types.EndpointAddCosignature:      false,
-		types.EndpointGetTreeHeadToCosign: false,
-		types.EndpointGetTreeHeadCosigned: false,
+		types.EndpointGetNextTreeHead:     false,
+		types.EndpointGetTreeHead:         false,
 		types.EndpointGetConsistencyProof: false,
 		types.EndpointGetInclusionProof:   false,
 		types.EndpointGetLeaves:           false,

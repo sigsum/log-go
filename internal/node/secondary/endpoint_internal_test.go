@@ -88,7 +88,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandleInternal(t, node, types.EndpointGetTreeHeadToCosign).ServeHTTP(w, req)
+			mustHandleInternal(t, node, types.EndpointGetNextTreeHead).ServeHTTP(w, req)
 			if got, want := w.Code, tbl.httpStatus; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, tbl.desc)
 			}

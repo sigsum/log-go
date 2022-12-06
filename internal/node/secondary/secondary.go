@@ -44,7 +44,7 @@ func (s Secondary) Run(ctx context.Context) {
 
 func (s Secondary) InternalHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
+		handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetNextTreeHead, http.MethodGet},
 	}
 }
 

@@ -33,7 +33,7 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return http.StatusBadRequest, err
 	}
 
-	sth := p.Stateman.ToCosignTreeHead()
+	sth := p.Stateman.NextTreeHead()
 	status, err := p.DbClient.AddLeaf(ctx,
 		&leaf, sth.TreeSize)
 	if err != nil {
@@ -61,16 +61,16 @@ func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *htt
 	return http.StatusOK, nil
 }
 
-func (p Primary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
+func (p Primary) getNextTreeHead(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-to-cosign request")
-	sth := p.Stateman.ToCosignTreeHead()
+	sth := p.Stateman.NextTreeHead()
 	if err := sth.ToASCII(w); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
 }
 
-func (p Primary) getTreeHeadCosigned(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
+func (p Primary) getTreeHead(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-cosigned request")
 	cth := p.Stateman.CosignedTreeHead()
 	if err := cth.ToASCII(w); err != nil {
@@ -86,7 +86,7 @@ func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter,
 		return http.StatusBadRequest, err
 	}
 
-	curTree := p.Stateman.ToCosignTreeHead()
+	curTree := p.Stateman.NextTreeHead()
 	if req.NewSize > curTree.TreeHead.TreeSize {
 		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
 			req.NewSize, curTree.TreeHead.TreeSize)
@@ -109,7 +109,7 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 		return http.StatusBadRequest, err
 	}
 
-	curTree := p.Stateman.ToCosignTreeHead()
+	curTree := p.Stateman.NextTreeHead()
 	if req.TreeSize > curTree.TreeHead.TreeSize {
 		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
 	}
@@ -132,7 +132,7 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 	// TODO: Use math.MaxUint64, available from golang 1.17.
 	maxIndex := ^uint64(0)
 	if doLimitToCurrentTree {
-		curTree := p.Stateman.ToCosignTreeHead()
+		curTree := p.Stateman.NextTreeHead()
 		treeSize := curTree.TreeHead.TreeSize
 		if treeSize == 0 {
 			return http.StatusBadRequest, fmt.Errorf("tree is empty")
