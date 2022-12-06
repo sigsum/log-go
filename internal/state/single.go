@@ -133,14 +133,14 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, sm.timeout)
 	defer cancel()
 
-	replicatedTreeHead, err := replicatedTreeAfter(
-		ctx, sm.signedTreeHead.Size,
+	nextTH, err := replicatedTreeAfter(
+		ctx, sm.signedTreeHead.TreeSize,
 		sm.client, sm.secondary)
 	if err != nil {
 		log.Error("no new replicated tree head: %v", err)
-		replicatedTreeHead = &sm.signedTreeHead.TreeHead
+		nextTH = &sm.signedTreeHead.TreeHead
 	}
-	nextSTH, err := sm.signTreeHead(replicatedTreeHead)
+	nextSTH, err := sm.signTreeHead(nextTH)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
@@ -154,17 +154,17 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 }
 
 // Identifies the latest tree head replicated by all secondaries, and
-// with size >= after, or fails if some secondary is in a bad or too
+// with size >= minSize, or fails if some secondary is in a bad or too
 // old state.
-func replicatedTreeAfter(ctx context.Context, after uint64, primary db.Client, secondary client.Client) (*types.TreeHead, error) {
+func replicatedTreeAfter(ctx context.Context, minSize uint64, primary db.Client, secondary client.Client) (*types.TreeHead, error) {
 	primaryTreeHead, err := primary.GetTreeHead(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get primary tree head: %w", err)
 	}
-	if primaryTreeHead.Size < after {
-		return nil, fmt.Errorf("primary is behind(!), %d < %d", primaryTreeHead.Size, after)
+	if primaryTreeHead.Size < minSize {
+		return nil, fmt.Errorf("primary is behind(!), %d < %d", primaryTreeHead.Size, minSize)
 	}
-	if secondary == nil {
+	if primaryTreeHead.TreeSize == minSize || secondary == nil {
 		return &primaryTreeHead, nil
 	}
 
@@ -175,8 +175,8 @@ func replicatedTreeAfter(ctx context.Context, after uint64, primary db.Client, s
 	if secSTH.Size > primaryTreeHead.Size {
 		return nil, fmt.Errorf("secondary is ahead of us: %d > %d", secSTH.Size, primaryTreeHead.Size)
 	}
-	if secSTH.Size < after {
-		return nil, fmt.Errorf("secondary is behind: %d <= %d", secSTH.Size, after)
+	if secSTH.Size <= minSize {
+		return nil, fmt.Errorf("secondary is behind: %d <= %d", secSTH.Size, minSize)
 	}
 	if secSTH.Size == primaryTreeHead.Size {
 		if secSTH.RootHash != primaryTreeHead.RootHash {
@@ -187,7 +187,7 @@ func replicatedTreeAfter(ctx context.Context, after uint64, primary db.Client, s
 	}
 	// We now know that
 	// * the primary tree is ahead of the secondary (including them not being equal)
-	// * both trees have size > after >= 0.
+	// * both trees have size > minSize >= 0.
 
 	req := requests.ConsistencyProof{
 		OldSize: secSTH.Size,
