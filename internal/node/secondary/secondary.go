@@ -54,7 +54,7 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 		log.Warning("unable to get tree head from primary: %v", err)
 		return
 	}
-	log.Debug("got tree head from primary, size %d", prim.TreeSize)
+	log.Debug("got tree head from primary, size %d", prim.Size)
 
 	curTH, err := treeHeadFromTrillian(ctx, s.DbClient)
 	if err != nil {
@@ -62,10 +62,10 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 		return
 	}
 	var leaves []types.Leaf
-	for index := int64(curTH.TreeSize); index < int64(prim.TreeSize); index += int64(len(leaves)) {
+	for index := int64(curTH.Size); index < int64(prim.Size); index += int64(len(leaves)) {
 		req := requests.Leaves{
 			StartIndex: uint64(index),
-			EndIndex:   prim.TreeSize,
+			EndIndex:   prim.Size,
 		}
 		// TODO: set context per request
 		leaves, err = s.Primary.GetLeaves(ctx, req)
@@ -86,6 +86,6 @@ func treeHeadFromTrillian(ctx context.Context, trillianClient db.Client) (types.
 	if err != nil {
 		return types.TreeHead{}, fmt.Errorf("fetching tree head from trillian: %v", err)
 	}
-	log.Debug("got tree head from trillian, size %d", th.TreeSize)
+	log.Debug("got tree head from trillian, size %d", th.Size)
 	return th, nil
 }

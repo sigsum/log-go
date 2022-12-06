@@ -69,7 +69,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				return
 			}
 
-			if got, want := sm.signedTreeHead.TreeSize, th.TreeSize; got != want {
+			if got, want := sm.signedTreeHead.Size, th.Size; got != want {
 				t.Errorf("%q: got tree size %d but wanted %d", table.description, got, want)
 			}
 			if got, want := sm.signedTreeHead.RootHash[:], th.RootHash[:]; !bytes.Equal(got, want) {

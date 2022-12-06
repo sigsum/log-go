@@ -28,10 +28,10 @@ var (
 		SignedTreeHead: *testSTH,
 		Cosignatures:   make([]types.Cosignature, 1),
 	}
-	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
-	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
-	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 2}} // 2 < testConfig.MaxRange
-	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 5}} // 5 >= testConfig.MaxRange+1
+	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 0}}
+	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 1}}
+	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 2}} // 2 < testConfig.MaxRange
+	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}} // 5 >= testConfig.MaxRange+1
 )
 
 // TODO: remove tests that are now located in internal/requests instead
@@ -415,7 +415,7 @@ func TestGetInclusionProof(t *testing.T) {
 			sth:         &sth2,
 			expect:      true,
 			rsp: types.InclusionProof{
-				TreeSize:  2,
+				Size:      2,
 				LeafIndex: 0,
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),

@@ -35,7 +35,7 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 	sth := p.Stateman.NextTreeHead()
 	status, err := p.DbClient.AddLeaf(ctx,
-		&leaf, sth.TreeSize)
+		&leaf, sth.Size)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -87,9 +87,9 @@ func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter,
 	}
 
 	curTree := p.Stateman.NextTreeHead()
-	if req.NewSize > curTree.TreeHead.TreeSize {
+	if req.NewSize > curTree.TreeHead.Size {
 		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
-			req.NewSize, curTree.TreeHead.TreeSize)
+			req.NewSize, curTree.TreeHead.Size)
 	}
 
 	proof, err := p.DbClient.GetConsistencyProof(ctx, req)
@@ -110,7 +110,7 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	curTree := p.Stateman.NextTreeHead()
-	if req.TreeSize > curTree.TreeHead.TreeSize {
+	if req.Size > curTree.TreeHead.Size {
 		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
 	}
 
@@ -133,7 +133,7 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 	maxIndex := ^uint64(0)
 	if doLimitToCurrentTree {
 		curTree := p.Stateman.NextTreeHead()
-		treeSize := curTree.TreeHead.TreeSize
+		treeSize := curTree.TreeHead.Size
 		if treeSize == 0 {
 			return http.StatusBadRequest, fmt.Errorf("tree is empty")
 		}

@@ -159,7 +159,7 @@ func TestGetTreeHead(t *testing.T) {
 				},
 			},
 			wantTh: &types.TreeHead{
-				TreeSize: 0,
+				Size:     0,
 				RootHash: crypto.Hash{},
 			},
 		},
@@ -180,7 +180,7 @@ func TestGetTreeHead(t *testing.T) {
 				return
 			}
 
-			if got, want := th.TreeSize, table.wantTh.TreeSize; got != want {
+			if got, want := th.Size, table.wantTh.Size; got != want {
 				t.Errorf("got tree head with tree size %d but wanted %d in test %q", got, want, table.description)
 			}
 			if got, want := th.RootHash[:], table.wantTh.RootHash[:]; !bytes.Equal(got, want) {
@@ -288,7 +288,7 @@ func TestGetConsistencyProof(t *testing.T) {
 
 func TestGetInclusionProof(t *testing.T) {
 	req := &requests.InclusionProof{
-		TreeSize: 4,
+		Size:     4,
 		LeafHash: crypto.Hash{},
 	}
 	for _, table := range []struct {
@@ -365,7 +365,7 @@ func TestGetInclusionProof(t *testing.T) {
 				},
 			},
 			wantProof: types.InclusionProof{
-				TreeSize:  4,
+				Size:      4,
 				LeafIndex: 1,
 				Path: []crypto.Hash{
 					crypto.Hash{},

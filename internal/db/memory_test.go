@@ -91,19 +91,19 @@ func TestMemoryInclusionProof(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetTreeHead failed: %v", err)
 	}
-	if th.TreeSize != 5 {
-		t.Fatalf("unexpected tree size, got %d, expected 5", th.TreeSize)
+	if th.Size != 5 {
+		t.Fatalf("unexpected tree size, got %d, expected 5", th.Size)
 	}
 	for i, leaf := range leaves {
 		leafHash := merkle.HashLeafNode(leaf.ToBinary())
 		proof, err := db.GetInclusionProof(nil, &requests.InclusionProof{
 			LeafHash: leafHash,
-			TreeSize: 5,
+			Size:     5,
 		})
 		if err != nil {
 			t.Errorf("GetInclusionProof for leaf %d failed: %v", i, err)
-		} else if proof.TreeSize != 5 {
-			t.Errorf("GetInclusionProof size: got %d, wanted 5", proof.TreeSize)
+		} else if proof.Size != 5 {
+			t.Errorf("GetInclusionProof size: got %d, wanted 5", proof.Size)
 		} else if proof.LeafIndex != uint64(i) {
 			t.Errorf("GetInclusionProof index: got %d, wanted %d", proof.LeafIndex, i)
 		} else if err := merkle.VerifyInclusion(&leafHash, uint64(i), 5, &th.RootHash, proof.Path); err != nil {
@@ -125,8 +125,8 @@ func TestMemoryconsistencyProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GetTreeHead failed after leaf %d: %v", i, err)
 		}
-		if th.TreeSize != uint64(i)+1 {
-			t.Fatalf("GetTreeHead return unexpected tree size %d after leaf %d", th.TreeSize, i)
+		if th.Size != uint64(i)+1 {
+			t.Fatalf("GetTreeHead return unexpected tree size %d after leaf %d", th.Size, i)
 		}
 		rootHashes = append(rootHashes, th.RootHash)
 	}

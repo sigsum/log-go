@@ -135,7 +135,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
-	log.Debug("wanted to advance to size %d, chose size %d", th.TreeSize, nextSTH.TreeSize)
+	log.Debug("wanted to advance to size %d, chose size %d", th.Size, nextSTH.Size)
 
 	if err := sm.storeSTH(nextSTH); err != nil {
 		return err
@@ -156,16 +156,16 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 		log.Warning("failed fetching tree head from secondary: %v", err)
 		return &sm.signedTreeHead.TreeHead
 	}
-	if secSTH.TreeSize > proposedTreeHead.TreeSize {
-		log.Error("secondary is ahead of us: %d > %d", secSTH.TreeSize, proposedTreeHead.TreeSize)
+	if secSTH.Size > proposedTreeHead.Size {
+		log.Error("secondary is ahead of us: %d > %d", secSTH.Size, proposedTreeHead.Size)
 		return &sm.signedTreeHead.TreeHead
 	}
-	if secSTH.TreeSize == proposedTreeHead.TreeSize {
+	if secSTH.Size == proposedTreeHead.Size {
 		if secSTH.RootHash != proposedTreeHead.RootHash {
-			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.TreeSize)
+			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.Size)
 			return &sm.signedTreeHead.TreeHead
 		}
-		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.TreeSize)
+		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.Size)
 		return proposedTreeHead
 	}
 	// We now know that
@@ -173,8 +173,8 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	// * the minimal tree size is 0, so the proposed tree is at tree size 1 or greater
 
 	// Consistency proofs can not be produced from a tree of size 0, so don't try when the secondary is at 0.
-	if secSTH.TreeSize == 0 {
-		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
+	if secSTH.Size == 0 {
+		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.Size)
 		return &sm.signedTreeHead.TreeHead
 	}
 	if err := sm.verifyConsistency(ctx, &secSTH.TreeHead, proposedTreeHead); err != nil {
@@ -186,19 +186,19 @@ func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *
 	// * secondary's tree is verified to be consistent with our proposed tree
 
 	// Protect against going backwards by chosing the larger of secondary tree and latest published.
-	if sm.signedTreeHead.TreeSize > secSTH.TreeHead.TreeSize {
-		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.TreeSize)
+	if sm.signedTreeHead.Size > secSTH.TreeHead.Size {
+		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.Size)
 		return &sm.signedTreeHead.TreeHead
 	}
 
-	log.Debug("using latest tree head from secondary: size %d", secSTH.TreeSize)
+	log.Debug("using latest tree head from secondary: size %d", secSTH.Size)
 	return &secSTH.TreeHead
 }
 
 func (sm *StateManagerSingle) verifyConsistency(ctx context.Context, from, to *types.TreeHead) error {
 	req := &requests.ConsistencyProof{
-		OldSize: from.TreeSize,
-		NewSize: to.TreeSize,
+		OldSize: from.Size,
+		NewSize: to.Size,
 	}
 	proof, err := sm.client.GetConsistencyProof(ctx, req)
 	if err != nil {
@@ -215,7 +215,7 @@ func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 	sm.Lock()
 	defer sm.Unlock()
 
-	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.TreeSize, sm.treeStatusString())
+	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.Size, sm.treeStatusString())
 	sm.setCosignedTreeHead()
 	sm.setToCosignTreeHead(nextSTH)
 	log.Debug("tree heads rotated: %s", sm.treeStatusString())
@@ -241,9 +241,9 @@ func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead)
 func (sm *StateManagerSingle) treeStatusString() string {
 	var cosigned uint64
 	if sm.cosignedTreeHead != nil {
-		cosigned = sm.cosignedTreeHead.TreeSize
+		cosigned = sm.cosignedTreeHead.Size
 	}
-	return fmt.Sprintf("signed at %d, cosigned at %d", sm.signedTreeHead.TreeSize, cosigned)
+	return fmt.Sprintf("signed at %d, cosigned at %d", sm.signedTreeHead.Size, cosigned)
 }
 
 func (sm *StateManagerSingle) restoreSTH() (*types.SignedTreeHead, error) {

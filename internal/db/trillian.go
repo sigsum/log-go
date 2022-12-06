@@ -148,7 +148,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 	rsp, err := c.GRPC.GetInclusionProofByHash(ctx, &trillian.GetInclusionProofByHashRequest{
 		LogId:           c.TreeID,
 		LeafHash:        req.LeafHash[:],
-		TreeSize:        int64(req.TreeSize),
+		TreeSize:        int64(req.Size),
 		OrderBySequence: true,
 	})
 	if err != nil {
@@ -169,7 +169,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 		return types.InclusionProof{}, fmt.Errorf("not an inclusion proof: %v", err)
 	}
 	return types.InclusionProof{
-		TreeSize:  req.TreeSize,
+		Size:      req.Size,
 		LeafIndex: uint64(proof.LeafIndex),
 		Path:      path,
 	}, nil
@@ -208,7 +208,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 
 func treeHeadFromLogRoot(lr *trillianTypes.LogRootV1) types.TreeHead {
 	th := types.TreeHead{
-		TreeSize: uint64(lr.TreeSize),
+		Size: uint64(lr.TreeSize),
 	}
 	copy(th.RootHash[:], lr.RootHash)
 	return th

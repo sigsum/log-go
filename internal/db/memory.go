@@ -64,7 +64,7 @@ func (db *MemoryDb) GetTreeHead(_ context.Context) (types.TreeHead, error) {
 	defer db.mu.RUnlock()
 
 	return types.TreeHead{
-		TreeSize: uint64(db.tree.Size()),
+		Size:     uint64(db.tree.Size()),
 		RootHash: db.tree.GetRootHash(),
 	}, nil
 }
@@ -90,12 +90,12 @@ func (db *MemoryDb) GetInclusionProof(_ context.Context, req *requests.Inclusion
 	if err != nil {
 		return types.InclusionProof{}, ErrNotIncluded
 	}
-	path, err := db.tree.ProveInclusion(index, req.TreeSize)
+	path, err := db.tree.ProveInclusion(index, req.Size)
 	if err != nil {
 		return types.InclusionProof{}, err
 	}
 	return types.InclusionProof{
-		TreeSize:  req.TreeSize,
+		Size:      req.Size,
 		LeafIndex: index,
 		Path:      path,
 	}, nil

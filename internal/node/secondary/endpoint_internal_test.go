@@ -33,7 +33,7 @@ func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
 
 var (
 	testTH = types.TreeHead{
-		TreeSize: 0,
+		Size:     0,
 		RootHash: crypto.HashBytes([]byte("root hash")),
 	}
 	testSignerFailing    = TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("mocked error")}
