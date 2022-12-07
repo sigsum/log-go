@@ -30,14 +30,9 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 		}
 		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
 	}
-	if !types.VerifyLeafMessage(&req.PublicKey, req.Message[:], &req.Signature) {
-		return http.StatusBadRequest, fmt.Errorf("invalid signature")
-	}
-
-	leaf := types.Leaf{
-		Checksum:  crypto.HashBytes(req.Message[:]),
-		Signature: req.Signature,
-		KeyHash:   crypto.HashBytes(req.PublicKey[:]),
+	leaf, err := req.Verify()
+	if err != nil {
+		return http.StatusBadRequest, err
 	}
 
 	sth := p.Stateman.ToCosignTreeHead()
