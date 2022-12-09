@@ -14,128 +14,116 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func addLeaf(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-		log.Debug("handling add-leaf request")
-		req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
-		if err != nil {
-			return http.StatusBadRequest, err
-		}
-		keyHash := crypto.HashBytes(req.PublicKey[:])
-		relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
-		if relax == nil {
-			if domain == nil {
-				return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
-			}
-			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
-		}
-		leaf, err := req.Verify()
-		if err != nil {
-			return http.StatusBadRequest, err
-		}
-
-		sth := p.Stateman.ToCosignTreeHead()
-		status, err := p.DbClient.AddLeaf(ctx,
-			&leaf, sth.TreeSize)
-		if err != nil {
-			return http.StatusInternalServerError, err
-		}
-		if status.AlreadyExists {
-			relax()
-		}
-		if status.IsSequenced {
-			return http.StatusOK, nil
-		} else {
-			return http.StatusAccepted, nil
-		}
+func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	log.Debug("handling add-leaf request")
+	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
+	if err != nil {
+		return http.StatusBadRequest, err
 	}
-}
+	keyHash := crypto.HashBytes(req.PublicKey[:])
+	relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
+	if relax == nil {
+		if domain == nil {
+			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
+		}
+		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+	}
+	leaf, err := req.Verify()
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
 
-func addCosignature(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(_ context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-		log.Debug("handling add-cosignature request")
-		req, err := requests.CosignatureRequestFromHTTP(r)
-		if err != nil {
-			return http.StatusBadRequest, err
-		}
-		if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err != nil {
-			return http.StatusBadRequest, err
-		}
+	sth := p.Stateman.ToCosignTreeHead()
+	status, err := p.DbClient.AddLeaf(ctx,
+		&leaf, sth.TreeSize)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	if status.AlreadyExists {
+		relax()
+	}
+	if status.IsSequenced {
 		return http.StatusOK, nil
+	} else {
+		return http.StatusAccepted, nil
 	}
 }
 
-func getTreeHeadToCosign(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
-		log.Debug("handling get-tree-head-to-cosign request")
-		sth := p.Stateman.ToCosignTreeHead()
-		if err := sth.ToASCII(w); err != nil {
-			return http.StatusInternalServerError, err
-		}
-		return http.StatusOK, nil
+func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	log.Debug("handling add-cosignature request")
+	req, err := requests.CosignatureRequestFromHTTP(r)
+	if err != nil {
+		return http.StatusBadRequest, err
 	}
+	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err != nil {
+		return http.StatusBadRequest, err
+	}
+	return http.StatusOK, nil
 }
 
-func getTreeHeadCosigned(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
-		log.Debug("handling get-tree-head-cosigned request")
-		cth := p.Stateman.CosignedTreeHead()
-		if err := cth.ToASCII(w); err != nil {
-			return http.StatusInternalServerError, err
-		}
-		return http.StatusOK, nil
+func (p Primary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
+	log.Debug("handling get-tree-head-to-cosign request")
+	sth := p.Stateman.ToCosignTreeHead()
+	if err := sth.ToASCII(w); err != nil {
+		return http.StatusInternalServerError, err
 	}
+	return http.StatusOK, nil
 }
 
-func getConsistencyProof(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-		log.Debug("handling get-consistency-proof request")
-		req, err := requests.ConsistencyProofRequestFromHTTP(r)
-		if err != nil {
-			return http.StatusBadRequest, err
-		}
+func (p Primary) getTreeHeadCosigned(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
+	log.Debug("handling get-tree-head-cosigned request")
+	cth := p.Stateman.CosignedTreeHead()
+	if err := cth.ToASCII(w); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
 
-		curTree := p.Stateman.ToCosignTreeHead()
-		if req.NewSize > curTree.TreeHead.TreeSize {
-			return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
-				req.NewSize, curTree.TreeHead.TreeSize)
-		}
+func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	log.Debug("handling get-consistency-proof request")
+	req, err := requests.ConsistencyProofRequestFromHTTP(r)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
 
-		proof, err := p.DbClient.GetConsistencyProof(ctx, req)
-		if err != nil {
-			return http.StatusInternalServerError, err
-		}
+	curTree := p.Stateman.ToCosignTreeHead()
+	if req.NewSize > curTree.TreeHead.TreeSize {
+		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
+			req.NewSize, curTree.TreeHead.TreeSize)
+	}
+
+	proof, err := p.DbClient.GetConsistencyProof(ctx, req)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	if err := proof.ToASCII(w); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
+
+func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	log.Debug("handling get-inclusion-proof request")
+	req, err := requests.InclusionProofRequestFromHTTP(r)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	curTree := p.Stateman.ToCosignTreeHead()
+	if req.TreeSize > curTree.TreeHead.TreeSize {
+		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
+	}
+
+	switch proof, err := p.DbClient.GetInclusionProof(ctx, req); err {
+	case db.ErrNotIncluded:
+		return http.StatusNotFound, err
+	case nil:
 		if err := proof.ToASCII(w); err != nil {
 			return http.StatusInternalServerError, err
 		}
 		return http.StatusOK, nil
-	}
-}
-
-func getInclusionProof(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-		log.Debug("handling get-inclusion-proof request")
-		req, err := requests.InclusionProofRequestFromHTTP(r)
-		if err != nil {
-			return http.StatusBadRequest, err
-		}
-
-		curTree := p.Stateman.ToCosignTreeHead()
-		if req.TreeSize > curTree.TreeHead.TreeSize {
-			return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
-		}
-
-		switch proof, err := p.DbClient.GetInclusionProof(ctx, req); err {
-		case db.ErrNotIncluded:
-			return http.StatusNotFound, err
-		case nil:
-			if err := proof.ToASCII(w); err != nil {
-				return http.StatusInternalServerError, err
-			}
-			return http.StatusOK, nil
-		default:
-			return http.StatusInternalServerError, err
-		}
+	default:
+		return http.StatusInternalServerError, err
 	}
 }
 
@@ -166,8 +154,6 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 	return http.StatusOK, nil
 }
 
-func getLeavesExternal(p Primary) func(context.Context, http.ResponseWriter, *http.Request) (int, error) {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-		return getLeavesGeneral(ctx, p, w, r, true)
-	}
+func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	return getLeavesGeneral(ctx, p, w, r, true)
 }

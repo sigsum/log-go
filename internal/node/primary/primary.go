@@ -28,21 +28,21 @@ type Primary struct {
 // PublicHTTPHandlers returns all external handlers
 func (p Primary) PublicHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{p.Config, addLeaf(p), types.EndpointAddLeaf, http.MethodPost},
-		handler.Handler{p.Config, addCosignature(p), types.EndpointAddCosignature, http.MethodPost},
-		handler.Handler{p.Config, getTreeHeadToCosign(p), types.EndpointGetTreeHeadToCosign, http.MethodGet},
-		handler.Handler{p.Config, getTreeHeadCosigned(p), types.EndpointGetTreeHeadCosigned, http.MethodGet},
-		handler.Handler{p.Config, getConsistencyProof(p), types.EndpointGetConsistencyProof, http.MethodGet},
-		handler.Handler{p.Config, getInclusionProof(p), types.EndpointGetInclusionProof, http.MethodGet},
-		handler.Handler{p.Config, getLeavesExternal(p), types.EndpointGetLeaves, http.MethodGet},
+		handler.Handler{p.Config, p.addLeaf, types.EndpointAddLeaf, http.MethodPost},
+		handler.Handler{p.Config, p.addCosignature, types.EndpointAddCosignature, http.MethodPost},
+		handler.Handler{p.Config, p.getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
+		handler.Handler{p.Config, p.getTreeHeadCosigned, types.EndpointGetTreeHeadCosigned, http.MethodGet},
+		handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet},
+		handler.Handler{p.Config, p.getInclusionProof, types.EndpointGetInclusionProof, http.MethodGet},
+		handler.Handler{p.Config, p.getLeavesExternal, types.EndpointGetLeaves, http.MethodGet},
 	}
 }
 
 // InternalHTTPHandlers() returns all internal handlers
 func (p Primary) InternalHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{p.Config, getTreeHeadUnsigned(p), types.EndpointGetTreeHeadUnsigned, http.MethodGet},
-		handler.Handler{p.Config, getConsistencyProof(p), types.EndpointGetConsistencyProof, http.MethodGet},
-		handler.Handler{p.Config, getLeavesInternal(p), types.EndpointGetLeaves, http.MethodGet},
+		handler.Handler{p.Config, p.getTreeHeadUnsigned, types.EndpointGetTreeHeadUnsigned, http.MethodGet},
+		handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet},
+		handler.Handler{p.Config, p.getLeavesInternal, types.EndpointGetLeaves, http.MethodGet},
 	}
 }
