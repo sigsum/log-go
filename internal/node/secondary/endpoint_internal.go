@@ -8,14 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
-	s := c.(Secondary)
+func (s Secondary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-to-cosign request")
 
 	signedTreeHead := func() (*types.SignedTreeHead, error) {

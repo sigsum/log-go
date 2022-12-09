@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
 	testWitVK  = crypto.PublicKey{}
-	testConfig = Config{
-		LogID:    fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
-		MaxRange: 3,
-		Timeout:  10,
+	testConfig = handler.Config{
+		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
+		Timeout: 10,
 	}
+	testMaxRange = int64(3)
 )
 
 // TestPublicHandlers checks that the expected external handlers are configured
@@ -29,7 +30,8 @@ func TestPublicHandlers(t *testing.T) {
 		types.EndpointGetLeaves:           false,
 	}
 	node := Primary{
-		Config: testConfig,
+		Config:   testConfig,
+		MaxRange: testMaxRange,
 	}
 	for _, handler := range node.PublicHTTPHandlers() {
 		if _, ok := endpoints[handler.Endpoint]; !ok {
@@ -52,7 +54,8 @@ func TestIntHandlers(t *testing.T) {
 		types.EndpointGetLeaves:           false,
 	}
 	node := Primary{
-		Config: testConfig,
+		Config:   testConfig,
+		MaxRange: testMaxRange,
 	}
 	for _, handler := range node.InternalHTTPHandlers() {
 		if _, ok := endpoints[handler.Endpoint]; !ok {

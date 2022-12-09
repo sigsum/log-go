@@ -125,7 +125,7 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 	}
 	s.Config.LogID = hex.EncodeToString(publicKey[:])
 	s.Config.Timeout = *timeout
-	s.Config.Interval = *interval
+	s.Interval = *interval
 
 	if *ephemeralBackend {
 		s.DbClient = db.NewMemoryDb()

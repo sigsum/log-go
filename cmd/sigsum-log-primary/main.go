@@ -137,8 +137,8 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 	}
 
 	p.Config.LogID = hex.EncodeToString(publicKey[:])
-	p.Config.MaxRange = *maxRange
 	p.Config.Timeout = *timeout
+	p.MaxRange = *maxRange
 	witnessMap, err := newWitnessMap(*witnesses)
 	if err != nil {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)

@@ -10,15 +10,15 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type Config interface {
-	LogID() string
-	Timeout() time.Duration
+type Config struct {
+	LogID   string
+	Timeout time.Duration
 }
 
 // Handler implements the http.Handler interface
 type Handler struct {
 	Config
-	Fun      func(context.Context, Config, http.ResponseWriter, *http.Request) (int, error)
+	Fun      func(context.Context, http.ResponseWriter, *http.Request) (int, error)
 	Endpoint types.Endpoint
 	Method   string
 }
@@ -39,10 +39,10 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		end := time.Now().Sub(start).Seconds()
 		sc := fmt.Sprintf("%d", code)
 
-		rspcnt.Inc(h.LogID(), string(h.Endpoint), sc)
-		latency.Observe(end, h.LogID(), string(h.Endpoint), sc)
+		rspcnt.Inc(h.LogID, string(h.Endpoint), sc)
+		latency.Observe(end, h.LogID, string(h.Endpoint), sc)
 	}()
-	reqcnt.Inc(h.LogID(), string(h.Endpoint))
+	reqcnt.Inc(h.LogID, string(h.Endpoint))
 
 	code = h.verifyMethod(w, r)
 	if code != 0 {
@@ -76,10 +76,10 @@ func (h Handler) verifyMethod(w http.ResponseWriter, r *http.Request) int {
 
 // handle handles an HTTP request for which the HTTP method is already verified
 func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), h.Timeout())
+	ctx, cancel := context.WithTimeout(r.Context(), h.Timeout)
 	defer cancel()
 
-	code, err := h.Fun(ctx, h.Config, w, r)
+	code, err := h.Fun(ctx, w, r)
 	if err != nil {
 		log.Debug("%s (%q): %v", h.Endpoint, r.URL.Path, err)
 		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)

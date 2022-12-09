@@ -15,29 +15,15 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-// Config is a collection of log parameters
-type Config struct {
-	LogID    string        // H(public key), then hex-encoded
-	Timeout  time.Duration // Timeout used for gRPC requests
-	Interval time.Duration // Signing frequency
-}
-
 // Secondary is an instance of a secondary node
 type Secondary struct {
-	Config
+	Config          handler.Config
+	Interval        time.Duration // Signing frequency
 	PublicHTTPMux   *http.ServeMux
 	InternalHTTPMux *http.ServeMux
 	DbClient        db.Client     // provides access to the backend, usually Trillian
 	Signer          crypto.Signer // provides access to Ed25519 private key
 	Primary         client.Client
-}
-
-// Implementing handler.Config
-func (s Secondary) LogID() string {
-	return s.Config.LogID
-}
-func (s Secondary) Timeout() time.Duration {
-	return s.Config.Timeout
 }
 
 func (s Secondary) Run(ctx context.Context) {
@@ -58,7 +44,7 @@ func (s Secondary) Run(ctx context.Context) {
 
 func (s Secondary) InternalHTTPHandlers() []handler.Handler {
 	return []handler.Handler{
-		handler.Handler{s, getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
+		handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetTreeHeadToCosign, http.MethodGet},
 	}
 }
 
