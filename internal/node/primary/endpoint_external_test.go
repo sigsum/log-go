@@ -504,7 +504,7 @@ func TestGetLeaves(t *testing.T) {
 			expect:      true,
 			rsp: func() []types.Leaf {
 				var list []types.Leaf
-				for i := int64(0); i < testConfig.MaxRange; i++ {
+				for i := int64(0); i < testMaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
 						Signature: crypto.Signature{},
@@ -517,12 +517,12 @@ func TestGetLeaves(t *testing.T) {
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			params:      fmt.Sprintf("%d/%d", 0, testConfig.MaxRange), // query will be pruned
+			params:      fmt.Sprintf("%d/%d", 0, testMaxRange), // query will be pruned
 			sth:         &sth5,
 			expect:      true,
 			rsp: func() []types.Leaf {
 				var list []types.Leaf
-				for i := int64(0); i < testConfig.MaxRange; i++ {
+				for i := int64(0); i < testMaxRange; i++ {
 					list = append(list[:], types.Leaf{
 						Checksum:  crypto.Hash{},
 						Signature: crypto.Signature{},

@@ -5,19 +5,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type dummyConfig struct{}
-
-func (c dummyConfig) LogID() string          { return "dummyLogID" }
-func (c dummyConfig) Timeout() time.Duration { return time.Nanosecond }
-
 // TestPath checks that Path works for an endpoint (add-leaf)
 func TestPath(t *testing.T) {
-	testFun := func(_ context.Context, _ Config, _ http.ResponseWriter, _ *http.Request) (int, error) {
+	testFun := func(_ context.Context, _ http.ResponseWriter, _ *http.Request) (int, error) {
 		return 0, nil
 	}
 	for _, table := range []struct {
@@ -35,7 +29,7 @@ func TestPath(t *testing.T) {
 			want:        "/test-prefix/add-leaf",
 		},
 	} {
-		h := Handler{dummyConfig{}, testFun, types.EndpointAddLeaf, http.MethodPost}
+		h := Handler{Config{}, testFun, types.EndpointAddLeaf, http.MethodPost}
 		if got, want := h.Path(table.prefix), table.want; got != want {
 			t.Errorf("got path %v but wanted %v", got, want)
 		}

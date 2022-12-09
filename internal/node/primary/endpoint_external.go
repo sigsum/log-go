@@ -8,15 +8,13 @@ import (
 	"net/http"
 
 	"sigsum.org/log-go/internal/db"
-	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/requests"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling add-leaf request")
 	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
 	if err != nil {
@@ -51,8 +49,7 @@ func addLeaf(ctx context.Context, c handler.Config, w http.ResponseWriter, r *ht
 	}
 }
 
-func addCosignature(_ context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling add-cosignature request")
 	req, err := requests.CosignatureRequestFromHTTP(r)
 	if err != nil {
@@ -64,8 +61,7 @@ func addCosignature(_ context.Context, c handler.Config, w http.ResponseWriter, 
 	return http.StatusOK, nil
 }
 
-func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-to-cosign request")
 	sth := p.Stateman.ToCosignTreeHead()
 	if err := sth.ToASCII(w); err != nil {
@@ -74,8 +70,7 @@ func getTreeHeadToCosign(ctx context.Context, c handler.Config, w http.ResponseW
 	return http.StatusOK, nil
 }
 
-func getTreeHeadCosigned(_ context.Context, c handler.Config, w http.ResponseWriter, _ *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) getTreeHeadCosigned(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-cosigned request")
 	cth := p.Stateman.CosignedTreeHead()
 	if err := cth.ToASCII(w); err != nil {
@@ -84,8 +79,7 @@ func getTreeHeadCosigned(_ context.Context, c handler.Config, w http.ResponseWri
 	return http.StatusOK, nil
 }
 
-func getConsistencyProof(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling get-consistency-proof request")
 	req, err := requests.ConsistencyProofRequestFromHTTP(r)
 	if err != nil {
@@ -108,8 +102,7 @@ func getConsistencyProof(ctx context.Context, c handler.Config, w http.ResponseW
 	return http.StatusOK, nil
 }
 
-func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
-	p := c.(Primary)
+func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling get-inclusion-proof request")
 	req, err := requests.InclusionProofRequestFromHTTP(r)
 	if err != nil {
@@ -134,8 +127,7 @@ func getInclusionProof(ctx context.Context, c handler.Config, w http.ResponseWri
 	}
 }
 
-func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
-	p := c.(Primary)
+func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
 	log.Debug("handling get-leaves request")
 	// TODO: Use math.MaxUint64, available from golang 1.17.
 	maxIndex := ^uint64(0)
@@ -162,6 +154,6 @@ func getLeavesGeneral(ctx context.Context, c handler.Config, w http.ResponseWrit
 	return http.StatusOK, nil
 }
 
-func getLeavesExternal(ctx context.Context, c handler.Config, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, c, w, r, true)
+func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	return getLeavesGeneral(ctx, p, w, r, true)
 }
