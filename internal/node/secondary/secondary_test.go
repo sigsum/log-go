@@ -23,7 +23,7 @@ var (
 // TestHandlers checks that the expected internal handlers are configured
 func TestIntHandlers(t *testing.T) {
 	endpoints := map[types.Endpoint]bool{
-		types.EndpointGetTreeHeadToCosign: false,
+		types.EndpointGetNextTreeHead: false,
 	}
 	node := Secondary{
 		Config: testConfig,
@@ -70,16 +70,16 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		},
 		{
 			desc:                "error fetching leaves",
-			primaryTHRet:        types.TreeHead{TreeSize: 6},
+			primaryTHRet:        types.TreeHead{Size: 6},
 			trillianGetTHExp:    true,
-			trillianTHRet:       types.TreeHead{TreeSize: 5}, // 6-5 => 1 expected GetLeaves
+			trillianTHRet:       types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesErr: fmt.Errorf("mocked error"),
 		},
 		{
 			desc:             "error adding leaves",
-			primaryTHRet:     types.TreeHead{TreeSize: 6},
+			primaryTHRet:     types.TreeHead{Size: 6},
 			trillianGetTHExp: true,
-			trillianTHRet:    types.TreeHead{TreeSize: 5}, // 6-5 => 1 expected GetLeaves
+			trillianTHRet:    types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
@@ -87,9 +87,9 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		},
 		{
 			desc:             "success",
-			primaryTHRet:     types.TreeHead{TreeSize: 10},
+			primaryTHRet:     types.TreeHead{Size: 10},
 			trillianGetTHExp: true,
-			trillianTHRet:    types.TreeHead{TreeSize: 5},
+			trillianTHRet:    types.TreeHead{Size: 5},
 			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
@@ -111,7 +111,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			if tbl.primaryGetLeavesErr != nil || tbl.primaryGetLeavesRet != nil {
 				primaryClient.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(tbl.primaryGetLeavesRet, tbl.primaryGetLeavesErr)
 				if tbl.trillianAddLeavesExp {
-					for i := tbl.trillianTHRet.TreeSize; i < tbl.primaryTHRet.TreeSize-1; i++ {
+					for i := tbl.trillianTHRet.Size; i < tbl.primaryTHRet.Size-1; i++ {
 						primaryClient.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(tbl.primaryGetLeavesRet, tbl.primaryGetLeavesErr)
 					}
 				}
@@ -120,7 +120,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			if tbl.trillianAddLeavesErr != nil || tbl.trillianAddLeavesExp {
 				trillianClient.EXPECT().AddSequencedLeaves(gomock.Any(), gomock.Any(), gomock.Any()).Return(tbl.trillianAddLeavesErr)
 				if tbl.trillianAddLeavesExp {
-					for i := tbl.trillianTHRet.TreeSize; i < tbl.primaryTHRet.TreeSize-1; i++ {
+					for i := tbl.trillianTHRet.Size; i < tbl.primaryTHRet.Size-1; i++ {
 						trillianClient.EXPECT().AddSequencedLeaves(gomock.Any(), gomock.Any(), gomock.Any()).Return(tbl.trillianAddLeavesErr)
 					}
 				}

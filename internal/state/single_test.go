@@ -69,7 +69,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				return
 			}
 
-			if got, want := sm.signedTreeHead.TreeSize, th.TreeSize; got != want {
+			if got, want := sm.signedTreeHead.Size, th.Size; got != want {
 				t.Errorf("%q: got tree size %d but wanted %d", table.description, got, want)
 			}
 			if got, want := sm.signedTreeHead.RootHash[:], th.RootHash[:]; !bytes.Equal(got, want) {
@@ -85,12 +85,12 @@ func TestNewStateManagerSingle(t *testing.T) {
 	}
 }
 
-func TestToCosignTreeHead(t *testing.T) {
+func TestNextTreeHead(t *testing.T) {
 	want := &types.SignedTreeHead{}
 	sm := StateManagerSingle{
 		signedTreeHead: want,
 	}
-	sth := sm.ToCosignTreeHead()
+	sth := sm.NextTreeHead()
 	if got := sth; !reflect.DeepEqual(got, want) {
 		t.Errorf("got signed tree head\n\t%v\nbut wanted\n\t%v", got, want)
 	}
@@ -179,10 +179,10 @@ func newHashBufferInc(t *testing.T) *crypto.Hash {
 func validConsistencyProof_5_10(t *testing.T) *types.ConsistencyProof {
 	t.Helper()
 	// # old tree head
-	//     tree_size=5
+	//     size=5
 	//     root_hash=c8e73a8c09e44c344d515eb717e248c5dbf12420908a6d29568197fae7751803
 	// # new tree head
-	//     tree_size=10
+	//     size=10
 	//     root_hash=2a40f11563b45522ca9eccf993c934238a8fbadcf7d7d65be3583ab2584838aa
 	r := bytes.NewReader([]byte("consistency_path=fadca95ab8ca34f17c5f3fa719183fe0e5c194a44c25324745388964a743ecce\nconsistency_path=6366fc0c20f9b8a8c089ed210191e401da6c995592eba78125f0ba0ba142ebaf\nconsistency_path=72b8d4f990b555a72d76fb8da075a65234519070cfa42e082026a8c686160349\nconsistency_path=d92714be792598ff55560298cd3ff099dfe5724646282578531c0d0063437c00\nconsistency_path=4b20d58bbae723755304fb179aef6d5f04d755a601884828c62c07929f6bd84a\n"))
 	var proof types.ConsistencyProof

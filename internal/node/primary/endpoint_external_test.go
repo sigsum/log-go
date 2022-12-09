@@ -28,10 +28,10 @@ var (
 		SignedTreeHead: *testSTH,
 		Cosignatures:   make([]types.Cosignature, 1),
 	}
-	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 0}}
-	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 1}}
-	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 2}} // 2 < testConfig.MaxRange
-	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{TreeSize: 5}} // 5 >= testConfig.MaxRange+1
+	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 0}}
+	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 1}}
+	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 2}} // 2 < testConfig.MaxRange
+	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}} // 5 >= testConfig.MaxRange+1
 )
 
 // TODO: remove tests that are now located in internal/requests instead
@@ -97,7 +97,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expectStateman {
-				stateman.EXPECT().ToCosignTreeHead().Return(table.sthStateman)
+				stateman.EXPECT().NextTreeHead().Return(table.sthStateman)
 			}
 			node := Primary{
 				Config:      testConfig,
@@ -209,7 +209,7 @@ func TestGetTreeToCosign(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().ToCosignTreeHead().Return(table.rsp)
+				stateman.EXPECT().NextTreeHead().Return(table.rsp)
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -217,7 +217,7 @@ func TestGetTreeToCosign(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadToCosign.Path("http://example.com")
+			url := types.EndpointGetNextTreeHead.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -225,7 +225,7 @@ func TestGetTreeToCosign(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetTreeHeadToCosign).ServeHTTP(w, req)
+			mustHandlePublic(t, node, types.EndpointGetNextTreeHead).ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -262,7 +262,7 @@ func TestGetTreeCosigned(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetTreeHeadCosigned.Path("http://example.com")
+			url := types.EndpointGetTreeHead.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -270,7 +270,7 @@ func TestGetTreeCosigned(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetTreeHeadCosigned).ServeHTTP(w, req)
+			mustHandlePublic(t, node, types.EndpointGetTreeHead).ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -342,7 +342,7 @@ func TestGetConsistencyProof(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.sth != nil {
-				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
+				stateman.EXPECT().NextTreeHead().Return(table.sth)
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -415,7 +415,7 @@ func TestGetInclusionProof(t *testing.T) {
 			sth:         &sth2,
 			expect:      true,
 			rsp: types.InclusionProof{
-				TreeSize:  2,
+				Size:      2,
 				LeafIndex: 0,
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),
@@ -434,7 +434,7 @@ func TestGetInclusionProof(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.sth != nil {
-				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
+				stateman.EXPECT().NextTreeHead().Return(table.sth)
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -544,9 +544,9 @@ func TestGetLeaves(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.sth != nil {
-				stateman.EXPECT().ToCosignTreeHead().Return(table.sth)
+				stateman.EXPECT().NextTreeHead().Return(table.sth)
 			} else {
-				stateman.EXPECT().ToCosignTreeHead().Return(&sth2)
+				stateman.EXPECT().NextTreeHead().Return(&sth2)
 			}
 			node := Primary{
 				Config:   testConfig,

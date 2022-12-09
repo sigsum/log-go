@@ -59,10 +59,10 @@ func InclusionProofRequestFromHTTP(r *http.Request) (*sigsumreq.InclusionProof, 
 	if err := req.FromURL(r.URL.Path); err != nil {
 		return nil, fmt.Errorf("parse url: %w", err)
 	}
-	if req.TreeSize < 2 {
-		// TreeSize:0 => not possible to prove inclusion of anything
-		// TreeSize:1 => you don't need an inclusion proof (it is always empty)
-		return nil, fmt.Errorf("tree_size(%d) must be larger than one", req.TreeSize)
+	if req.Size < 2 {
+		// Size:0 => not possible to prove inclusion of anything
+		// Size:1 => you don't need an inclusion proof (it is always empty)
+		return nil, fmt.Errorf("size(%d) must be larger than one", req.Size)
 	}
 	return &req, nil
 }
