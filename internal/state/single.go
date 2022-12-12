@@ -58,7 +58,7 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, time
 	if err != nil {
 		return nil, err
 	}
-	// Resign, with current timestamp.
+	// Re-sign, with current timestamp.
 	if sm.signedTreeHead, err = sm.signTreeHead(&sth.TreeHead); err != nil {
 		return nil, err
 	}
