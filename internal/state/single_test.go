@@ -34,8 +34,13 @@ func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
 }
 
 func TestNewStateManagerSingle(t *testing.T) {
-	signerOk := &TestSigner{crypto.PublicKey{}, crypto.Signature{}, nil}
-	signerErr := &TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("err")}
+	pub, signer, err := crypto.NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	kh := crypto.HashBytes(pub[:])
+	signerOk := &TestSigner{pub, crypto.Signature{}, nil}
+	signerErr := &TestSigner{pub, crypto.Signature{}, fmt.Errorf("err")}
 	for _, table := range []struct {
 		description string
 		signer      crypto.Signer
@@ -59,9 +64,21 @@ func TestNewStateManagerSingle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer tmpFile.Close()
 			defer os.Remove(tmpFile.Name())
+			emptyTh := types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
+			emptySth, err := emptyTh.Sign(signer, &kh, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := emptySth.ToASCII(tmpFile); err != nil {
+				t.Fatal(err)
+			}
+			if err := tmpFile.Close(); err != nil {
+				t.Fatal(err)
+			}
 			// This test uses no secondary and no witnesses.
-			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), nil, tmpFile, nil)
+			sm, err := NewStateManagerSingle(trillianClient, table.signer, time.Duration(0), time.Duration(0), nil, tmpFile.Name(), nil)
 			if got, want := err != nil, table.description != "valid"; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}

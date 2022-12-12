@@ -69,12 +69,7 @@ func main() {
 	defer cancel()
 
 	log.Debug("configuring log-go-primary")
-	sthFile, err := os.OpenFile(*sthStorePath, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatal("opening STH file: %v", err)
-	}
-	defer sthFile.Close()
-	node, err := setupPrimaryFromFlags(sthFile)
+	node, err := setupPrimaryFromFlags()
 	if err != nil {
 		log.Fatal("setup primary: %v", err)
 	}
@@ -125,7 +120,7 @@ func main() {
 }
 
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
-func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
+func setupPrimaryFromFlags() (*primary.Primary, error) {
 	var p primary.Primary
 	var err error
 	var publicKey crypto.PublicKey
@@ -173,7 +168,7 @@ func setupPrimaryFromFlags(sthFile *os.File) (*primary.Primary, error) {
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, *interval, p.Config.Timeout,
-		secondary, sthFile, witnessMap)
+		secondary, *sthStorePath, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}

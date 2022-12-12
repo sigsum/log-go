@@ -163,6 +163,7 @@ function node_start() {
 		if [[ "$testflavor" != ephemeral ]] ; then
 			trillian_start $i
 		fi
+		sigsum_create_tree $i
 		sigsum_start $i
 	done
 }
@@ -294,6 +295,16 @@ function sigsum_setup() {
 		# Use special test.sigsum.org test key to generate token.
 		nvars[$i:token]=$(echo 0000000000000000000000000000000000000000000000000000000000000001 \
 				    | ./sigsum-debug token $(echo ${nvars[$i:ssrv_pub]}))
+	done
+}
+
+function sigsum_create_tree() {
+	for i in $@; do
+		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
+			go run ../cmd/sigsum-mktree \
+			   -sth-path=${nvars[$i:log_dir]}/sth-store \
+			   -key=<(echo ${nvars[$i:ssrv_priv]})
+		fi
 	done
 }
 
