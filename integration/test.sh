@@ -117,32 +117,10 @@ function client_setup() {
 			source $1
 		else
 			cli_priv=$(./sigsum-debug key private)
-			cli_domain_hint=_sigsum_v0.example.com
 		fi
 		cli_pub=$(echo $cli_priv | ./sigsum-debug key public)
 		cli_key_hash=$(echo $cli_pub | ./sigsum-debug key hash)
-
-		[[ $cli_domain_hint =~ ^_sigsum_v0..+ ]] ||
-			die "must have a valid domain hint"
-
-		if [[ $g_offline_mode -ne 1 ]]; then
-			verify_domain_hint_in_dns $cli_domain_hint $cli_key_hash
-		fi
 	done
-}
-
-function verify_domain_hint_in_dns() {
-	local domain_hint=$1; shift
-	local key_hash=$1; shift
-
-	for line in $(dig +short -t txt $domain_hint); do
-		key_hash=${line:1:${#line}-2}
-		if [[ $key_hash == $key_hash ]]; then
-			return
-		fi
-	done
-
-	die "must have a properly configured domain hint"
 }
 
 function node_setup() {
