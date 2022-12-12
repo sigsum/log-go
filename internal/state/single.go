@@ -1,10 +1,8 @@
 package state
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -25,7 +23,7 @@ type StateManagerSingle struct {
 	// Timeout for interaction with the secondary.
 	timeout   time.Duration
 	secondary client.Client
-	sthFile   *os.File
+	sthFile   sthFile
 
 	// Witnesses map trusted witness identifiers to public keys
 	witnesses map[crypto.Hash]crypto.PublicKey
@@ -44,7 +42,7 @@ type StateManagerSingle struct {
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
 func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, timeout time.Duration,
-	secondary client.Client, sthFile *os.File, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
+	secondary client.Client, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sm := &StateManagerSingle{
 		client:    dbcli,
@@ -53,11 +51,15 @@ func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, time
 		interval:  interval,
 		timeout:   timeout,
 		secondary: secondary,
-		sthFile:   sthFile,
+		sthFile:   sthFile{name: sthFileName},
 		witnesses: witnesses,
 	}
-	var err error
-	if sm.signedTreeHead, err = sm.restoreSTH(); err != nil {
+	sth, err := sm.sthFile.Load(&pub)
+	if err != nil {
+		return nil, err
+	}
+	// Re-sign, with current timestamp.
+	if sm.signedTreeHead, err = sm.signTreeHead(&sth.TreeHead); err != nil {
 		return nil, err
 	}
 	// No cosignatures available at startup.
@@ -137,7 +139,7 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 	}
 	log.Debug("wanted to advance to size %d, chose size %d", th.Size, nextSTH.Size)
 
-	if err := sm.storeSTH(nextSTH); err != nil {
+	if err := sm.sthFile.Store(nextSTH); err != nil {
 		return err
 	}
 
@@ -244,39 +246,6 @@ func (sm *StateManagerSingle) treeStatusString() string {
 		cosigned = sm.cosignedTreeHead.Size
 	}
 	return fmt.Sprintf("signed at %d, cosigned at %d", sm.signedTreeHead.Size, cosigned)
-}
-
-func (sm *StateManagerSingle) restoreSTH() (*types.SignedTreeHead, error) {
-	var th types.TreeHead
-	b := make([]byte, 1024)
-	n, err := sm.sthFile.Read(b)
-	if err != nil {
-		th = *zeroTreeHead()
-	} else if err := th.FromASCII(bytes.NewBuffer(b[:n])); err != nil {
-		th = *zeroTreeHead()
-	}
-	return sm.signTreeHead(&th)
-}
-
-func (sm *StateManagerSingle) storeSTH(sth *types.SignedTreeHead) error {
-	buf := bytes.NewBuffer(nil)
-	if err := sth.ToASCII(buf); err != nil {
-		return err
-	}
-	if err := sm.sthFile.Truncate(int64(buf.Len())); err != nil {
-		return err
-	}
-	if _, err := sm.sthFile.WriteAt(buf.Bytes(), 0); err != nil {
-		return err
-	}
-	if err := sm.sthFile.Sync(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func zeroTreeHead() *types.TreeHead {
-	return &types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
 }
 
 // Signs tree head, with current time as timestamp.
