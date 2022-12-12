@@ -202,6 +202,9 @@ function node_promote() {
 	nvars[$new_primary:ssrv_pub]=${nvars[$prev_primary:ssrv_pub]}
 	nvars[$new_primary:ssrv_key_hash]=${nvars[$prev_primary:ssrv_key_hash]}
 	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
+
+	info "copying sth-store file"
+	mv ${nvars[$prev_primary:log_dir]}/sth-store ${nvars[$new_primary:log_dir]}/sth-store
 }
 
 function trillian_setup() {
@@ -301,6 +304,7 @@ function sigsum_setup() {
 function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
+			info "creating empty ${nvars[$i:log_dir]}/sth-store"
 			go run ../cmd/sigsum-mktree \
 			   -sth-path=${nvars[$i:log_dir]}/sth-store \
 			   -key=<(echo ${nvars[$i:ssrv_priv]})
