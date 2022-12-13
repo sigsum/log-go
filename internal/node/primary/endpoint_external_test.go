@@ -15,6 +15,7 @@ import (
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
+	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -125,24 +126,35 @@ func TestAddLeaf(t *testing.T) {
 }
 
 func TestAddCosignature(t *testing.T) {
-	buf := func() io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("%s=%x %x\n",
+	buf := func() string {
+		return fmt.Sprintf("%s=%x %x\n",
 			"cosignature",
 			crypto.HashBytes(testWitVK[:]),
 			crypto.Signature{},
-		))
+		)
 	}
 	for _, table := range []struct {
 		description string
-		ascii       io.Reader // buffer used to populate HTTP request
-		expect      bool      // set if a mock answer is expected
-		err         error     // error from Trillian client
-		wantCode    int       // HTTP status ok
+		ascii       string // HTTP request
+		expect      bool   // set if a mock answer is expected
+		err         error  // error from Trillian client
+		wantCode    int    // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
-			ascii:       bytes.NewBufferString("key=value\n"),
+			ascii:       "key=value\n",
 			wantCode:    http.StatusBadRequest,
+		},
+		{
+			description: "invalid: unknown witness",
+			ascii: fmt.Sprintf("%s=%x %x\n",
+				"cosignature",
+				crypto.HashBytes([]byte{}),
+				crypto.Signature{},
+			),
+			expect:   true,
+			err:      state.ErrUnknownWitness,
+			wantCode: http.StatusForbidden,
 		},
 		{
 			description: "invalid: backend failure",
@@ -173,7 +185,7 @@ func TestAddCosignature(t *testing.T) {
 
 			// Create HTTP request
 			url := types.EndpointAddCosignature.Path("http://example.com")
-			req, err := http.NewRequest("POST", url, table.ascii)
+			req, err := http.NewRequest("POST", url, bytes.NewBufferString(table.ascii))
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}

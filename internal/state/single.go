@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
+
+var ErrUnknownWitness = errors.New("unknown witness")
 
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
@@ -93,7 +96,7 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.S
 	// This mapping is immutable, no lock needed.
 	pub, ok := sm.witnesses[*keyHash]
 	if !ok {
-		return fmt.Errorf("unknown witness: %x", keyHash)
+		return ErrUnknownWitness
 	}
 
 	// Write lock, since cosignatures mapping is updated. Note

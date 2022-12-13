@@ -133,13 +133,13 @@ func TestAddCosignature(t *testing.T) {
 		desc    string
 		signer  crypto.Signer
 		vk      crypto.PublicKey
-		wantErr bool
+		wantErr error
 	}{
 		{
 			desc:    "invalid: wrong public key",
 			signer:  secret,
 			vk:      crypto.PublicKey{},
-			wantErr: true,
+			wantErr: ErrUnknownWitness,
 		},
 		{
 			desc:   "valid",
@@ -157,7 +157,7 @@ func TestAddCosignature(t *testing.T) {
 		sth := mustSign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.keyHash)
 		keyHash := crypto.HashBytes(table.vk[:])
 		err := sm.AddCosignature(&keyHash, &sth.Signature)
-		if got, want := err != nil, table.wantErr; got != want {
+		if got, want := err, table.wantErr; got != want {
 			t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.desc, err)
 		}
 		if err != nil {
