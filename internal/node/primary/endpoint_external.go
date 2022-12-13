@@ -9,6 +9,7 @@ import (
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/requests"
+	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -55,10 +56,14 @@ func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	if err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err != nil {
+	switch err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err {
+	case nil:
+		return http.StatusOK, nil
+	case state.ErrUnknownWitness:
+		return http.StatusForbidden, err
+	default:
 		return http.StatusBadRequest, err
 	}
-	return http.StatusOK, nil
 }
 
 func (p Primary) getNextTreeHead(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
