@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
+	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/secondary"
 	"sigsum.org/log-go/internal/utils"
@@ -26,31 +27,39 @@ import (
 )
 
 var (
-	externalEndpoint = flag.String("external-endpoint", "localhost:6965", "host:port specification of where sigsum-log-secondary serves clients")
-	internalEndpoint = flag.String("internal-endpoint", "localhost:6967", "host:port specification of where sigsum-log-secondary serves other log nodes")
-	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
-	ephemeralBackend = flag.Bool("ephemeral-test-backend", false, "if set, enables in-memory backend, with NO persistent storage")
-	prefix           = flag.String("url-prefix", "", "a prefix that preceeds /<endpoint>")
-	trillianID       = flag.Int64("tree-id", 0, "log identifier in the Trillian database")
-	timeout          = flag.Duration("timeout", time.Second*10, "timeout for backend requests")
-	key              = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
-	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the node's STH")
-	testMode         = flag.Bool("test-mode", false, "run in test mode (Default: false)")
-	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
-	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	primaryURL       = flag.String("primary-url", "", "primary node endpoint for fetching leaves")
-	primaryPubkey    = flag.String("primary-pubkey", "", "hex-encoded Ed25519 public key for primary node")
-
 	gitCommit = "unknown"
 )
 
-func main() {
+func ParseFlags(c *config.Config) {
+	flag.StringVar(&c.Secondary.PrimaryURL, "primary-url", c.Secondary.PrimaryURL, "primary node endpoint for fetching leaves")
+	flag.StringVar(&c.Secondary.PrimaryPubkey, "primary-pubkey", c.Secondary.PrimaryPubkey, "hex-encoded Ed25519 public key for primary node")
+	flag.BoolVar(&c.Secondary.TestMode, "test-mode", c.Secondary.TestMode, "run in test mode (Default: false)")
 	flag.Parse()
+}
 
-	if err := utils.LogToFile(*logFile); err != nil {
+func main() {
+	var conf *config.Config
+
+	// Read default values from the Config struct
+	confFile, err := config.OpenConfigFile()
+	if err != nil {
+		log.Info("didn't find configuration file, using defaults: %v", err)
+		conf = config.NewConfig()
+	} else {
+		conf, err = config.LoadConfig(confFile)
+		if err != nil {
+			log.Fatal("failed to parse config file: %v", err)
+		}
+	}
+
+	// Allow flags to override them
+	config.ServerFlags(conf)
+	ParseFlags(conf)
+
+	if err := utils.LogToFile(conf.LogFile); err != nil {
 		log.Fatal("open log file failed: %v", err)
 	}
-	if err := log.SetLevelFromString(*logLevel); err != nil {
+	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
 	log.Info("log-go git-commit %s", gitCommit)
@@ -62,7 +71,7 @@ func main() {
 	defer cancel()
 
 	log.Debug("configuring log-go-secondary")
-	node, err := setupSecondaryFromFlags()
+	node, err := setupSecondaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup secondary: %v", err)
 	}
@@ -76,8 +85,8 @@ func main() {
 		cancel() // must have periodic running
 	}()
 
-	server := &http.Server{Addr: *externalEndpoint, Handler: node.PublicHTTPMux}
-	intserver := &http.Server{Addr: *internalEndpoint, Handler: node.InternalHTTPMux}
+	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux}
+	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: node.InternalHTTPMux}
 	log.Debug("starting await routine")
 	go await(ctx, func() {
 		wg.Add(1)
@@ -97,7 +106,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		log.Info("serving log nodes on %v/%v", *internalEndpoint, *prefix)
+		log.Info("serving log nodes on %v/%v", conf.InternalEndpoint, conf.Prefix)
 		if err = intserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error("serve(intserver): %v", err)
 		}
@@ -105,7 +114,7 @@ func main() {
 		cancel()
 	}()
 
-	log.Info("serving clients on %v/%v", *externalEndpoint, *prefix)
+	log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
 	if err = server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Error("serve(server): %v", err)
 	}
@@ -113,41 +122,41 @@ func main() {
 }
 
 // setupSecondaryFromFlags() sets up a new sigsum secondary node from flags.
-func setupSecondaryFromFlags() (*secondary.Secondary, error) {
+func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
 	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	publicKey, s.Signer, err = utils.ReadKeyFile(*key)
+	publicKey, s.Signer, err = utils.ReadKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 	s.Config.LogID = hex.EncodeToString(publicKey[:])
-	s.Config.Timeout = *timeout
-	s.Interval = *interval
+	s.Config.Timeout = conf.Timeout
+	s.Interval = conf.Interval
 
-	if *ephemeralBackend {
+	if conf.EphemeralBackend {
 		s.DbClient = db.NewMemoryDb()
 	} else {
 		// Setup trillian client.
 		dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(s.Config.Timeout)}
-		conn, err := grpc.Dial(*rpcBackend, dialOpts...)
+		conn, err := grpc.Dial(conf.RpcBackend, dialOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("Dial: %v", err)
 		}
 		s.DbClient = &db.TrillianClient{
-			TreeID: *trillianID,
+			TreeID: conf.TrillianID,
 			GRPC:   trillian.NewTrillianLogClient(conn),
 		}
 	}
 	// Setup primary node configuration.
-	pubkey, err := crypto.PublicKeyFromHex(*primaryPubkey)
+	pubkey, err := crypto.PublicKeyFromHex(conf.Secondary.PrimaryPubkey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid primary node pubkey: %v", err)
 	}
 	s.Primary = client.New(client.Config{
-		LogURL: *primaryURL,
+		LogURL: conf.Secondary.PrimaryURL,
 		LogPub: pubkey,
 	})
 
@@ -159,7 +168,7 @@ func setupSecondaryFromFlags() (*secondary.Secondary, error) {
 
 	mux = http.NewServeMux()
 	for _, h := range s.InternalHTTPHandlers() {
-		path := h.Path(*prefix)
+		path := h.Path(conf.Prefix)
 		log.Debug("adding internal handler: %s", path)
 		mux.Handle(path, h)
 	}
