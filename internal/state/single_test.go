@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	mocksDB "sigsum.org/log-go/internal/mocks/db"
+	"sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -55,7 +55,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			trillianClient := mocksDB.NewMockClient(ctrl)
+			trillianClient := db.NewMockClient(ctrl)
 			th := types.TreeHead{}
 			if table.thExp {
 				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(th, table.thErr)

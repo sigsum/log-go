@@ -7,11 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"sigsum.org/log-go/internal/db"
-	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -19,14 +16,11 @@ var ErrUnknownWitness = errors.New("unknown witness")
 
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
-	client   db.Client
-	signer   crypto.Signer
-	keyHash  crypto.Hash
-	interval time.Duration
-	// Timeout for interaction with the secondary.
-	timeout   time.Duration
-	secondary client.Client
-	sthFile   sthFile
+	signer           crypto.Signer
+	keyHash          crypto.Hash
+	interval         time.Duration
+	sthFile          sthFile
+	replicationState ReplicationState
 
 	// Witnesses map trusted witness identifiers to public keys
 	witnesses map[crypto.Hash]crypto.PublicKey
@@ -44,17 +38,19 @@ type StateManagerSingle struct {
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(dbcli db.Client, signer crypto.Signer, interval, timeout time.Duration,
-	secondary client.Client, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
+func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, interval, timeout time.Duration,
+	secondary SecondaryTree, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sm := &StateManagerSingle{
-		client:    dbcli,
-		signer:    signer,
-		keyHash:   crypto.HashBytes(pub[:]),
-		interval:  interval,
-		timeout:   timeout,
-		secondary: secondary,
-		sthFile:   sthFile{name: sthFileName},
+		signer:   signer,
+		keyHash:  crypto.HashBytes(pub[:]),
+		interval: interval,
+		sthFile:  sthFile{name: sthFileName},
+		replicationState: ReplicationState{
+			primary:   primary,
+			secondary: secondary,
+			timeout:   timeout,
+		},
 		witnesses: witnesses,
 	}
 	sth, err := sm.sthFile.Load(&pub)
@@ -130,89 +126,22 @@ func (sm *StateManagerSingle) Run(ctx context.Context) {
 }
 
 func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, sm.timeout)
-	defer cancel()
-	th, err := sm.client.GetTreeHead(ctx)
+	nextTH, err := sm.replicationState.ReplicatedTreeHead(
+		ctx, sm.signedTreeHead.Size)
 	if err != nil {
-		return fmt.Errorf("get tree head: %v", err)
+		log.Error("no new replicated tree head: %v", err)
+		nextTH = sm.signedTreeHead.TreeHead
 	}
-	nextSTH, err := sm.signTreeHead(sm.chooseTree(ctx, &th))
+	nextSTH, err := sm.signTreeHead(&nextTH)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
-	log.Debug("wanted to advance to size %d, chose size %d", th.Size, nextSTH.Size)
 
 	if err := sm.sthFile.Store(nextSTH); err != nil {
 		return err
 	}
 
 	sm.rotate(nextSTH)
-	return nil
-}
-
-// chooseTree picks a tree to publish, taking the state of a possible secondary node into account.
-func (sm *StateManagerSingle) chooseTree(ctx context.Context, proposedTreeHead *types.TreeHead) *types.TreeHead {
-	if sm.secondary == nil {
-		return proposedTreeHead
-	}
-
-	secSTH, err := sm.secondary.GetToCosignTreeHead(ctx)
-	if err != nil {
-		log.Warning("failed fetching tree head from secondary: %v", err)
-		return &sm.signedTreeHead.TreeHead
-	}
-	if secSTH.Size > proposedTreeHead.Size {
-		log.Error("secondary is ahead of us: %d > %d", secSTH.Size, proposedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
-	}
-	if secSTH.Size == proposedTreeHead.Size {
-		if secSTH.RootHash != proposedTreeHead.RootHash {
-			log.Error("secondary root hash doesn't match our root hash at tree size %d", secSTH.Size)
-			return &sm.signedTreeHead.TreeHead
-		}
-		log.Debug("secondary is up-to-date with matching tree head, using proposed tree, size %d", proposedTreeHead.Size)
-		return proposedTreeHead
-	}
-	// We now know that
-	// * the proposed tree is ahead of the secondary (including them not being equal)
-	// * the minimal tree size is 0, so the proposed tree is at tree size 1 or greater
-
-	// Consistency proofs can not be produced from a tree of size 0, so don't try when the secondary is at 0.
-	if secSTH.Size == 0 {
-		log.Debug("secondary tree size is zero, using latest published tree head: size %d", sm.signedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
-	}
-	if err := sm.verifyConsistency(ctx, &secSTH.TreeHead, proposedTreeHead); err != nil {
-		log.Error("secondary tree not consistent with ours: %v", err)
-		return &sm.signedTreeHead.TreeHead
-	}
-	// We now know that
-	// * we have two candidates: latest published and secondary's tree
-	// * secondary's tree is verified to be consistent with our proposed tree
-
-	// Protect against going backwards by chosing the larger of secondary tree and latest published.
-	if sm.signedTreeHead.Size > secSTH.TreeHead.Size {
-		log.Debug("using latest published tree head: size %d", sm.signedTreeHead.Size)
-		return &sm.signedTreeHead.TreeHead
-	}
-
-	log.Debug("using latest tree head from secondary: size %d", secSTH.Size)
-	return &secSTH.TreeHead
-}
-
-func (sm *StateManagerSingle) verifyConsistency(ctx context.Context, from, to *types.TreeHead) error {
-	req := &requests.ConsistencyProof{
-		OldSize: from.Size,
-		NewSize: to.Size,
-	}
-	proof, err := sm.client.GetConsistencyProof(ctx, req)
-	if err != nil {
-		return fmt.Errorf("unable to get consistency proof from %d to %d: %w", req.OldSize, req.NewSize, err)
-	}
-	if err := proof.Verify(&from.RootHash, &to.RootHash); err != nil {
-		return fmt.Errorf("invalid consistency proof from %d to %d: %v", req.OldSize, req.NewSize, err)
-	}
-	log.Debug("consistency proof from %d to %d verified", req.OldSize, req.NewSize)
 	return nil
 }
 
