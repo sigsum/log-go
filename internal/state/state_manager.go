@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"time"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -20,5 +21,5 @@ type StateManager interface {
 	AddCosignature(*crypto.Hash, *crypto.Signature) error
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
-	Run(context.Context)
+	Run(context.Context, time.Duration)
 }
