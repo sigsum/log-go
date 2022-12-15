@@ -122,11 +122,9 @@ func main() {
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
 func setupPrimaryFromFlags() (*primary.Primary, error) {
 	var p primary.Primary
-	var err error
-	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	publicKey, p.Signer, err = utils.ReadKeyFile(*key)
+	publicKey, signer, err := utils.ReadKeyFile(*key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -167,7 +165,7 @@ func setupPrimaryFromFlags() (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, p.Config.Timeout,
+	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
 		secondary, *sthStorePath, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)

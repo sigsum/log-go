@@ -7,7 +7,6 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
-	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -19,7 +18,6 @@ type Primary struct {
 	PublicHTTPMux   *http.ServeMux
 	InternalHTTPMux *http.ServeMux
 	DbClient        db.Client          // provides access to the backend, usually Trillian
-	Signer          crypto.Signer      // provides access to Ed25519 private key
 	Stateman        state.StateManager // coordinates access to (co)signed tree heads
 	TokenVerifier   token.Verifier     // checks if domain name knows a public key
 	RateLimiter     rateLimit.Limiter
