@@ -18,7 +18,6 @@ var ErrUnknownWitness = errors.New("unknown witness")
 type StateManagerSingle struct {
 	signer           crypto.Signer
 	keyHash          crypto.Hash
-	interval         time.Duration
 	sthFile          sthFile
 	replicationState ReplicationState
 
@@ -38,14 +37,13 @@ type StateManagerSingle struct {
 // NewStateManagerSingle() sets up a new state manager, in particular its
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
-func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, interval, timeout time.Duration,
+func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
 	secondary SecondaryTree, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sm := &StateManagerSingle{
-		signer:   signer,
-		keyHash:  crypto.HashBytes(pub[:]),
-		interval: interval,
-		sthFile:  sthFile{name: sthFileName},
+		signer:  signer,
+		keyHash: crypto.HashBytes(pub[:]),
+		sthFile: sthFile{name: sthFileName},
 		replicationState: ReplicationState{
 			primary:   primary,
 			secondary: secondary,
@@ -109,8 +107,8 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.S
 	return nil
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context) {
-	ticker := time.NewTicker(sm.interval)
+func (sm *StateManagerSingle) Run(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {

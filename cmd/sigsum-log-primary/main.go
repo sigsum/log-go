@@ -78,7 +78,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx)
+		node.Stateman.Run(ctx, *interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -167,7 +167,7 @@ func setupPrimaryFromFlags() (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, *interval, p.Config.Timeout,
+	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, p.Signer, p.Config.Timeout,
 		secondary, *sthStorePath, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)

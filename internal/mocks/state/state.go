@@ -7,6 +7,7 @@ package state
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	crypto "sigsum.org/sigsum-go/pkg/crypto"
@@ -79,13 +80,13 @@ func (mr *MockStateManagerMockRecorder) NextTreeHead() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context) {
+func (m *MockStateManager) Run(arg0 context.Context, arg1 time.Duration) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Run", arg0)
+	m.ctrl.Call(m, "Run", arg0, arg1)
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockStateManagerMockRecorder) Run(arg0 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) Run(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1)
 }
