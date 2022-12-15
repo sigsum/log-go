@@ -67,6 +67,10 @@ func (r ReplicationState) checkConsistency(ctx context.Context, old types.TreeHe
 		}
 		return nil
 	}
+	// Anything is consistent with an empty tree.
+	if old.Size == 0 {
+		return nil
+	}
 	proof, err := r.primary.GetConsistencyProof(ctx, &requests.ConsistencyProof{
 		OldSize: old.Size,
 		NewSize: new.Size,
