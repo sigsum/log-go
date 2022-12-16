@@ -126,9 +126,10 @@ func TestAddLeaf(t *testing.T) {
 
 func TestAddCosignature(t *testing.T) {
 	buf := func() string {
-		return fmt.Sprintf("%s=%x %x\n",
+		return fmt.Sprintf("%s=%x %d %x\n",
 			"cosignature",
 			crypto.HashBytes(testWitVK[:]),
+			1,
 			crypto.Signature{},
 		)
 	}
@@ -146,7 +147,7 @@ func TestAddCosignature(t *testing.T) {
 		},
 		{
 			description: "invalid: unknown witness",
-			ascii: fmt.Sprintf("%s=%x %x\n",
+			ascii: fmt.Sprintf("%s=%x 1 %x\n",
 				"cosignature",
 				crypto.HashBytes([]byte{}),
 				crypto.Signature{},
@@ -175,7 +176,7 @@ func TestAddCosignature(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().AddCosignature(gomock.Any(), gomock.Any()).Return(table.err)
+				stateman.EXPECT().AddCosignature(gomock.Any()).Return(table.err)
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -193,7 +194,7 @@ func TestAddCosignature(t *testing.T) {
 			w := httptest.NewRecorder()
 			mustHandlePublic(t, node, types.EndpointAddCosignature).ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
+				t.Errorf("got HTTP status code %v (%s) but wanted %v in test %q", got, w.Result().Status, want, table.description)
 			}
 		}()
 	}

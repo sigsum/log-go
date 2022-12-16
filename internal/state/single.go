@@ -31,7 +31,7 @@ type StateManagerSingle struct {
 	cosignedTreeHead *types.CosignedTreeHead
 
 	// Syncronized and deduplicated witness cosignatures for signedTreeHead
-	cosignatures map[crypto.Hash]*crypto.Signature
+	cosignatures map[crypto.Hash]types.Cosignature
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
@@ -86,13 +86,14 @@ func (sm *StateManagerSingle) CosignedTreeHead() *types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.Signature) error {
+func (sm *StateManagerSingle) AddCosignature(sig *types.Cosignature) error {
 	// This mapping is immutable, no lock needed.
-	pub, ok := sm.witnesses[*keyHash]
+	pub, ok := sm.witnesses[sig.KeyHash]
 	if !ok {
 		return ErrUnknownWitness
 	}
 
+	// TODO: Check that timestamp is resonable?
 	// Write lock, since cosignatures mapping is updated. Note
 	// that we can't release lock in between access to
 	// sm.signedTreeHead and sm.cosignatures, since on concurrent
@@ -100,10 +101,10 @@ func (sm *StateManagerSingle) AddCosignature(keyHash *crypto.Hash, sig *crypto.S
 	sm.Lock()
 	defer sm.Unlock()
 
-	if !sm.signedTreeHead.Verify(&pub, sig, &sm.keyHash) {
+	if !sig.Verify(&pub, &sm.keyHash, &sm.signedTreeHead.TreeHead) {
 		return fmt.Errorf("invalid cosignature")
 	}
-	sm.cosignatures[crypto.HashBytes(pub[:])] = sig
+	sm.cosignatures[crypto.HashBytes(pub[:])] = *sig
 	return nil
 }
 
@@ -157,16 +158,14 @@ func (sm *StateManagerSingle) setCosignedTreeHead() {
 	var cth types.CosignedTreeHead
 	cth.SignedTreeHead = *sm.signedTreeHead
 	cth.Cosignatures = make([]types.Cosignature, 0, len(sm.cosignatures))
-	for keyHash, cosignature := range sm.cosignatures {
-		cth.Cosignatures = append(cth.Cosignatures, types.Cosignature{
-			KeyHash:   keyHash,
-			Signature: *cosignature})
+	for _, cosignature := range sm.cosignatures {
+		cth.Cosignatures = append(cth.Cosignatures, cosignature)
 	}
 	sm.cosignedTreeHead = &cth
 }
 
 func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead) {
-	sm.cosignatures = make(map[crypto.Hash]*crypto.Signature)
+	sm.cosignatures = make(map[crypto.Hash]types.Cosignature)
 	sm.signedTreeHead = nextSTH
 }
 
@@ -180,5 +179,5 @@ func (sm *StateManagerSingle) treeStatusString() string {
 
 // Signs tree head, with current time as timestamp.
 func (sm *StateManagerSingle) signTreeHead(th *types.TreeHead) (*types.SignedTreeHead, error) {
-	return th.Sign(sm.signer, &sm.keyHash, uint64(time.Now().Unix()))
+	return th.Sign(sm.signer)
 }
