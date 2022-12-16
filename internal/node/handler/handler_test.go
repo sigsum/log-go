@@ -30,7 +30,7 @@ func TestPath(t *testing.T) {
 		},
 	} {
 		h := Handler{Config{}, testFun, types.EndpointAddLeaf, http.MethodPost}
-		if got, want := h.Path(table.prefix), table.want; got != want {
+		if got, want := h.path(table.prefix), table.want; got != want {
 			t.Errorf("got path %v but wanted %v", got, want)
 		}
 	}

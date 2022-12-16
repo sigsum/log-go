@@ -20,26 +20,26 @@ var (
 	}
 )
 
-// TestHandlers checks that the expected internal handlers are configured
-func TestIntHandlers(t *testing.T) {
-	endpoints := map[types.Endpoint]bool{
-		types.EndpointGetNextTreeHead: false,
-	}
-	node := Secondary{
-		Config: testConfig,
-	}
-	for _, handler := range node.InternalHTTPHandlers() {
-		if _, ok := endpoints[handler.Endpoint]; !ok {
-			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
-		}
-		endpoints[handler.Endpoint] = true
-	}
-	for endpoint, ok := range endpoints {
-		if !ok {
-			t.Errorf("endpoint %s is not configured", endpoint)
-		}
-	}
-}
+// // TestHandlers checks that the expected internal handlers are configured
+// func TestIntHandlers(t *testing.T) {
+// 	endpoints := map[types.Endpoint]bool{
+// 		types.EndpointGetNextTreeHead: false,
+// 	}
+// 	node := Secondary{
+// 		Config: testConfig,
+// 	}
+// 	for _, handler := range node.InternalHTTPHandlers() {
+// 		if _, ok := endpoints[handler.Endpoint]; !ok {
+// 			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
+// 		}
+// 		endpoints[handler.Endpoint] = true
+// 	}
+// 	for endpoint, ok := range endpoints {
+// 		if !ok {
+// 			t.Errorf("endpoint %s is not configured", endpoint)
+// 		}
+// 	}
+// }
 
 func TestFetchLeavesFromPrimary(t *testing.T) {
 	for _, tbl := range []struct {
