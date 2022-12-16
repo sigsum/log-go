@@ -110,7 +110,6 @@ func TestAddLeaf(t *testing.T) {
 			// Create HTTP request
 			url := types.EndpointAddLeaf.Path("http://example.com")
 			req, err := http.NewRequest("POST", url, table.ascii)
-			fmt.Printf("ascii: %q\n", table.ascii)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
@@ -615,7 +614,6 @@ func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {
 	if err != nil {
 		t.Fatalf("must have an ed25519 signature: %v", err)
 	}
-	fmt.Printf("sig: %x\n", sig)
 	if !wantSig {
 		sig[0] += 1
 	}
