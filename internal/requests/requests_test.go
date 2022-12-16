@@ -57,7 +57,6 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		{"valid leaf, invalid domain", input(msg), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
 	} {
 		func() {
-			fmt.Println(table.desc)
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			vf := mocksToken.NewMockVerifier(ctrl)
