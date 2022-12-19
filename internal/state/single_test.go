@@ -151,10 +151,8 @@ func TestAddCosignature(t *testing.T) {
 		}
 
 		sig := mustCosign(t, table.signer, &sm.signedTreeHead.TreeHead, &sm.keyHash)
-		err := sm.AddCosignature(&types.Cosignature{
-			KeyHash:   crypto.HashBytes(table.vk[:]),
-			Timestamp: 0,
-			Signature: sig})
+		sig.KeyHash = crypto.HashBytes(table.vk[:])
+		err := sm.AddCosignature(&sig)
 		if got, want := err, table.wantErr; got != want {
 			t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.desc, err)
 		}
@@ -173,7 +171,7 @@ func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 	return pub, signer
 }
 
-func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) crypto.Signature {
+func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) types.Cosignature {
 	t.Helper()
 	signature, err := th.Cosign(s, kh, 0)
 	if err != nil {
