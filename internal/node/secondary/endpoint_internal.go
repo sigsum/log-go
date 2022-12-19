@@ -17,9 +17,7 @@ func (s Secondary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWrite
 	log.Debug("handling get-tree-head-to-cosign request")
 
 	signedTreeHead := func() (*types.SignedTreeHead, error) {
-		tctx, cancel := context.WithTimeout(ctx, s.Config.Timeout)
-		defer cancel()
-		th, err := treeHeadFromTrillian(tctx, s.DbClient)
+		th, err := s.DbClient.GetTreeHead(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting tree head: %w", err)
 		}

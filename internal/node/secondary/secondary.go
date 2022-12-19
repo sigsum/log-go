@@ -2,7 +2,6 @@ package secondary
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -49,6 +48,9 @@ func (s Secondary) InternalHTTPHandlers() []handler.Handler {
 }
 
 func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, s.Config.Timeout)
+	defer cancel()
+
 	prim, err := s.Primary.GetUnsignedTreeHead(ctx)
 	if err != nil {
 		log.Warning("unable to get tree head from primary: %v", err)
@@ -56,11 +58,12 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 	}
 	log.Debug("got tree head from primary, size %d", prim.Size)
 
-	curTH, err := treeHeadFromTrillian(ctx, s.DbClient)
+	curTH, err := s.DbClient.GetTreeHead(ctx)
 	if err != nil {
 		log.Warning("unable to get tree head from trillian: %v", err)
 		return
 	}
+	log.Debug("got tree head from trillian, size %d", curTH.Size)
 	var leaves []types.Leaf
 	for index := int64(curTH.Size); index < int64(prim.Size); index += int64(len(leaves)) {
 		req := requests.Leaves{
@@ -79,13 +82,4 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 			return
 		}
 	}
-}
-
-func treeHeadFromTrillian(ctx context.Context, trillianClient db.Client) (types.TreeHead, error) {
-	th, err := trillianClient.GetTreeHead(ctx)
-	if err != nil {
-		return types.TreeHead{}, fmt.Errorf("fetching tree head from trillian: %v", err)
-	}
-	log.Debug("got tree head from trillian, size %d", th.Size)
-	return th, nil
 }
