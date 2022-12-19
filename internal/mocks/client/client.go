@@ -37,7 +37,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddCosignature mocks base method.
-func (m *MockClient) AddCosignature(arg0 context.Context, arg1 requests.Cosignature) error {
+func (m *MockClient) AddCosignature(arg0 context.Context, arg1 types.Cosignature) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1)
 	ret0, _ := ret[0].(error)

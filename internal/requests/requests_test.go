@@ -92,41 +92,6 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 	}
 }
 
-func TestCosignatureRequestFromHTTP(t *testing.T) {
-	input := func(h crypto.Hash) io.Reader {
-		return bytes.NewBufferString(fmt.Sprintf("cosignature=%x %x\n", h, crypto.Signature{}))
-	}
-	for _, table := range []struct {
-		desc    string
-		params  io.Reader
-		wantRsp *sigsumreq.Cosignature
-	}{
-		{"invalid: parser error", bytes.NewBufferString("abcd"), nil},
-		{"valid", input(crypto.HashBytes([]byte("w1"))),
-			&sigsumreq.Cosignature{
-				Signature: crypto.Signature{},
-				KeyHash:   crypto.HashBytes([]byte("w1")),
-			}},
-	} {
-		url := types.EndpointAddCosignature.Path("http://example.org/sigsum")
-		req, err := http.NewRequest(http.MethodPost, url, table.params)
-		if err != nil {
-			t.Fatalf("must create http request: %v", err)
-		}
-
-		parsedReq, err := CosignatureRequestFromHTTP(req)
-		if got, want := err != nil, table.desc != "valid"; got != want {
-			t.Errorf("%s: got error %v but wanted %v: %v", table.desc, got, want, err)
-		}
-		if err != nil {
-			continue
-		}
-		if got, want := parsedReq, table.wantRsp; !reflect.DeepEqual(got, want) {
-			t.Errorf("%s: got request %v but wanted %v", table.desc, got, want)
-		}
-	}
-}
-
 func TestConsistencyProofRequestFromHTTP(t *testing.T) {
 	for _, table := range []struct {
 		desc    string

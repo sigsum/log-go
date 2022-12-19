@@ -52,11 +52,11 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling add-cosignature request")
-	req, err := requests.CosignatureRequestFromHTTP(r)
-	if err != nil {
+	var cs types.Cosignature
+	if err := cs.FromASCII(r.Body); err != nil {
 		return http.StatusBadRequest, err
 	}
-	switch err := p.Stateman.AddCosignature(&req.KeyHash, &req.Signature); err {
+	switch err := p.Stateman.AddCosignature(&cs.KeyHash, &cs.Signature); err {
 	case nil:
 		return http.StatusOK, nil
 	case state.ErrUnknownWitness:

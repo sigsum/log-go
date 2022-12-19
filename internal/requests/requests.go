@@ -32,14 +32,6 @@ func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier
 	return &req, domain, nil
 }
 
-func CosignatureRequestFromHTTP(r *http.Request) (*sigsumreq.Cosignature, error) {
-	var req sigsumreq.Cosignature
-	if err := req.FromASCII(r.Body); err != nil {
-		return nil, fmt.Errorf("parse ascii: %w", err)
-	}
-	return &req, nil
-}
-
 func ConsistencyProofRequestFromHTTP(r *http.Request) (*sigsumreq.ConsistencyProof, error) {
 	var req sigsumreq.ConsistencyProof
 	if err := req.FromURL(r.URL.Path); err != nil {
