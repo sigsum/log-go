@@ -49,7 +49,7 @@ function main() {
 
 	# Primary
 	nvars[$loga:ssrv_extra_args]="-secondary-url=http://${nvars[$logb:int_url]}"
-	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logb:ssrv_pub]}"
+	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=$(cat ${nvars[$logb:log_dir]}/ssrv.key.pub)"
 	nvars[$loga:ssrv_extra_args]+=" -rate-limit-config=rate-limit.cfg"
 	nvars[$loga:ssrv_extra_args]+=" -allow-test-domain=true"
 	if [[ "$testflavor" = ephemeral ]] ; then
@@ -59,7 +59,7 @@ function main() {
 
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
-	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=${nvars[$loga:ssrv_pub]}"
+	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=$(cat ${nvars[$loga:log_dir]}/ssrv.key.pub)"
 	if [[ "$testflavor" = ephemeral ]] ; then
 		nvars[$logb:ssrv_extra_args]+=" -ephemeral-test-backend"
 	fi
@@ -70,8 +70,8 @@ function main() {
 
 	client_setup $client
 	check_setup $loga $logb
-	run_tests $loga $logb 0 5
-	run_tests $loga $logb 5 1
+	run_tests $loga $logb $client 0 5
+	run_tests $loga $logb $client 5 1
 
 	if [[ $testflavor == extended ]]; then
 		# for tree equality tests later on; FIXME: remove
@@ -84,16 +84,16 @@ function main() {
 
 		node_promote $logb $loga
 		nvars[$logb:ssrv_extra_args]="-secondary-url=http://${nvars[$logc:int_url]}"
-		nvars[$logb:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logc:ssrv_pub]}"
+		nvars[$logb:ssrv_extra_args]+=" -secondary-pubkey=$(cat ${nvars[$logc:log_dir]}/ssrv.key.pub)"
 		node_start_fe $logb
 
 		nvars[$logc:ssrv_extra_args]="-primary-url=http://${nvars[$logb:int_url]}"
-		nvars[$logc:ssrv_extra_args]+=" -primary-pubkey=${nvars[$logb:ssrv_pub]}"
+		nvars[$logc:ssrv_extra_args]+=" -primary-pubkey=$(cat ${nvars[$logb:log_dir]}/ssrv.key.pub)"
 		nodes+=" logc"
 		node_start $logc
 
 		check_setup $logb $logc
-		run_tests_extended $logb $logc 6 ${nvars[$loga:log_dir]}/last_sth
+		run_tests_extended $logb $logc $client 6 ${nvars[$loga:log_dir]}/last_sth
 	fi
 }
 
@@ -109,17 +109,20 @@ function check_go_deps() {
 }
 
 function client_setup() {
-	# NOTE: not ready for multiple clients --  stomping on everything
 	for i in $@; do
 		info "setting up client ($i)"
-		if [[ -f $1 ]];
+		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
+		info "$i: logging to $dir"
+		nvars[$i:log_dir]=$dir
+		if [[ -f $i ]];
 		then
-			source $1
+			source $i
+			echo $cli_priv > ${nvars[$i:log_dir]}/cli.key
 		else
-			cli_priv=$(./sigsum-debug key private)
+			./sigsum-debug key private > ${nvars[$i:log_dir]}/cli.key
 		fi
-		cli_pub=$(echo $cli_priv | ./sigsum-debug key public)
-		cli_key_hash=$(echo $cli_pub | ./sigsum-debug key hash)
+		./sigsum-debug key public < ${nvars[$i:log_dir]}/cli.key > ${nvars[$i:log_dir]}/cli.key.pub
+		nvars[$i:cli_key_hash]=$(cat ${nvars[$i:log_dir]}/cli.key.pub | ./sigsum-debug key hash)
 	done
 }
 
@@ -176,12 +179,14 @@ function node_promote() {
 
 	nvars[$new_primary:ssrv_role]=primary
 	nvars[$new_primary:ssrv_interval]=5 # FIXME: parameterize
-	nvars[$new_primary:ssrv_priv]=${nvars[$prev_primary:ssrv_priv]}
-	nvars[$new_primary:ssrv_pub]=${nvars[$prev_primary:ssrv_pub]}
+
+	info "copying key files"
+	mv ${nvars[$prev_primary:log_dir]}/ssrv.key ${nvars[$new_primary:log_dir]}/ssrv.key
+	mv ${nvars[$prev_primary:log_dir]}/ssrv.key.pub ${nvars[$new_primary:log_dir]}/ssrv.key.pub
 	nvars[$new_primary:ssrv_key_hash]=${nvars[$prev_primary:ssrv_key_hash]}
 	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
 
-	info "copying sth-store file"
+	info "moving sth-store file"
 	mv ${nvars[$prev_primary:log_dir]}/sth-store ${nvars[$new_primary:log_dir]}/sth-store
 }
 
@@ -262,20 +267,22 @@ function sigsum_setup() {
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 
-		nvars[$i:wit1_priv]=$(./sigsum-debug key private)
-		nvars[$i:wit1_pub]=$(echo ${nvars[$i:wit1_priv]} | ./sigsum-debug key public)
-		nvars[$i:wit1_key_hash]=$(echo ${nvars[$i:wit1_pub]} | ./sigsum-debug key hash)
-		nvars[$i:wit2_priv]=$(./sigsum-debug key private)
-		nvars[$i:wit2_pub]=$(echo ${nvars[$i:wit2_priv]} | ./sigsum-debug key public)
-		nvars[$i:wit2_key_hash]=$(echo ${nvars[$i:wit2_pub]} | ./sigsum-debug key hash)
-		nvars[$i:ssrv_witnesses]=${nvars[$i:wit1_pub]},${nvars[$i:wit2_pub]}
+		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/wit1.key \
+			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/wit1.key.pub
+		nvars[$i:wit1_key_hash]=$(./sigsum-debug key hash < ${nvars[$i:log_dir]}/wit1.key.pub)
 
-		nvars[$i:ssrv_priv]=$(./sigsum-debug key private)
-		nvars[$i:ssrv_pub]=$(echo ${nvars[$i:ssrv_priv]} | ./sigsum-debug key public)
-		nvars[$i:ssrv_key_hash]=$(echo ${nvars[$i:ssrv_pub]} | ./sigsum-debug key hash)
+		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/wit2.key \
+			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/wit2.key.pub
+		nvars[$i:wit2_key_hash]=$(./sigsum-debug key hash < ${nvars[$i:log_dir]}/wit2.key.pub)
+
+		nvars[$i:ssrv_witnesses]=$(cat ${nvars[$i:log_dir]}/wit1.key.pub),$(cat ${nvars[$i:log_dir]}/wit2.key.pub)
+
+		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/ssrv.key \
+			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/ssrv.key.pub
+		nvars[$i:ssrv_key_hash]=$(cat ${nvars[$i:log_dir]}/ssrv.key.pub | ./sigsum-debug key hash)
 		# Use special test.sigsum.org test key to generate token.
 		nvars[$i:token]=$(echo 0000000000000000000000000000000000000000000000000000000000000001 \
-				    | ./sigsum-debug token $(echo ${nvars[$i:ssrv_pub]}))
+				    | ./sigsum-debug token $(cat ${nvars[$i:log_dir]}/ssrv.key.pub))
 	done
 }
 
@@ -285,7 +292,7 @@ function sigsum_create_tree() {
 			info "creating empty ${nvars[$i:log_dir]}/sth-store"
 			go run ../cmd/sigsum-mktree \
 			   -sth-path=${nvars[$i:log_dir]}/sth-store \
-			   -key=<(echo ${nvars[$i:ssrv_priv]})
+			   -key=${nvars[$i:log_dir]}/ssrv.key
 		fi
 	done
 }
@@ -320,7 +327,7 @@ function sigsum_start() {
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
 		go build -o $binary ../cmd/$binary/main.go
-		./$binary $args -key=<(echo ${nvars[$i:ssrv_priv]}) \
+		./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
 			2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 		nvars[$i:ssrv_pid]=$!
 
@@ -437,6 +444,7 @@ function check_setup() {
 function run_tests() {
 	local pri=$1; shift
 	local sec=$1; shift
+	local cli=$1; shift
 	local start_leaf=$1; shift # 0-based
 	local num_leaf=$1; shift
 
@@ -445,7 +453,7 @@ function run_tests() {
 	test_signed_tree_head $pri $start_leaf
 
 	info "adding $num_leaf leaves"
-	test_add_leaves $pri $(( $start_leaf + 1 )) $num_leaf
+	test_add_leaves $pri $cli $(( $start_leaf + 1 )) $num_leaf
 	num_leaf=$(( $num_leaf + $start_leaf ))
 
 	test_signed_tree_head $pri $num_leaf
@@ -453,19 +461,19 @@ function run_tests() {
 		test_consistency_proof $pri $i $num_leaf
 	done
 
-	test_cosignature $pri ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:wit1_priv]}
-	test_cosignature $pri ${nvars[$pri:wit2_key_hash]} ${nvars[$pri:wit2_priv]}
+	test_cosignature $pri ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:log_dir]}/wit1.key
+	test_cosignature $pri ${nvars[$pri:wit2_key_hash]} ${nvars[$pri:log_dir]}/wit2.key
 
 	info "waiting for cosignature(s) to be available..."
 	sleep ${nvars[$pri:ssrv_interval]}
 
 	test_cosigned_tree_head $pri $num_leaf
 	for i in $(seq  $(( $start_leaf + 1 )) $num_leaf); do
-		test_inclusion_proof $pri $num_leaf $i $(( $i - 1 ))
+		test_inclusion_proof $pri $cli $num_leaf $i $(( $i - 1 ))
 	done
 
 	for i in $(seq  $(( $start_leaf + 1 )) $num_leaf); do
-		test_get_leaf $pri $i $(( $i - 1 ))
+		test_get_leaf $pri $cli $i $(( $i - 1 ))
 	done
 
 	warn "no signatures and merkle proofs were verified"
@@ -474,6 +482,7 @@ function run_tests() {
 run_tests_extended() {
 	local pri=$1; shift
 	local sec=$1; shift
+	local cli=$1; shift
 	local current_size=$1; shift
 	local old_pri_sth_rsp=$1; shift
 	info "running extended tests"
@@ -484,7 +493,7 @@ run_tests_extended() {
 	test_signed_tree_head $pri $current_size
 	test_tree_heads_equal ${nvars[$pri:log_dir]}/rsp $old_pri_sth_rsp
 
-	run_tests $pri $sec $current_size 5
+	run_tests $pri $sec $cli $current_size 5
 }
 
 function test_signed_tree_head() {
@@ -602,14 +611,15 @@ function test_cosigned_tree_head() {
 
 function test_inclusion_proof() {
 	local pri=$1; shift
+	local cli=$1; shift
 	local size=$1; shift
 	local data=$1; shift
 	local index=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (size $size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $cli_priv)
-	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k $cli_key_hash -s $signature)
+	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $(cat ${nvars[$cli:log_dir]}/cli.key))
+	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k ${nvars[$cli:cli_key_hash]} -s $signature)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -653,7 +663,8 @@ function test_consistency_proof() {
 }
 
 function test_get_leaf() {
-	local pri=$1; shift
+	local pri=$1; shift	
+	local cli=$1; shift	
 	local data="$1"; shift
 	local index="$1"; shift
 	local log_dir=${nvars[$pri:log_dir]}
@@ -678,7 +689,7 @@ function test_get_leaf() {
 		return
 	fi
 
-	if [[ $(value_of $pri leaf | cut -d' ' -f3) != $cli_key_hash ]]; then
+	if [[ $(value_of $pri leaf | cut -d' ' -f3) != ${nvars[$cli:cli_key_hash]} ]]; then
 		fail "$desc: wrong key hash $(value_of $pri key_hash)"
 	fi
 
@@ -688,6 +699,7 @@ function test_get_leaf() {
 
 function test_add_leaves() {
 	local s=$1; shift
+	local cli=$1; shift
 	local start=$1; shift	# integer, used as data and filename under subs/
 	local end=$(( $start + $1 - 1 )); shift # number of leaves to add
 	local desc="add leaves"
@@ -696,7 +708,7 @@ function test_add_leaves() {
 
 	local -a rc
 	for i in $(seq $start $end); do
-		rc[$i]=$(add_leaf $s $i)
+		rc[$i]=$(add_leaf $s $cli $i)
 	done
 
 	# TODO: bail out and fail after $timeout seconds
@@ -713,7 +725,7 @@ function test_add_leaves() {
 		sleep 1
 		for i in $(seq $start $end); do
 			if [[ ${rc[$i]} -eq 202 ]]; then
-				rc[$i]=$(add_leaf $s $i)
+				rc[$i]=$(add_leaf $s $cli $i)
 				if [[ ${rc[$i]} -eq 200 ]]; then
 					if ! keys $s; then
 						fail "$desc (data \"$i\"): ascii keys in response $(debug_response $s)"
@@ -736,13 +748,14 @@ function test_add_leaves() {
 
 function add_leaf() {
 	local s=$1; shift
+	local cli=$1; shift
 	local data="$1"; shift
 	local log_dir=${nvars[$s:log_dir]}
 
 	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
 	echo "signature=$(echo $data |
-		./sigsum-debug leaf sign -k $cli_priv)" >> $log_dir/req
-	echo "public_key=$cli_pub" >> $log_dir/req
+		./sigsum-debug leaf sign -k $(cat ${nvars[$cli:log_dir]}/cli.key))" >> $log_dir/req
+	echo "public_key=$(cat ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
 
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" -H "sigsum-token: test.sigsum.org ${nvars[$s:token]}" \
@@ -758,7 +771,7 @@ function test_cosignature() {
 	local desc="POST add-cosignature (witness $1)"
 
 	echo "cosignature=$1 $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
-		./sigsum-debug head sign -k $2 -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
+		./sigsum-debug head sign -k $(cat $2) -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp
