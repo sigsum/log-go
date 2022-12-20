@@ -19,7 +19,6 @@ log-file = ""
 log-level = "info"
 
 [primary]
-witnesses = ""
 max-range = 10
 rate-limit-config = ""
 allow-test-domain = false

@@ -25,8 +25,6 @@ type Primary struct {
 func (p Primary) PublicHTTPMux(prefix string) *http.ServeMux {
 	mux := http.NewServeMux()
 	handler.Handler{p.Config, p.addLeaf, types.EndpointAddLeaf, http.MethodPost}.Register(mux, prefix)
-	handler.Handler{p.Config, p.addCosignature, types.EndpointAddCosignature, http.MethodPost}.Register(mux, prefix)
-	handler.Handler{p.Config, p.getNextTreeHead, types.EndpointGetNextTreeHead, http.MethodGet}.Register(mux, prefix)
 	handler.Handler{p.Config, p.getTreeHead, types.EndpointGetTreeHead, http.MethodGet}.Register(mux, prefix)
 	handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet}.Register(mux, prefix)
 	handler.Handler{p.Config, p.getInclusionProof, types.EndpointGetInclusionProof, http.MethodGet}.Register(mux, prefix)

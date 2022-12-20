@@ -13,7 +13,6 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/rate-limit"
-	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -66,8 +65,7 @@ func TestAddLeaf(t *testing.T) {
 			client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian).AnyTimes()
 
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{}).AnyTimes()
-
+			stateman.EXPECT().SignedTreeHead().Return(types.SignedTreeHead{}).AnyTimes()
 			node := Primary{
 				Config:      testConfig,
 				DbClient:    client,
@@ -92,78 +90,7 @@ func TestAddLeaf(t *testing.T) {
 	}
 }
 
-func TestAddCosignature(t *testing.T) {
-	buf := func() string {
-		return fmt.Sprintf("%s=%x %d %x\n",
-			"cosignature",
-			crypto.HashBytes(testWitVK[:]),
-			1,
-			crypto.Signature{},
-		)
-	}
-	for _, table := range []struct {
-		description string
-		ascii       string // HTTP request
-		err         error  // error from Trillian client
-		wantCode    int    // HTTP status ok
-	}{
-		{
-			description: "invalid: bad request (parser error)",
-			ascii:       "key=value\n",
-			wantCode:    http.StatusBadRequest,
-		},
-		{
-			description: "invalid: unknown witness",
-			ascii: fmt.Sprintf("%s=%x 1 %x\n",
-				"cosignature",
-				crypto.HashBytes([]byte{}),
-				crypto.Signature{},
-			),
-			err:      state.ErrUnknownWitness,
-			wantCode: http.StatusForbidden,
-		},
-		{
-			description: "invalid: backend failure",
-			ascii:       buf(),
-			err:         fmt.Errorf("something went wrong"),
-			wantCode:    http.StatusBadRequest,
-		},
-		{
-			description: "valid",
-			ascii:       buf(),
-			wantCode:    http.StatusOK,
-		},
-	} {
-		// Run deferred functions at the end of each iteration
-		func() {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().AddCosignature(gomock.Any()).Return(table.err).AnyTimes()
-
-			node := Primary{
-				Config:   testConfig,
-				Stateman: stateman,
-			}
-
-			// Create HTTP request
-			url := types.EndpointAddCosignature.Path("http://example.com")
-			req, err := http.NewRequest("POST", url, bytes.NewBufferString(table.ascii))
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v (%s) but wanted %v in test %q", got, w.Result().Status, want, table.description)
-			}
-		}()
-	}
-}
-
-func TestGetTreeToCosign(t *testing.T) {
+func TestGetTreeHead(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		err         error // error from Trillian client
@@ -179,50 +106,7 @@ func TestGetTreeToCosign(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
-
-			node := Primary{
-				Config:   testConfig,
-				Stateman: stateman,
-			}
-
-			// Create HTTP request
-			url := types.EndpointGetNextTreeHead.Path("http://example.com")
-			req, err := http.NewRequest("GET", url, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
-			}
-		}()
-	}
-}
-
-func TestGetTreeCosigned(t *testing.T) {
-	for _, table := range []struct {
-		description string
-		err         error // error from Trillian client
-		wantCode    int   // HTTP status ok
-	}{
-		{
-			description: "valid",
-			wantCode:    http.StatusOK,
-		},
-	} {
-		// Run deferred functions at the end of each iteration
-		func() {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().CosignedTreeHead().Return(
-				types.CosignedTreeHead{
-					Cosignatures: make([]types.Cosignature, 1),
-				})
+			stateman.EXPECT().SignedTreeHead().Return(types.SignedTreeHead{})
 
 			node := Primary{
 				Config:   testConfig,
@@ -304,7 +188,7 @@ func TestGetConsistencyProof(t *testing.T) {
 				client.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(
+			stateman.EXPECT().SignedTreeHead().Return(
 				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}).AnyTimes()
 
 			node := Primary{
@@ -391,7 +275,7 @@ func TestGetInclusionProof(t *testing.T) {
 				client.EXPECT().GetInclusionProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(
+			stateman.EXPECT().SignedTreeHead().Return(
 				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}).AnyTimes()
 
 			node := Primary{
@@ -499,7 +383,7 @@ func TestGetLeaves(t *testing.T) {
 					})
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(
+			stateman.EXPECT().SignedTreeHead().Return(
 				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}})
 
 			node := Primary{
