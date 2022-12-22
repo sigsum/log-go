@@ -3,6 +3,7 @@ module sigsum.org/log-go
 go 1.15
 
 require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/google/trillian v1.5.0
 	github.com/prometheus/client_golang v1.13.0

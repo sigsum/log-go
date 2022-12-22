@@ -1,0 +1,25 @@
+external-endpoint = "localhost:6965"
+internal-endpoint = "localhost:6967"
+trillian-rpc-server = "localhost:6962"
+ephemeral-test-backend = false
+url-prefix = ""
+tree-id = 0
+timeout = 10s
+key = ""
+interval = 30s
+log-file = ""
+log-level = "info"
+
+[primary]
+witnesses = ""
+max-range = 10
+rate-limit-config = ""
+allow-test-domain = false
+secondary-url = ""
+secondary-pubkey = ""
+sth-path = "/var/lib/sigsum-log/sth"
+
+[secondary]
+primary-url = ""
+primary-pubkey = ""
+test-mode = false

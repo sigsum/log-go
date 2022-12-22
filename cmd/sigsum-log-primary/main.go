@@ -18,46 +18,55 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
+	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/primary"
-	"sigsum.org/log-go/internal/rate-limit"
+	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/submit-token"
+	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 var (
-	externalEndpoint = flag.String("external-endpoint", "localhost:6965", "host:port specification of where sigsum-log-primary serves clients")
-	internalEndpoint = flag.String("internal-endpoint", "localhost:6967", "host:port specification of where sigsum-log-primary serves other log nodes")
-	rpcBackend       = flag.String("trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
-	ephemeralBackend = flag.Bool("ephemeral-test-backend", false, "if set, enables in-memory backend, with NO persistent storage")
-	prefix           = flag.String("url-prefix", "", "a prefix that precedes /<endpoint>")
-	trillianID       = flag.Int64("tree-id", 0, "tree identifier in the Trillian database")
-	timeout          = flag.Duration("timeout", time.Second*10, "timeout for backend requests")
-	key              = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
-	witnesses        = flag.String("witnesses", "", "comma-separated list of trusted witness public keys in hex")
-	maxRange         = flag.Int64("max-range", 10, "maximum number of entries that can be retrived in a single request")
-	interval         = flag.Duration("interval", time.Second*30, "interval used to rotate the log's cosigned STH")
-	rateLimitConfig  = flag.String("rate-limit-config", "", "enable rate limiting, based on given config file")
-	allowTestDomain  = flag.Bool("allow-test-domain", false, "allow submit tokens from test.sigsum.org")
-	logFile          = flag.String("log-file", "", "file to write logs to (Default: stderr)")
-	logLevel         = flag.String("log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	secondaryURL     = flag.String("secondary-url", "", "secondary node endpoint for fetching latest replicated tree head")
-	secondaryPubkey  = flag.String("secondary-pubkey", "", "hex-encoded Ed25519 public key for secondary node")
-	sthStorePath     = flag.String("sth-path", "/var/lib/sigsum-log/sth", "path to file where latest published STH is being stored")
-
 	gitCommit = "unknown"
 )
 
-func main() {
+func ParseFlags(c *config.Config) {
+	flag.StringVar(&c.Primary.Witnesses, "witnesses", c.Primary.Witnesses, "comma-separated list of trusted witness public keys in hex")
+	flag.StringVar(&c.Primary.RateLimitConfig, "rate-limit-config", c.Primary.RateLimitConfig, "enable rate limiting, based on given config file")
+	flag.BoolVar(&c.Primary.AllowTestDomain, "allow-test-domain", c.Primary.AllowTestDomain, "allow submit tokens from test.sigsum.org")
+	flag.StringVar(&c.Primary.SecondaryURL, "secondary-url", c.Primary.SecondaryURL, "secondary node endpoint for fetching latest replicated tree head")
+	flag.StringVar(&c.Primary.SecondaryPubkey, "secondary-pubkey", c.Primary.SecondaryPubkey, "hex-encoded Ed25519 public key for secondary node")
+	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
 	flag.Parse()
-	if err := utils.LogToFile(*logFile); err != nil {
+}
+
+func main() {
+	var conf *config.Config
+
+	// Read default values from the Config struct
+	confFile, err := config.OpenConfigFile()
+	if err != nil {
+		log.Info("didn't find configuration file, using defaults: %v", err)
+		conf = config.NewConfig()
+	} else {
+		conf, err = config.LoadConfig(confFile)
+		if err != nil {
+			log.Fatal("failed to parse config file: %v", err)
+		}
+	}
+
+	// Allow flags to override them
+	config.ServerFlags(conf)
+	ParseFlags(conf)
+
+	if err := utils.LogToFile(conf.LogFile); err != nil {
 		log.Fatal("open log file failed: %v", err)
 	}
-	if err := log.SetLevelFromString(*logLevel); err != nil {
+	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
 	log.Info("log-go git-commit %s", gitCommit)
@@ -69,7 +78,7 @@ func main() {
 	defer cancel()
 
 	log.Debug("configuring log-go-primary")
-	node, err := setupPrimaryFromFlags()
+	node, err := setupPrimaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup primary: %v", err)
 	}
@@ -78,13 +87,13 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx, *interval)
+		node.Stateman.Run(ctx, conf.Interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
 
-	server := &http.Server{Addr: *externalEndpoint, Handler: node.PublicHTTPMux}
-	intserver := &http.Server{Addr: *internalEndpoint, Handler: node.InternalHTTPMux}
+	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux}
+	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: node.InternalHTTPMux}
 	log.Debug("starting await routine")
 	go await(ctx, func() {
 		wg.Add(1)
@@ -104,7 +113,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		log.Info("serving log nodes on %v/%v", *internalEndpoint, *prefix)
+		log.Info("serving log nodes on %v/%v", conf.InternalEndpoint, conf.Prefix)
 		if err = intserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error("serve(intserver): %v", err)
 		}
@@ -112,7 +121,7 @@ func main() {
 		cancel()
 	}()
 
-	log.Info("serving clients on %v/%v", *externalEndpoint, *prefix)
+	log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
 	if err = server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Error("serve(server): %v", err)
 	}
@@ -120,64 +129,66 @@ func main() {
 }
 
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
-func setupPrimaryFromFlags() (*primary.Primary, error) {
+func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
-	publicKey, signer, err := utils.ReadKeyFile(*key)
+	publicKey, signer, err := utils.ReadKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 
+	// Proxy over values from config.Config to the old Config struct
+	// TODO: Refactor this handling
 	p.Config.LogID = hex.EncodeToString(publicKey[:])
-	p.Config.Timeout = *timeout
-	p.MaxRange = *maxRange
-	witnessMap, err := newWitnessMap(*witnesses)
+	p.Config.Timeout = conf.Timeout
+	p.MaxRange = conf.MaxRange
+	witnessMap, err := newWitnessMap(conf.Primary.Witnesses)
 	if err != nil {
 		return nil, fmt.Errorf("newWitnessMap: %v", err)
 	}
 
-	if *ephemeralBackend {
+	if conf.EphemeralBackend {
 		p.DbClient = db.NewMemoryDb()
 	} else {
 		// Setup trillian client.
 		dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Timeout)}
-		conn, err := grpc.Dial(*rpcBackend, dialOpts...)
+		conn, err := grpc.Dial(conf.RpcBackend, dialOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("Dial: %v", err)
 		}
 		p.DbClient = &db.TrillianClient{
-			TreeID: *trillianID,
+			TreeID: conf.TrillianID,
 			GRPC:   trillian.NewTrillianLogClient(conn),
 		}
 	}
 	// Setup secondary node configuration.
 	var secondary client.Client
-	if *secondaryURL != "" && *secondaryPubkey != "" {
-		pubkey, err := crypto.PublicKeyFromHex(*secondaryPubkey)
+	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkey != "" {
+		pubkey, err := crypto.PublicKeyFromHex(conf.Primary.SecondaryPubkey)
 		if err != nil {
 			return nil, fmt.Errorf("invalid secondary node pubkey: %v", err)
 		}
 		secondary = client.New(client.Config{
-			LogURL: *secondaryURL,
+			LogURL: conf.Primary.SecondaryURL,
 			LogPub: pubkey,
 		})
 	}
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
-		secondary, *sthStorePath, witnessMap)
+		secondary, conf.Primary.SthStorePath, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
 	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
-	if len(*rateLimitConfig) > 0 {
-		f, err := os.Open(*rateLimitConfig)
+	if len(conf.Primary.RateLimitConfig) > 0 {
+		f, err := os.Open(conf.Primary.RateLimitConfig)
 		if err != nil {
 			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}
-		p.RateLimiter, err = rateLimit.NewLimiter(f, *allowTestDomain)
+		p.RateLimiter, err = rateLimit.NewLimiter(f, conf.Primary.AllowTestDomain)
 		if err != nil {
 			return nil, fmt.Errorf("initializing rate limiter failed: %v", err)
 		}
@@ -190,7 +201,7 @@ func setupPrimaryFromFlags() (*primary.Primary, error) {
 	// Register HTTP endpoints.
 	mux := http.NewServeMux()
 	for _, h := range p.PublicHTTPHandlers() {
-		path := h.Path(*prefix)
+		path := h.Path(conf.Prefix)
 		log.Debug("adding external handler: %s", path)
 		mux.Handle(path, h)
 	}
@@ -198,7 +209,7 @@ func setupPrimaryFromFlags() (*primary.Primary, error) {
 
 	mux = http.NewServeMux()
 	for _, h := range p.InternalHTTPHandlers() {
-		path := h.Path(*prefix)
+		path := h.Path(conf.Prefix)
 		log.Debug("adding internal handler: %s", path)
 		mux.Handle(path, h)
 	}
