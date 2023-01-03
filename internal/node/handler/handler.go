@@ -49,10 +49,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// verifyMethod checks that an appropriate HTTP method is used and
-// returns 0 if so, or an HTTP status code if not.  Error handling is
-// based on RFC 7231, see Sections 6.5.5 (Status 405) and 6.5.1
-// (Status 400).
+// validMethod checks that an appropriate HTTP method is used. Error
+// handling is based on RFC 7231, see Sections 6.5.5 (Status 405) and
+// 6.5.1 (Status 400).
 func (h Handler) validMethod(w http.ResponseWriter, r *http.Request) bool {
 	if h.Method == r.Method {
 		return true
