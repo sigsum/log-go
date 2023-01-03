@@ -65,8 +65,8 @@ function main() {
 	fi
 	node_start $logb
 
-        # Wait a bit to give time to the logs to be ready
-        sleep 10
+	# Wait a bit to give time to the logs to be ready
+	sleep 10
 
 	client_setup $client
 	check_setup $loga $logb
@@ -319,7 +319,7 @@ function sigsum_start() {
 		info "starting Sigsum log $role node ($i)"
 
 		args="$extra_args \
-                      -url-prefix=${nvars[$i:ssrv_prefix]} \
+		      -url-prefix=${nvars[$i:ssrv_prefix]} \
 		      -interval=${nvars[$i:ssrv_interval]}s \
 		      -external-endpoint=${nvars[$i:ssrv_endpoint]} \
 		      -internal-endpoint=${nvars[$i:ssrv_internal]} \
@@ -418,7 +418,7 @@ function cleanup() {
 		node_stop_be $cleanup_i
 	done
 
-	for var in $nodes; do
+	for var in $nodes client; do
 		declare -n cleanup_i=$var # Using unique iterator name, bc leaking
 		printf "\n  Press enter to delete logs in ${nvars[$cleanup_i:log_dir]}"
 		read dummy
@@ -575,7 +575,7 @@ function test_cosigned_tree_head() {
 	while read cs ; do
 		# Check key hash
 		found=""
-	        got=$(echo $cs | cut -d' ' -f1)
+		got=$(echo $cs | cut -d' ' -f1)
 		for want in ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:wit2_key_hash]}; do
 			if [[ $got == $want ]]; then
 				found=true
@@ -658,8 +658,8 @@ function test_consistency_proof() {
 }
 
 function test_get_leaf() {
-	local pri=$1; shift	
-	local cli=$1; shift	
+	local pri=$1; shift
+	local cli=$1; shift
 	local data="$1"; shift
 	local index="$1"; shift
 	local log_dir=${nvars[$pri:log_dir]}
@@ -815,7 +815,7 @@ function value_of_file() {
 }
 
 function keys() {
-        local s=$1; shift
+	local s=$1; shift
 	declare -A map
 	map[thedummystring]=to_avoid_error_on_size_zero
 	while read line; do
