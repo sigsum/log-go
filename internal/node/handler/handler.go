@@ -44,34 +44,31 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	reqcnt.Inc(h.LogID, string(h.Endpoint))
 
-	code = h.verifyMethod(w, r)
-	if code != 0 {
-		return
+	if h.validMethod(w, r) {
+		h.handle(w, r)
 	}
-	h.handle(w, r)
 }
 
 // verifyMethod checks that an appropriate HTTP method is used and
 // returns 0 if so, or an HTTP status code if not.  Error handling is
 // based on RFC 7231, see Sections 6.5.5 (Status 405) and 6.5.1
 // (Status 400).
-func (h Handler) verifyMethod(w http.ResponseWriter, r *http.Request) int {
-	checkHTTPMethod := func(m string) bool {
-		return m == http.MethodGet || m == http.MethodPost
-	}
-
+func (h Handler) validMethod(w http.ResponseWriter, r *http.Request) bool {
 	if h.Method == r.Method {
-		return 0
+		return true
 	}
 
-	code := http.StatusBadRequest
-	if ok := checkHTTPMethod(r.Method); ok {
+	errorWithCode := func(w http.ResponseWriter, code int) {
+		http.Error(w, fmt.Sprintf("error=%s", http.StatusText(code)), code)
+	}
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut:
 		w.Header().Set("Allow", h.Method)
-		code = http.StatusMethodNotAllowed
+		errorWithCode(w, http.StatusMethodNotAllowed)
+	default:
+		errorWithCode(w, http.StatusBadRequest)
 	}
-
-	http.Error(w, fmt.Sprintf("error=%s", http.StatusText(code)), code)
-	return code
+	return false
 }
 
 // handle handles an HTTP request for which the HTTP method is already verified

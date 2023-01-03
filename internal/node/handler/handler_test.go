@@ -40,8 +40,8 @@ func TestPath(t *testing.T) {
 // 	h.ServeHTTP(w http.ResponseWriter, r *http.Request)
 // }
 
-func TestVerifyMethod(t *testing.T) {
-	badMethod := http.MethodHead
+func TestValidMethod(t *testing.T) {
+	badMethod := "badMethod"
 	for _, h := range []Handler{
 		{
 			Endpoint: types.EndpointAddLeaf,
@@ -53,8 +53,12 @@ func TestVerifyMethod(t *testing.T) {
 		},
 	} {
 		for _, method := range []string{
+			// Known methods
 			http.MethodGet,
 			http.MethodPost,
+			http.MethodHead,
+			http.MethodPut,
+			// Invalid method
 			badMethod,
 		} {
 			url := h.Endpoint.Path("http://log.example.com", "fixme")
@@ -64,17 +68,17 @@ func TestVerifyMethod(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			code := h.verifyMethod(w, req)
-			if got, want := code == 0, h.Method == method; got != want {
+			valid := h.validMethod(w, req)
+			if got, want := valid, h.Method == method; got != want {
 				t.Errorf("%s %s: got %v but wanted %v: %v", method, url, got, want, err)
 				continue
 			}
-			if code == 0 {
+			if valid {
 				continue
 			}
 
 			if method == badMethod {
-				if got, want := code, http.StatusBadRequest; got != want {
+				if got, want := w.Code, http.StatusBadRequest; got != want {
 					t.Errorf("%s %s: got status %d, wanted %d", method, url, got, want)
 				}
 				if _, ok := w.Header()["Allow"]; ok {
@@ -83,7 +87,7 @@ func TestVerifyMethod(t *testing.T) {
 				continue
 			}
 
-			if got, want := code, http.StatusMethodNotAllowed; got != want {
+			if got, want := w.Code, http.StatusMethodNotAllowed; got != want {
 				t.Errorf("%s %s: got status %d, wanted %d", method, url, got, want)
 			} else if methods, ok := w.Header()["Allow"]; !ok {
 				t.Errorf("%s %s: got no allow header, expected one", method, url)
