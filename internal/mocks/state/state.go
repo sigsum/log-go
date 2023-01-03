@@ -10,7 +10,6 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	crypto "sigsum.org/sigsum-go/pkg/crypto"
 	types "sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -38,17 +37,17 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 }
 
 // AddCosignature mocks base method.
-func (m *MockStateManager) AddCosignature(arg0 *crypto.Hash, arg1 *crypto.Signature) error {
+func (m *MockStateManager) AddCosignature(arg0 *types.Cosignature) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCosignature", arg0, arg1)
+	ret := m.ctrl.Call(m, "AddCosignature", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddCosignature indicates an expected call of AddCosignature.
-func (mr *MockStateManagerMockRecorder) AddCosignature(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) AddCosignature(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCosignature", reflect.TypeOf((*MockStateManager)(nil).AddCosignature), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCosignature", reflect.TypeOf((*MockStateManager)(nil).AddCosignature), arg0)
 }
 
 // CosignedTreeHead mocks base method.

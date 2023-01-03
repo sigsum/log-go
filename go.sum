@@ -73,7 +73,6 @@ cloud.google.com/go/trace v1.0.0/go.mod h1:4iErSByzxkyHWzzlAj63/Gmjz0NH1ASqhJguH
 contrib.go.opencensus.io/exporter/stackdriver v0.13.12 h1:bjBKzIf7/TAkxd7L2utGaLM78bmUWlCval5K9UeElbY=
 contrib.go.opencensus.io/exporter/stackdriver v0.13.12/go.mod h1:mmxnWlrvrFdpiOHOhxBaVi1rkc0WOqhgfknj4Yg0SeQ=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
@@ -1208,5 +1207,5 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
-sigsum.org/sigsum-go v0.1.13 h1:IkElACX5il64/IsYOa5oEeaSl7nsDIAP8T+1tm2EQ/o=
-sigsum.org/sigsum-go v0.1.13/go.mod h1:Bg92On5qK06zNYcP3D0faoM3Z/lyi3Uo7YsdADN5Io4=
+sigsum.org/sigsum-go v0.1.14 h1:wMh+pjZhOj8YPOGA2DT3I9dQZp8ahuyaDFjiwKzpgZg=
+sigsum.org/sigsum-go v0.1.14/go.mod h1:Bg92On5qK06zNYcP3D0faoM3Z/lyi3Uo7YsdADN5Io4=

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -18,16 +17,14 @@ var (
 
 func main() {
 	flag.Parse()
-	publicKey, signer, err := utils.ReadKeyFile(*key)
+	_, signer, err := utils.ReadKeyFile(*key)
 
 	if err != nil {
 		log.Fatal("failed to read private key: %v", err)
 	}
 
-	kh := crypto.HashBytes(publicKey[:])
-
 	emptyTh := types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
-	emptySth, err := emptyTh.Sign(signer, &kh, uint64(time.Now().Unix()))
+	emptySth, err := emptyTh.Sign(signer)
 	if err != nil {
 		log.Fatal("signing tree head failed: %v", err)
 	}
