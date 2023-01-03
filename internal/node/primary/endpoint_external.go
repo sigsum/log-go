@@ -56,7 +56,7 @@ func (p Primary) addCosignature(_ context.Context, w http.ResponseWriter, r *htt
 	if err := cs.FromASCII(r.Body); err != nil {
 		return http.StatusBadRequest, err
 	}
-	switch err := p.Stateman.AddCosignature(&cs.KeyHash, &cs.Signature); err {
+	switch err := p.Stateman.AddCosignature(&cs); err {
 	case nil:
 		return http.StatusOK, nil
 	case state.ErrUnknownWitness:

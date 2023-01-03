@@ -502,7 +502,6 @@ function test_signed_tree_head() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-next-tree-head (size $size)"
 
-	now=$(date +%s)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-next-tree-head \
 	     >$log_dir/rsp
 
@@ -511,17 +510,8 @@ function test_signed_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "timestamp" "size" "root_hash" "signature"; then
+	if ! keys $pri "size" "root_hash" "signature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
-		return
-	fi
-
-	if [[ $(value_of $pri "timestamp") -gt $now ]]; then
-		fail "$desc: timestamp $(value_of $pri "timestamp") is too high"
-		return
-	fi
-	if [[ $(value_of $pri "timestamp") -lt $(( $now - ${nvars[$pri:ssrv_interval]} - 1 )) ]]; then
-		fail "$desc: timestamp $(value_of $pri "timestamp") is too low"
 		return
 	fi
 
@@ -570,28 +560,22 @@ function test_cosigned_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "timestamp" "size" "root_hash" "signature" "cosignature"; then
+	if ! keys $pri "size" "root_hash" "signature" "cosignature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
 
 	now=$(date +%s)
-	if [[ $(value_of $pri "timestamp") -gt $now ]]; then
-		fail "$desc: timestamp $(value_of $pri "timestamp") is too large"
-		return
-	fi
-	if [[ $(value_of $pri "timestamp") -lt $(( $now - ${nvars[$pri:ssrv_interval]} * 2 )) ]]; then
-		fail "$desc: timestamp $(value_of $pri "timestamp") is too small"
-		return
-	fi
 
 	if [[ $(value_of $pri "size") != $size ]]; then
 		fail "$desc: size $(value_of $pri "size")"
 		return
 	fi
 
-	for got in $(value_of $pri cosignature | cut -d' ' -f1) ; do
+	while read cs ; do
+		# Check key hash
 		found=""
+	        got=$(echo $cs | cut -d' ' -f1)
 		for want in ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:wit2_key_hash]}; do
 			if [[ $got == $want ]]; then
 				found=true
@@ -602,7 +586,18 @@ function test_cosigned_tree_head() {
 			fail "$desc: missing witness $got"
 			return
 		fi
-	done
+
+		# Check timestamp
+		ts=$(echo $cs | cut -d' ' -f2)
+		if [[ $ts -gt $now ]]; then
+			fail "$desc: timestamp $(value_of $pri "timestamp") is too large"
+			return
+		fi
+		if [[ $ts -lt $(( $now - ${nvars[$pri:ssrv_interval]} * 2 )) ]]; then
+			fail "$desc: timestamp $(value_of $pri "timestamp") is too small"
+			return
+		fi
+	done < <(value_of $pri cosignature)
 
 	# TODO: verify tree head signature
 	# TODO: verify tree head cosignatures
@@ -769,9 +764,10 @@ function test_cosignature() {
 	local pri=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="POST add-cosignature (witness $1)"
+	local now=$(date +%s)
 
-	echo "cosignature=$1 $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
-		./sigsum-debug head sign -k $(cat $2) -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
+	echo "cosignature=$1 $now $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
+		./sigsum-debug head sign -k $(cat $2) -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp

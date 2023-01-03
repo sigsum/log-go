@@ -6,9 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
-	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -21,9 +19,7 @@ func (s Secondary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWrite
 		if err != nil {
 			return nil, fmt.Errorf("getting tree head: %w", err)
 		}
-		pub := s.Signer.Public()
-		keyHash := crypto.HashBytes(pub[:])
-		sth, err := th.Sign(s.Signer, &keyHash, uint64(time.Now().Unix()))
+		sth, err := th.Sign(s.Signer)
 		if err != nil {
 			return nil, fmt.Errorf("signing tree head: %w", err)
 		}

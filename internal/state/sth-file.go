@@ -22,7 +22,7 @@ func (s sthFile) Load(pub *crypto.PublicKey) (types.SignedTreeHead, error) {
 	if err := sth.FromASCII(f); err != nil {
 		return types.SignedTreeHead{}, err
 	}
-	if !sth.VerifyLogSignature(pub) {
+	if !sth.Verify(pub) {
 		return types.SignedTreeHead{}, fmt.Errorf("invalid signature in file %q", s.name)
 	}
 	return sth, nil
