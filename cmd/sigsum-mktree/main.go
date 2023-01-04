@@ -4,21 +4,36 @@ import (
 	"flag"
 	"os"
 
+	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-var (
-	key          = flag.String("key", "", "path to file with hex-encoded Ed25519 private key")
-	sthStorePath = flag.String("sth-path", "/var/lib/sigsum-log/sth", "path to file where latest published STH is being stored")
-)
+func ParseFlags(c *config.Config) {
+	flag.StringVar(&c.Key, "key", "", "path to file with hex-encoded Ed25519 private key")
+	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
+	flag.Parse()
+}
 
 func main() {
-	flag.Parse()
-	_, signer, err := utils.ReadKeyFile(*key)
+	var conf *config.Config
+	// Read default values from the Config struct
+	confFile, err := config.OpenConfigFile()
+	if err != nil {
+		log.Info("didn't find configuration file, using defaults: %v", err)
+		conf = config.NewConfig()
+	} else {
+		conf, err = config.LoadConfig(confFile)
+		if err != nil {
+			log.Fatal("failed to parse config file: %v", err)
+		}
+	}
 
+	ParseFlags(conf)
+
+	_, signer, err := utils.ReadKeyFile(conf.Key)
 	if err != nil {
 		log.Fatal("failed to read private key: %v", err)
 	}
@@ -29,7 +44,7 @@ func main() {
 		log.Fatal("signing tree head failed: %v", err)
 	}
 
-	f, err := os.OpenFile(*sthStorePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	f, err := os.OpenFile(conf.SthStorePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		log.Fatal("opening sth file failed: %v", err)
 	}
@@ -37,12 +52,12 @@ func main() {
 	// check for errors and remove file if we fail to successfully write it.
 	if err := emptySth.ToASCII(f); err != nil {
 		f.Close()
-		os.Remove(*sthStorePath)
+		os.Remove(conf.SthStorePath)
 		log.Fatal("writing sth file failed: %v", err)
 	}
 	// Explicit Close, to check for error.
 	if err := f.Close(); err != nil {
-		os.Remove(*sthStorePath)
+		os.Remove(conf.SthStorePath)
 		log.Fatal("closing sth file failed: %v", err)
 	}
 }
