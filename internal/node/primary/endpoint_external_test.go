@@ -13,7 +13,6 @@ import (
 	"sigsum.org/log-go/internal/db"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
-	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -116,7 +115,7 @@ func TestAddLeaf(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointAddLeaf).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -192,7 +191,7 @@ func TestAddCosignature(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointAddCosignature).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v (%s) but wanted %v in test %q", got, w.Result().Status, want, table.description)
 			}
@@ -237,7 +236,7 @@ func TestGetTreeToCosign(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetNextTreeHead).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -282,7 +281,7 @@ func TestGetTreeCosigned(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetTreeHead).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -371,7 +370,7 @@ func TestGetConsistencyProof(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetConsistencyProof).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -463,7 +462,7 @@ func TestGetInclusionProof(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetInclusionProof).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -575,7 +574,7 @@ func TestGetLeaves(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandlePublic(t, node, types.EndpointGetLeaves).ServeHTTP(w, req)
+			node.PublicHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -592,16 +591,6 @@ func TestGetLeaves(t *testing.T) {
 			}
 		}()
 	}
-}
-
-func mustHandlePublic(t *testing.T, p Primary, e types.Endpoint) handler.Handler {
-	for _, handler := range p.PublicHTTPHandlers() {
-		if handler.Endpoint == e {
-			return handler
-		}
-	}
-	t.Fatalf("must handle endpoint: %v", e)
-	return handler.Handler{}
 }
 
 func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {

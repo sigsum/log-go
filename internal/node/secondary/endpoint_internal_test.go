@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -70,7 +69,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			trillianClient := mocksDB.NewMockClient(ctrl)
+			trillianClient := db.NewMockClient(ctrl)
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
 
 			node := Secondary{
@@ -80,7 +79,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointAddLeaf.Path("http://example.com")
+			url := types.EndpointGetNextTreeHead.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
@@ -88,20 +87,10 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			mustHandleInternal(t, node, types.EndpointGetNextTreeHead).ServeHTTP(w, req)
+			node.InternalHTTPMux("").ServeHTTP(w, req)
 			if got, want := w.Code, tbl.httpStatus; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, tbl.desc)
 			}
 		}()
 	}
-}
-
-func mustHandleInternal(t *testing.T, s Secondary, e types.Endpoint) handler.Handler {
-	for _, h := range s.InternalHTTPHandlers() {
-		if h.Endpoint == e {
-			return h
-		}
-	}
-	t.Fatalf("must handle endpoint: %v", e)
-	return handler.Handler{}
 }

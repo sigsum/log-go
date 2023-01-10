@@ -85,8 +85,14 @@ func main() {
 		cancel() // must have periodic running
 	}()
 
-	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux}
-	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: node.InternalHTTPMux}
+	// No external endpoints but we want to return 404.
+	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: http.NewServeMux()}
+	// Register HTTP endpoints.
+	internalMux := node.InternalHTTPMux(conf.Prefix)
+	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
+	internalMux.Handle("/metrics", promhttp.Handler())
+	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
+
 	log.Debug("starting await routine")
 	go await(ctx, func() {
 		wg.Add(1)
@@ -163,20 +169,6 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	// TODO: verify that GRPC.TreeType() == PREORDERED_LOG.
 
 	// Register HTTP endpoints.
-	mux := http.NewServeMux()
-	s.PublicHTTPMux = mux // No external endpoints but we want to return 404.
-
-	mux = http.NewServeMux()
-	for _, h := range s.InternalHTTPHandlers() {
-		path := h.Path(conf.Prefix)
-		log.Debug("adding internal handler: %s", path)
-		mux.Handle(path, h)
-	}
-	s.InternalHTTPMux = mux
-
-	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
-	http.Handle("/metrics", promhttp.Handler())
-
 	return &s, nil
 }
 

@@ -16,13 +16,11 @@ import (
 
 // Secondary is an instance of a secondary node
 type Secondary struct {
-	Config          handler.Config
-	Interval        time.Duration // Signing frequency
-	PublicHTTPMux   *http.ServeMux
-	InternalHTTPMux *http.ServeMux
-	DbClient        db.Client     // provides access to the backend, usually Trillian
-	Signer          crypto.Signer // provides access to Ed25519 private key
-	Primary         client.Client
+	Config   handler.Config
+	Interval time.Duration // Signing frequency
+	DbClient db.Client     // provides access to the backend, usually Trillian
+	Signer   crypto.Signer // provides access to Ed25519 private key
+	Primary  client.Client
 }
 
 func (s Secondary) Run(ctx context.Context) {
@@ -41,10 +39,10 @@ func (s Secondary) Run(ctx context.Context) {
 
 // TODO: nit-pick: the internal endpoint is used by primaries to figure out how much can be signed; not cosigned - update name?
 
-func (s Secondary) InternalHTTPHandlers() []handler.Handler {
-	return []handler.Handler{
-		handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetNextTreeHead, http.MethodGet},
-	}
+func (s Secondary) InternalHTTPMux(prefix string) *http.ServeMux {
+	mux := http.NewServeMux()
+	handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetNextTreeHead, http.MethodGet}.Register(mux, prefix)
+	return mux
 }
 
 func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
