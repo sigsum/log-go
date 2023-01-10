@@ -92,8 +92,15 @@ func main() {
 		cancel() // must have state manager running
 	}()
 
-	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux}
-	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: node.InternalHTTPMux}
+	// Register HTTP endpoints.
+	log.Debug("adding external handler under prefix: %s", conf.Prefix)
+	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux(conf.Prefix)}
+	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
+	internalMux := node.InternalHTTPMux(conf.Prefix)
+	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
+	internalMux.Handle("/metrics", promhttp.Handler())
+	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
+
 	log.Debug("starting await routine")
 	go await(ctx, func() {
 		wg.Add(1)
@@ -197,26 +204,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	// TODO: verify that GRPC.TreeType() == LOG.
-
-	// Register HTTP endpoints.
-	mux := http.NewServeMux()
-	for _, h := range p.PublicHTTPHandlers() {
-		path := h.Path(conf.Prefix)
-		log.Debug("adding external handler: %s", path)
-		mux.Handle(path, h)
-	}
-	p.PublicHTTPMux = mux
-
-	mux = http.NewServeMux()
-	for _, h := range p.InternalHTTPHandlers() {
-		path := h.Path(conf.Prefix)
-		log.Debug("adding internal handler: %s", path)
-		mux.Handle(path, h)
-	}
-	p.InternalHTTPMux = mux
-
-	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
-	http.Handle("/metrics", promhttp.Handler())
 
 	return &p, nil
 }

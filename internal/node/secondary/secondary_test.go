@@ -3,6 +3,7 @@ package secondary
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -22,21 +23,19 @@ var (
 
 // TestHandlers checks that the expected internal handlers are configured
 func TestIntHandlers(t *testing.T) {
-	endpoints := map[types.Endpoint]bool{
-		types.EndpointGetNextTreeHead: false,
-	}
 	node := Secondary{
 		Config: testConfig,
 	}
-	for _, handler := range node.InternalHTTPHandlers() {
-		if _, ok := endpoints[handler.Endpoint]; !ok {
-			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
+	mux := node.InternalHTTPMux("")
+	for _, endpoint := range []types.Endpoint{
+		types.EndpointGetNextTreeHead,
+	} {
+		req, err := http.NewRequest(http.MethodGet, endpoint.Path(""), nil)
+		if err != nil {
+			t.Fatalf("create http request failed: %v", err)
 		}
-		endpoints[handler.Endpoint] = true
-	}
-	for endpoint, ok := range endpoints {
-		if !ok {
-			t.Errorf("endpoint %s is not configured", endpoint)
+		if _, pattern := mux.Handler(req); pattern == "" {
+			t.Errorf("endpoint %s not registered", endpoint)
 		}
 	}
 }

@@ -24,11 +24,15 @@ type Handler struct {
 }
 
 // Path returns a path that should be configured for this handler
-func (h Handler) Path(prefix string) string {
+func (h Handler) path(prefix string) string {
 	if len(prefix) == 0 {
 		return h.Endpoint.Path("")
 	}
 	return h.Endpoint.Path("", prefix)
+}
+
+func (h Handler) Register(mux *http.ServeMux, prefix string) {
+	mux.Handle(h.path(prefix), h)
 }
 
 // ServeHTTP is part of the http.Handler interface
