@@ -178,6 +178,7 @@ function node_promote() {
 	mv ${nvars[$prev_primary:log_dir]}/ssrv.key.pub ${nvars[$new_primary:log_dir]}/ssrv.key.pub
 	nvars[$new_primary:ssrv_key_hash]=${nvars[$prev_primary:ssrv_key_hash]}
 	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
+	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "moving sth-store file"
 	mv ${nvars[$prev_primary:log_dir]}/sth-store ${nvars[$new_primary:log_dir]}/sth-store
@@ -322,16 +323,14 @@ function sigsum_start() {
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
 		go build -o $binary ../cmd/$binary/main.go
-		info "ssrv_agent: ${nvars[$i:ssrv_agent]}"
 		if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
 			info "enabling ssh-agent for $role node ($i)"
 			read nvars[$i:ssrv_pid] < <(
 				ssh-agent sh <<EOF
 			ssh-add ${nvars[$i:log_dir]}/ssrv.key
-			./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
-				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
-			echo \$!
-			wait \$!
+			echo \$\$
+			exec ./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
+				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
 EOF
 )
 		else
