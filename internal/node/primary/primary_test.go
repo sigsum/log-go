@@ -2,11 +2,12 @@ package primary
 
 import (
 	"fmt"
-	// "testing"
+	"net/http"
+	"testing"
 
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/crypto"
-	// "sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 var (
@@ -18,54 +19,51 @@ var (
 	testMaxRange = int64(3)
 )
 
-// // TestPublicHandlers checks that the expected external handlers are configured
-// func TestPublicHandlers(t *testing.T) {
-// 	endpoints := map[types.Endpoint]bool{
-// 		types.EndpointAddLeaf:             false,
-// 		types.EndpointAddCosignature:      false,
-// 		types.EndpointGetNextTreeHead:     false,
-// 		types.EndpointGetTreeHead:         false,
-// 		types.EndpointGetConsistencyProof: false,
-// 		types.EndpointGetInclusionProof:   false,
-// 		types.EndpointGetLeaves:           false,
-// 	}
-// 	node := Primary{
-// 		Config:   testConfig,
-// 		MaxRange: testMaxRange,
-// 	}
-// 	for _, handler := range node.PublicHTTPHandlers() {
-// 		if _, ok := endpoints[handler.Endpoint]; !ok {
-// 			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
-// 		}
-// 		endpoints[handler.Endpoint] = true
-// 	}
-// 	for endpoint, ok := range endpoints {
-// 		if !ok {
-// 			t.Errorf("endpoint %s is not configured", endpoint)
-// 		}
-// 	}
-// }
-//
-// // TestIntHandlers checks that the expected internal handlers are configured
-// func TestIntHandlers(t *testing.T) {
-// 	endpoints := map[types.Endpoint]bool{
-// 		types.EndpointGetTreeHeadUnsigned: false,
-// 		types.EndpointGetConsistencyProof: false,
-// 		types.EndpointGetLeaves:           false,
-// 	}
-// 	node := Primary{
-// 		Config:   testConfig,
-// 		MaxRange: testMaxRange,
-// 	}
-// 	for _, handler := range node.InternalHTTPHandlers() {
-// 		if _, ok := endpoints[handler.Endpoint]; !ok {
-// 			t.Errorf("got unexpected endpoint: %s", handler.Endpoint)
-// 		}
-// 		endpoints[handler.Endpoint] = true
-// 	}
-// 	for endpoint, ok := range endpoints {
-// 		if !ok {
-// 			t.Errorf("endpoint %s is not configured", endpoint)
-// 		}
-// 	}
-// }
+// TestPublicHandlers checks that the expected external handlers are configured
+func TestPublicHandlers(t *testing.T) {
+	node := Primary{
+		Config:   testConfig,
+		MaxRange: testMaxRange,
+	}
+	mux := node.PublicHTTPMux("")
+	for _, endpoint := range []types.Endpoint{
+		types.EndpointAddLeaf,
+		types.EndpointAddCosignature,
+		types.EndpointGetNextTreeHead,
+		types.EndpointGetTreeHead,
+		types.EndpointGetConsistencyProof,
+		types.EndpointGetInclusionProof,
+		types.EndpointGetLeaves,
+	} {
+		req, err := http.NewRequest(http.MethodGet, endpoint.Path(""), nil)
+		if err != nil {
+			t.Fatalf("create http request failed: %v", err)
+		}
+		if _, pattern := mux.Handler(req); pattern == "" {
+			t.Errorf("endpoint %s not registered", endpoint)
+		}
+	}
+}
+
+// TestIntHandlers checks that the expected internal handlers are configured
+func TestIntHandlers(t *testing.T) {
+	node := Primary{
+		Config:   testConfig,
+		MaxRange: testMaxRange,
+	}
+	prefix := "int"
+	mux := node.InternalHTTPMux(prefix)
+	for _, endpoint := range []types.Endpoint{
+		types.EndpointGetTreeHeadUnsigned,
+		types.EndpointGetConsistencyProof,
+		types.EndpointGetLeaves,
+	} {
+		req, err := http.NewRequest(http.MethodGet, endpoint.Path("", prefix), nil)
+		if err != nil {
+			t.Fatalf("create http request failed: %v", err)
+		}
+		if _, pattern := mux.Handler(req); pattern == "" {
+			t.Errorf("internal endpoint %s not registered", endpoint)
+		}
+	}
+}

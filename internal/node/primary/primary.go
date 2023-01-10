@@ -22,7 +22,7 @@ type Primary struct {
 }
 
 // PublicHTTPHandler registers all external handlers
-func (p Primary) PublicHTTPHandler(prefix string) http.Handler {
+func (p Primary) PublicHTTPMux(prefix string) *http.ServeMux {
 	mux := http.NewServeMux()
 	handler.Handler{p.Config, p.addLeaf, types.EndpointAddLeaf, http.MethodPost}.Register(mux, prefix)
 	handler.Handler{p.Config, p.addCosignature, types.EndpointAddCosignature, http.MethodPost}.Register(mux, prefix)
