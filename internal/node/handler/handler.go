@@ -48,6 +48,8 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	reqcnt.Inc(h.LogID, string(h.Endpoint))
 
+	// All responses (success or error) are text/plain.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if h.validMethod(w, r) {
 		h.handle(w, r)
 	}
@@ -62,7 +64,7 @@ func (h Handler) validMethod(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	errorWithCode := func(w http.ResponseWriter, code int) {
-		http.Error(w, fmt.Sprintf("error=%s", http.StatusText(code)), code)
+		http.Error(w, http.StatusText(code), code)
 	}
 	switch r.Method {
 	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut:
@@ -82,7 +84,7 @@ func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
 	code, err := h.Fun(ctx, w, r)
 	if err != nil {
 		log.Debug("%s (%q): %v", h.Endpoint, r.URL.Path, err)
-		http.Error(w, fmt.Sprintf("error=%s", err.Error()), code)
+		http.Error(w, err.Error(), code)
 	} else if code != 200 {
 		w.WriteHeader(code)
 	}
