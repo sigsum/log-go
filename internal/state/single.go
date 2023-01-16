@@ -179,5 +179,6 @@ func (sm *StateManagerSingle) treeStatusString() string {
 
 // Signs tree head, with current time as timestamp.
 func (sm *StateManagerSingle) signTreeHead(th *types.TreeHead) (*types.SignedTreeHead, error) {
-	return th.Sign(sm.signer)
+	sig, err := th.Sign(sm.signer)
+	return &sig, err
 }
