@@ -39,7 +39,7 @@ the secondary. This means that in case the secondary is unreachable
 for any reason, the primary may accept new log entries, but they will
 not be signed and published.
 
-A primary node implements two HTTP apis, with separate base urls: The
+A primary node implements two HTTP APIs, with separate base urls: The
 public one, used by log clients, and an internal api, used by the
 secondary node.
 
