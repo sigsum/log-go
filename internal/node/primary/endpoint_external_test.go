@@ -58,7 +58,7 @@ func TestAddLeaf(t *testing.T) {
 		{
 			description: "invalid: bad request (signature error)",
 			ascii:       mustLeafBuffer(t, crypto.Hash{}, false),
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusForbidden,
 		},
 		{
 			description:    "invalid: backend failure",

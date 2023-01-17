@@ -31,7 +31,7 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 	leaf, err := req.Verify()
 	if err != nil {
-		return http.StatusBadRequest, err
+		return http.StatusForbidden, err
 	}
 
 	sth := p.Stateman.NextTreeHead()
