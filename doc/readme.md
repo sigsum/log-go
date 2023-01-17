@@ -13,7 +13,7 @@ Sections:
    for public log servers.
    
 1. [Fail-over](./failover.md), instruction for setup and procedures to
-   be able to fail over to sthe secondary node on catastrophic failure
+   be able to fail over to the secondary node on catastrophic failure
    of the primary.
    
 1. TBD: Quick-start instructions, how to setup a new log instance,
