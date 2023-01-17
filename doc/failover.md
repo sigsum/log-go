@@ -40,7 +40,7 @@ log instance, the following things need to be done:
 6. In order for clients to reach the new primary rather than the old
    one, DNS record changes are usually needed as well.
 
-## The signed treehead auxillary state
+## The signed tree head auxiliary state
 
 The primary server stores it's latest signed tree head to a file
 (`sth-path` config setting). If possible, this file should be backed
