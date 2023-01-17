@@ -47,7 +47,7 @@ secondary node.
 
 A secondary node interacts only with the primary node. It is
 configured with its own signing key (corresponding signatures are seen
-and verified only by the primary), and the public key of the priamry,
+and verified only by the primary), and the public key of the primary,
 and the base url of the primary node's itnernal HTTP api.
 
 The secondary periodically polls the primary for new leaves, and
