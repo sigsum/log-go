@@ -13,7 +13,7 @@ the log's append-only property.
 ## Log's private key
 
 Since the log is identified by it's signing key, for the secondary
-node to take on the rol of primary, it must have access to the
+node to take on the role of primary, it must have access to the
 corresponding private key. Hence, for failover to be possible in case
 of catastrophic failure, a secure backup of the private key is
 required. E.g., using n-of-k secret sharing, or a securely stored
