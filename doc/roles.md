@@ -22,7 +22,7 @@ configure a new secondary node). See [fail-over](./failover.md) for
 details on necessary setup and the promotion procedure.
 
 Besides the log server itself, each node also runs an internal
-trillian server and a mariadb database for storing the log state;
+trillian service and a mariadb database for storing the log state;
 these servers are not exposed outside of the node, in particular, data
 replication is not done at this level.
 
