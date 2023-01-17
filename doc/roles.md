@@ -51,7 +51,7 @@ and verified only by the primary), and the public key of the primary,
 and the base url of the primary node's internal HTTP API.
 
 The secondary periodically polls the primary for new leaves, and
-copies then to the secondary's trillian instance. The trillian
+copies them to the secondary's trillian instance. The trillian
 instance is configured with a `PREORDERED_LOG` tree and without a
 sequencer. Polling should use a frequency that is higher than the
 primary's publishing frequency, typically on the order of once every
