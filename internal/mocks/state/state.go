@@ -51,10 +51,10 @@ func (mr *MockStateManagerMockRecorder) AddCosignature(arg0 interface{}) *gomock
 }
 
 // CosignedTreeHead mocks base method.
-func (m *MockStateManager) CosignedTreeHead() *types.CosignedTreeHead {
+func (m *MockStateManager) CosignedTreeHead() types.CosignedTreeHead {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CosignedTreeHead")
-	ret0, _ := ret[0].(*types.CosignedTreeHead)
+	ret0, _ := ret[0].(types.CosignedTreeHead)
 	return ret0
 }
 
@@ -65,10 +65,10 @@ func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
 }
 
 // NextTreeHead mocks base method.
-func (m *MockStateManager) NextTreeHead() *types.SignedTreeHead {
+func (m *MockStateManager) NextTreeHead() types.SignedTreeHead {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NextTreeHead")
-	ret0, _ := ret[0].(*types.SignedTreeHead)
+	ret0, _ := ret[0].(types.SignedTreeHead)
 	return ret0
 }
 

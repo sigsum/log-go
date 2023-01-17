@@ -10,10 +10,10 @@ import (
 // StateManager coordinates access to a nodes tree heads and (co)signatures.
 type StateManager interface {
 	// NextHead returns the node's to-cosign tree head
-	NextTreeHead() *types.SignedTreeHead
+	NextTreeHead() types.SignedTreeHead
 
 	// CosignedTreeHead returns the node's cosigned tree head
-	CosignedTreeHead() *types.CosignedTreeHead
+	CosignedTreeHead() types.CosignedTreeHead
 
 	// AddCosignature verifies that a cosignature is valid for the to-cosign
 	// tree head before adding it

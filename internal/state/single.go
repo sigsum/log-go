@@ -18,17 +18,16 @@ var ErrUnknownWitness = errors.New("unknown witness")
 type StateManagerSingle struct {
 	signer           crypto.Signer
 	keyHash          crypto.Hash
-	sthFile          sthFile
+	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
 	// Witnesses map trusted witness identifiers to public keys
 	witnesses map[crypto.Hash]crypto.PublicKey
 
-	// Lock-protected access to pointers. The pointed-to values
-	// must be treated as immutable. All endpoints are readers.
+	// Lock-protected access to pointers. All endpoints are readers.
 	sync.RWMutex
-	signedTreeHead   *types.SignedTreeHead
-	cosignedTreeHead *types.CosignedTreeHead
+	signedTreeHead   types.SignedTreeHead
+	cosignedTreeHead types.CosignedTreeHead
 
 	// Syncronized and deduplicated witness cosignatures for signedTreeHead
 	cosignatures map[crypto.Hash]types.Cosignature
@@ -40,10 +39,11 @@ type StateManagerSingle struct {
 func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
 	secondary SecondaryTree, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
+	sthFile := sthFile{name: sthFileName}
 	sm := &StateManagerSingle{
-		signer:  signer,
-		keyHash: crypto.HashBytes(pub[:]),
-		sthFile: sthFile{name: sthFileName},
+		signer:   signer,
+		keyHash:  crypto.HashBytes(pub[:]),
+		storeSth: sthFile.Store,
 		replicationState: ReplicationState{
 			primary:   primary,
 			secondary: secondary,
@@ -51,16 +51,14 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		},
 		witnesses: witnesses,
 	}
-	sth, err := sm.sthFile.Load(&pub)
+	var err error
+	sm.signedTreeHead, err = sthFile.Load(&pub)
 	if err != nil {
 		return nil, err
 	}
-	// Re-sign, with current timestamp.
-	if sm.signedTreeHead, err = sm.signTreeHead(&sth.TreeHead); err != nil {
-		return nil, err
-	}
+
 	// No cosignatures available at startup.
-	sm.cosignedTreeHead = &types.CosignedTreeHead{SignedTreeHead: *sm.signedTreeHead}
+	sm.cosignedTreeHead = types.CosignedTreeHead{SignedTreeHead: sm.signedTreeHead}
 
 	ctx := context.Background()
 	for {
@@ -74,13 +72,13 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 	return sm, nil
 }
 
-func (sm *StateManagerSingle) NextTreeHead() *types.SignedTreeHead {
+func (sm *StateManagerSingle) NextTreeHead() types.SignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
 	return sm.signedTreeHead
 }
 
-func (sm *StateManagerSingle) CosignedTreeHead() *types.CosignedTreeHead {
+func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
 	return sm.cosignedTreeHead
@@ -131,54 +129,47 @@ func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
 		log.Error("no new replicated tree head: %v", err)
 		nextTH = sm.signedTreeHead.TreeHead
 	}
-	nextSTH, err := sm.signTreeHead(&nextTH)
+	return sm.rotate(&nextTH)
+}
+
+func (sm *StateManagerSingle) rotate(nextTH *types.TreeHead) error {
+	nextSTH, err := nextTH.Sign(sm.signer)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
 	}
 
-	if err := sm.sthFile.Store(nextSTH); err != nil {
+	if err := sm.storeSth(&nextSTH); err != nil {
 		return err
 	}
 
-	sm.rotate(nextSTH)
-	return nil
-}
-
-func (sm *StateManagerSingle) rotate(nextSTH *types.SignedTreeHead) {
 	sm.Lock()
 	defer sm.Unlock()
 
 	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.Size, sm.treeStatusString())
 	sm.setCosignedTreeHead()
-	sm.setToCosignTreeHead(nextSTH)
+	sm.setSignedTreeHead(&nextSTH)
 	log.Debug("tree heads rotated: %s", sm.treeStatusString())
+	return nil
 }
 
+// Must be called with write lock held.
 func (sm *StateManagerSingle) setCosignedTreeHead() {
-	var cth types.CosignedTreeHead
-	cth.SignedTreeHead = *sm.signedTreeHead
-	cth.Cosignatures = make([]types.Cosignature, 0, len(sm.cosignatures))
-	for _, cosignature := range sm.cosignatures {
-		cth.Cosignatures = append(cth.Cosignatures, cosignature)
+	sm.cosignedTreeHead = types.CosignedTreeHead{
+		SignedTreeHead: sm.signedTreeHead,
+		Cosignatures:   make([]types.Cosignature, 0, len(sm.cosignatures)),
 	}
-	sm.cosignedTreeHead = &cth
+	for _, cosignature := range sm.cosignatures {
+		sm.cosignedTreeHead.Cosignatures = append(sm.cosignedTreeHead.Cosignatures,
+			cosignature)
+	}
 }
 
-func (sm *StateManagerSingle) setToCosignTreeHead(nextSTH *types.SignedTreeHead) {
+// Must be called with write lock held.
+func (sm *StateManagerSingle) setSignedTreeHead(nextSTH *types.SignedTreeHead) {
 	sm.cosignatures = make(map[crypto.Hash]types.Cosignature)
-	sm.signedTreeHead = nextSTH
+	sm.signedTreeHead = *nextSTH
 }
 
 func (sm *StateManagerSingle) treeStatusString() string {
-	var cosigned uint64
-	if sm.cosignedTreeHead != nil {
-		cosigned = sm.cosignedTreeHead.Size
-	}
-	return fmt.Sprintf("signed at %d, cosigned at %d", sm.signedTreeHead.Size, cosigned)
-}
-
-// Signs tree head, with current time as timestamp.
-func (sm *StateManagerSingle) signTreeHead(th *types.TreeHead) (*types.SignedTreeHead, error) {
-	sig, err := th.Sign(sm.signer)
-	return &sig, err
+	return fmt.Sprintf("signed at %d, cosigned at %d", sm.signedTreeHead.Size, sm.cosignedTreeHead.Size)
 }
