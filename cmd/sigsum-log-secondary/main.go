@@ -33,7 +33,6 @@ var (
 func ParseFlags(c *config.Config) {
 	flag.StringVar(&c.Secondary.PrimaryURL, "primary-url", c.Secondary.PrimaryURL, "primary node endpoint for fetching leaves")
 	flag.StringVar(&c.Secondary.PrimaryPubkey, "primary-pubkey", c.Secondary.PrimaryPubkey, "hex-encoded Ed25519 public key for primary node")
-	flag.BoolVar(&c.Secondary.TestMode, "test-mode", c.Secondary.TestMode, "run in test mode (Default: false)")
 	flag.Parse()
 }
 

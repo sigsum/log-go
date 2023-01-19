@@ -21,13 +21,11 @@ type Primary struct {
 
 // Secondary Config
 type Secondary struct {
-	TestMode      bool   `toml:"test-mode"`
 	PrimaryURL    string `toml:"primary-url"`
 	PrimaryPubkey string `toml:"primary-pubkey"`
 }
 
 type Config struct {
-	LogID            string        `toml:"log-id"`
 	Prefix           string        `toml:"url-prefix"`
 	MaxRange         int64         `toml:"max-range"`
 	Timeout          time.Duration `toml:"timeout"`
@@ -70,7 +68,6 @@ func NewConfig() *Config {
 		Secondary: Secondary{
 			PrimaryURL:    "",
 			PrimaryPubkey: "",
-			TestMode:      false,
 		},
 	}
 }
