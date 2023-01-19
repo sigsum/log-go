@@ -38,7 +38,7 @@ type Config struct {
 	InternalEndpoint string        `toml:"internal-endpoint"`
 	RpcBackend       string        `toml:"rpc-backend"`
 	EphemeralBackend bool          `toml:"ephemeral-backend"`
-	TrillianID       int64         `toml:"trillian-id"`
+	TreeID           int64         `toml:"tree-id"`
 	Key              string        `toml:"key"`
 	Primary          `toml:"primary"`
 	Secondary        `toml:"secondary"`
@@ -52,7 +52,7 @@ func NewConfig() *Config {
 		RpcBackend:       "localhost:6962",
 		EphemeralBackend: false,
 		Prefix:           "",
-		TrillianID:       0,
+		TreeID:           0,
 		Timeout:          time.Second * 10,
 		Key:              "",
 		Interval:         time.Second * 30,
@@ -107,7 +107,7 @@ func ServerFlags(c *Config) {
 	flag.StringVar(&c.RpcBackend, "trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
 	flag.BoolVar(&c.EphemeralBackend, "ephemeral-test-backend", false, "if set, enables in-memory backend, with NO persistent storage")
 	flag.StringVar(&c.Prefix, "url-prefix", "", "a prefix that precedes /<endpoint>")
-	flag.Int64Var(&c.TrillianID, "tree-id", 0, "tree identifier in the Trillian database") // time
+	flag.Int64Var(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database") // time
 	flag.DurationVar(&c.Timeout, "timeout", time.Second*10, "timeout for backend requests")
 	flag.StringVar(&c.Key, "key", "", "path to file with hex-encoded Ed25519 private key")
 	flag.DurationVar(&c.Interval, "interval", time.Second*30, "interval used to rotate the log's cosigned STH")
