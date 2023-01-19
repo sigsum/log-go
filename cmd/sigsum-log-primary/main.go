@@ -35,11 +35,11 @@ var (
 )
 
 func ParseFlags(c *config.Config) {
-	flag.StringVar(&c.Primary.Witnesses, "witnesses", c.Primary.Witnesses, "comma-separated list of trusted witness public keys in hex")
+	flag.StringVar(&c.Primary.Witnesses, "witnesses", c.Primary.Witnesses, "comma-separated list of trusted witness public key files")
 	flag.StringVar(&c.Primary.RateLimitConfig, "rate-limit-config", c.Primary.RateLimitConfig, "enable rate limiting, based on given config file")
 	flag.BoolVar(&c.Primary.AllowTestDomain, "allow-test-domain", c.Primary.AllowTestDomain, "allow submit tokens from test.sigsum.org")
 	flag.StringVar(&c.Primary.SecondaryURL, "secondary-url", c.Primary.SecondaryURL, "secondary node endpoint for fetching latest replicated tree head")
-	flag.StringVar(&c.Primary.SecondaryPubkey, "secondary-pubkey", c.Primary.SecondaryPubkey, "hex-encoded Ed25519 public key for secondary node")
+	flag.StringVar(&c.Primary.SecondaryPubkey, "secondary-pubkey", c.Primary.SecondaryPubkey, "public key file for secondary node")
 	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
 	flag.Parse()
 }
@@ -140,7 +140,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
-	publicKey, signer, err := utils.ReadKeyFile(conf.Key)
+	publicKey, signer, err := utils.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -172,9 +172,9 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	// Setup secondary node configuration.
 	var secondary client.Client
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkey != "" {
-		pubkey, err := crypto.PublicKeyFromHex(conf.Primary.SecondaryPubkey)
+		pubkey, err := utils.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
 		if err != nil {
-			return nil, fmt.Errorf("invalid secondary node pubkey: %v", err)
+			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
 		secondary = client.New(client.Config{
 			LogURL: conf.Primary.SecondaryURL,
@@ -213,15 +213,12 @@ func newWitnessMap(witnesses string) (map[crypto.Hash]crypto.PublicKey, error) {
 	w := make(map[crypto.Hash]crypto.PublicKey)
 	if len(witnesses) > 0 {
 		for _, witness := range strings.Split(witnesses, ",") {
-			b, err := hex.DecodeString(witness)
+			vk, err := utils.ReadPublicKeyFile(witness)
 			if err != nil {
-				return nil, fmt.Errorf("DecodeString: %v", err)
+				return nil, fmt.Errorf("failed reading witness key file %q: %v",
+					witness, err)
 			}
 
-			var vk crypto.PublicKey
-			if n := copy(vk[:], b); n != crypto.PublicKeySize {
-				return nil, fmt.Errorf("Invalid public key size: %v", n)
-			}
 			w[crypto.HashBytes(vk[:])] = vk
 		}
 	}

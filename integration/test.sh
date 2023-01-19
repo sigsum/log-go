@@ -47,7 +47,7 @@ function main() {
 
 	# Primary
 	nvars[$loga:ssrv_extra_args]="-secondary-url=http://${nvars[$logb:int_url]}"
-	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=$(cat ${nvars[$logb:log_dir]}/ssrv.key.pub)"
+	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
 	nvars[$loga:ssrv_extra_args]+=" -rate-limit-config=rate-limit.cfg"
 	nvars[$loga:ssrv_extra_args]+=" -allow-test-domain=true"
 	if [[ "$testflavor" = ephemeral ]] ; then
@@ -57,7 +57,7 @@ function main() {
 
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
-	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=$(cat ${nvars[$loga:log_dir]}/ssrv.key.pub)"
+	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=${nvars[$loga:log_dir]}/ssrv.key.pub"
 	if [[ "$testflavor" = ephemeral ]] ; then
 		nvars[$logb:ssrv_extra_args]+=" -ephemeral-test-backend"
 	fi
@@ -82,11 +82,11 @@ function main() {
 
 		node_promote $logb $loga
 		nvars[$logb:ssrv_extra_args]="-secondary-url=http://${nvars[$logc:int_url]}"
-		nvars[$logb:ssrv_extra_args]+=" -secondary-pubkey=$(cat ${nvars[$logc:log_dir]}/ssrv.key.pub)"
+		nvars[$logb:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logc:log_dir]}/ssrv.key.pub"
 		node_start_fe $logb
 
 		nvars[$logc:ssrv_extra_args]="-primary-url=http://${nvars[$logb:int_url]}"
-		nvars[$logc:ssrv_extra_args]+=" -primary-pubkey=$(cat ${nvars[$logb:log_dir]}/ssrv.key.pub)"
+		nvars[$logc:ssrv_extra_args]+=" -primary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
 		nodes+=" logc"
 		node_start $logc
 
@@ -104,6 +104,8 @@ function check_go_deps() {
 		[[ $(command -v updatetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/updatetree"
 	fi
 	go build -o sigsum-debug sigsum.org/sigsum-go/cmd/sigsum-debug
+	go build -o sigsum-key sigsum.org/sigsum-go/cmd/sigsum-key
+	go build -o sigsum-token sigsum.org/sigsum-go/cmd/sigsum-token
 }
 
 function client_setup() {
@@ -263,22 +265,17 @@ function sigsum_setup() {
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 
-		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/wit1.key \
-			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/wit1.key.pub
-		nvars[$i:wit1_key_hash]=$(./sigsum-debug key hash < ${nvars[$i:log_dir]}/wit1.key.pub)
+		./sigsum-key gen -o ${nvars[$i:log_dir]}/wit1.key
+		nvars[$i:wit1_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/wit1.key.pub)
+		./sigsum-key gen -o  ${nvars[$i:log_dir]}/wit2.key
+		nvars[$i:wit2_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/wit2.key.pub)
 
-		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/wit2.key \
-			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/wit2.key.pub
-		nvars[$i:wit2_key_hash]=$(./sigsum-debug key hash < ${nvars[$i:log_dir]}/wit2.key.pub)
+		nvars[$i:ssrv_witnesses]=${nvars[$i:log_dir]}/wit1.key.pub,${nvars[$i:log_dir]}/wit2.key.pub
 
-		nvars[$i:ssrv_witnesses]=$(cat ${nvars[$i:log_dir]}/wit1.key.pub),$(cat ${nvars[$i:log_dir]}/wit2.key.pub)
-
-		./sigsum-debug key private | tee ${nvars[$i:log_dir]}/ssrv.key \
-			| ./sigsum-debug key public > ${nvars[$i:log_dir]}/ssrv.key.pub
-		nvars[$i:ssrv_key_hash]=$(cat ${nvars[$i:log_dir]}/ssrv.key.pub | ./sigsum-debug key hash)
+		./sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
+		nvars[$i:ssrv_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
 		# Use special test.sigsum.org test key to generate token.
-		nvars[$i:token]=$(echo 0000000000000000000000000000000000000000000000000000000000000001 \
-				    | ./sigsum-debug token $(cat ${nvars[$i:log_dir]}/ssrv.key.pub))
+		nvars[$i:token]=$(./sigsum-token create -k <(printf '%064x' 1) --log ${nvars[$i:log_dir]}/ssrv.key.pub)
 	done
 }
 
