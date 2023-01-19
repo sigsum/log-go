@@ -16,5 +16,5 @@ Sections:
    be able to fail over to the secondary node on catastrophic failure
    of the primary.
 
-4. TBD: Quick-start instructions, how to setup a new log instance,
-   possible using ansible recipies.
+4. [Server-setup](./setup.md). How to manually setup a new log
+   instance (for deployment using ansible, see XXX),
