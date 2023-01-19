@@ -165,7 +165,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 			return nil, fmt.Errorf("Dial: %v", err)
 		}
 		p.DbClient = &db.TrillianClient{
-			TreeID: conf.TrillianID,
+			TreeID: conf.TreeID,
 			GRPC:   trillian.NewTrillianLogClient(conn),
 		}
 	}
