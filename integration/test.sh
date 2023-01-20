@@ -15,8 +15,6 @@ set -eu
 shopt -s nullglob
 trap cleanup EXIT
 
-declare g_offline_mode=1
-
 declare -A nvars
 declare nodes="loga logb"
 declare -r loga=conf/primary.config
@@ -196,9 +194,7 @@ function trillian_setup() {
 
 		source $i
 		nvars[$i:tsrv_rpc]=$tsrv_rpc
-		nvars[$i:tsrv_http]=$tsrv_http
 		nvars[$i:tseq_rpc]=$tseq_rpc
-		nvars[$i:tseq_http]=$tseq_http
 	done
 }
 
@@ -216,7 +212,7 @@ function trillian_start_server() {
 		trillian_log_server\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tsrv_rpc]}\
-			-http_endpoint=${nvars[$i:tsrv_http]}\
+			-http_endpoint=""\
 			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
 		nvars[$i:tsrv_pid]=$!
 		info "started Trillian log server (pid ${nvars[$i:tsrv_pid]})"
@@ -233,7 +229,7 @@ function trillian_start_sequencer() {
 			-force_master\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
-			-http_endpoint=${nvars[$i:tseq_http]}\
+			-http_endpoint=""\
 			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
 		nvars[$i:tseq_pid]=$!
 		info "started Trillian log sequencer (pid ${nvars[$i:tseq_pid]})"
