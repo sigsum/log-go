@@ -18,6 +18,7 @@ type Config struct {
 // Handler implements the http.Handler interface
 type Handler struct {
 	Config
+	// Must always return a valid HTTP status code, for both nil and non-nil error.
 	Fun      func(context.Context, http.ResponseWriter, *http.Request) (int, error)
 	Endpoint types.Endpoint
 	Method   string
@@ -82,8 +83,14 @@ func (h Handler) handle(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	code, err := h.Fun(ctx, w, r)
+	// Log all internal server errors.
+	if code == http.StatusInternalServerError {
+		log.Error("Internal server error for %s (%q): %v", h.Endpoint, r.URL.Path, err)
+	}
 	if err != nil {
-		log.Debug("%s (%q): %v", h.Endpoint, r.URL.Path, err)
+		if code != http.StatusInternalServerError {
+			log.Debug("%s (%q): status %d, %v", h.Endpoint, r.URL.Path, code, err)
+		}
 		http.Error(w, err.Error(), code)
 	} else if code != 200 {
 		w.WriteHeader(code)
