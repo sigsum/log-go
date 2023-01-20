@@ -56,7 +56,7 @@ To start the trillian server,
 trillian_log_server \
   -mysql_uri=sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test \
   -rpc_endpoint=localhost:6962 \
-  -http_endpoint=localhost:6964
+  -http_endpoint=""
 ```
 See trillian documentation for further configuration, in particular,
 the `-log_dir` option can be used to specify where it stores logs.
@@ -67,7 +67,7 @@ trillian_log_signer \
   -force_master \
   -mysql_uri=sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test \
   -rpc_endpoint=localhost:6963 \
-  -http_endpoint=localhost:6965
+  -http_endpoint=""
 ```
 
 ## Creating the trillian merkle trees
