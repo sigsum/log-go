@@ -755,12 +755,14 @@ function add_leaf() {
 
 function test_cosignature() {
 	local pri=$1; shift
+	local kh=$1; shift
+	local key_file=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
-	local desc="POST add-cosignature (witness $1)"
+	local desc="POST add-cosignature (witness ${kh})"
 	local now=$(date +%s)
 
-	echo "cosignature=$1 $now $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
-		./sigsum-debug head sign -k $(cat $2) -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
+	echo "cosignature=${kh} $now $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
+		./sigsum-debug head sign -k ${key_file} -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp
