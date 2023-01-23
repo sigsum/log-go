@@ -12,7 +12,7 @@ import (
 )
 
 func ParseFlags(c *config.Config) {
-	flag.StringVar(&c.Key, "key", "", "path to file with hex-encoded Ed25519 private key")
+	flag.StringVar(&c.Key, "key", "", "key file (openssh format), either unencrypted private key, or a public key, with corresponding private key accessed via ssh-agent")
 	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
 	flag.Parse()
 }
