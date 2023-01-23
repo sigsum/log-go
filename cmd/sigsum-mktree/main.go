@@ -33,7 +33,7 @@ func main() {
 
 	ParseFlags(conf)
 
-	_, signer, err := utils.ReadKeyFile(conf.Key)
+	_, signer, err := utils.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		log.Fatal("failed to read private key: %v", err)
 	}

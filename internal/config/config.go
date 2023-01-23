@@ -106,7 +106,7 @@ func ServerFlags(c *Config) {
 	flag.StringVar(&c.Prefix, "url-prefix", "", "a prefix that precedes /<endpoint>")
 	flag.Int64Var(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database") // time
 	flag.DurationVar(&c.Timeout, "timeout", time.Second*10, "timeout for backend requests")
-	flag.StringVar(&c.Key, "key", "", "path to file with hex-encoded Ed25519 private key")
+	flag.StringVar(&c.Key, "key", "", "name of key file, containing hex-encoded Ed25519 private key or openssh public key (accessed via ssh agent)")
 	flag.DurationVar(&c.Interval, "interval", time.Second*30, "interval used to rotate the log's cosigned STH")
 	flag.StringVar(&c.LogFile, "log-file", "", "file to write logs to (Default: stderr)")
 	flag.StringVar(&c.LogLevel, "log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")

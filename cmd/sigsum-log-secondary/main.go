@@ -32,7 +32,7 @@ var (
 
 func ParseFlags(c *config.Config) {
 	flag.StringVar(&c.Secondary.PrimaryURL, "primary-url", c.Secondary.PrimaryURL, "primary node endpoint for fetching leaves")
-	flag.StringVar(&c.Secondary.PrimaryPubkey, "primary-pubkey", c.Secondary.PrimaryPubkey, "hex-encoded Ed25519 public key for primary node")
+	flag.StringVar(&c.Secondary.PrimaryPubkey, "primary-pubkey", c.Secondary.PrimaryPubkey, "public key file for primary node")
 	flag.Parse()
 }
 
@@ -133,7 +133,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	publicKey, s.Signer, err = utils.ReadKeyFile(conf.Key)
+	publicKey, s.Signer, err = utils.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -156,9 +156,9 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		}
 	}
 	// Setup primary node configuration.
-	pubkey, err := crypto.PublicKeyFromHex(conf.Secondary.PrimaryPubkey)
+	pubkey, err := utils.ReadPublicKeyFile(conf.Secondary.PrimaryPubkey)
 	if err != nil {
-		return nil, fmt.Errorf("invalid primary node pubkey: %v", err)
+		return nil, fmt.Errorf("failed to read primary node pubkey: %v", err)
 	}
 	s.Primary = client.New(client.Config{
 		LogURL: conf.Secondary.PrimaryURL,
