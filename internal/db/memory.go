@@ -87,7 +87,7 @@ func (db *MemoryDb) GetInclusionProof(_ context.Context, req *requests.Inclusion
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	index, err := db.tree.GetLeafIndex(&req.LeafHash)
-	if err != nil {
+	if err != nil || index >= req.Size {
 		return types.InclusionProof{}, ErrNotIncluded
 	}
 	path, err := db.tree.ProveInclusion(index, req.Size)
