@@ -1,11 +1,5 @@
 #!/bin/bash
 
-#
-# Requirements to run
-#
-#   - Install required dependencies, see check_go_deps()
-#   - Fill in the empty values in conf/client.config
-#
 # Example usage:
 #
 #     $ ./test.sh
@@ -41,7 +35,7 @@ function main() {
 		esac
 		shift
 	done
-	check_go_deps
+	install_go_deps
 
 	node_setup $loga $logb
 
@@ -95,7 +89,7 @@ function main() {
 	fi
 }
 
-function check_go_deps() {
+function install_go_deps() {
 	GOBIN=$(pwd) go install sigsum.org/sigsum-go/cmd/...
 	if [[ "$testflavor" != ephemeral ]] ; then
 		GOBIN=$(pwd) go install github.com/google/trillian/cmd/...
