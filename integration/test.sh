@@ -606,7 +606,7 @@ function test_inclusion_proof() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (size $size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k $(cat ${nvars[$cli:log_dir]}/cli.key))
+	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)
 	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k ${nvars[$cli:cli_key_hash]} -s $signature)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${size}/${leaf_hash} >${log_dir}/rsp
 
@@ -742,7 +742,7 @@ function add_leaf() {
 
 	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
 	echo "signature=$(echo $data |
-		./sigsum-debug leaf sign -k $(cat ${nvars[$cli:log_dir]}/cli.key))" >> $log_dir/req
+		./sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)" >> $log_dir/req
 	echo "public_key=$(cat ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
 
 	cat $log_dir/req |
