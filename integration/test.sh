@@ -114,15 +114,8 @@ function client_setup() {
 		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
 		info "$i: logging to $dir"
 		nvars[$i:log_dir]=$dir
-		if [[ -f $i ]];
-		then
-			source $i
-			echo $cli_priv > ${nvars[$i:log_dir]}/cli.key
-		else
-			./sigsum-debug key private > ${nvars[$i:log_dir]}/cli.key
-		fi
-		./sigsum-debug key public < ${nvars[$i:log_dir]}/cli.key > ${nvars[$i:log_dir]}/cli.key.pub
-		nvars[$i:cli_key_hash]=$(cat ${nvars[$i:log_dir]}/cli.key.pub | ./sigsum-debug key hash)
+		./sigsum-key gen -o ${nvars[$i:log_dir]}/cli.key
+		nvars[$i:cli_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/cli.key.pub)
 	done
 }
 
@@ -185,6 +178,7 @@ function node_promote() {
 	mv ${nvars[$prev_primary:log_dir]}/ssrv.key.pub ${nvars[$new_primary:log_dir]}/ssrv.key.pub
 	nvars[$new_primary:ssrv_key_hash]=${nvars[$prev_primary:ssrv_key_hash]}
 	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
+	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "moving sth-store file"
 	mv ${nvars[$prev_primary:log_dir]}/sth-store ${nvars[$new_primary:log_dir]}/sth-store
@@ -260,7 +254,7 @@ function sigsum_setup() {
 		nvars[$i:ssrv_internal]=$ssrv_internal
 		nvars[$i:ssrv_prefix]=$ssrv_prefix
 		nvars[$i:ssrv_interval]=$ssrv_interval_sec
-
+		nvars[$i:ssrv_agent]=$ssrv_agent
 
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
@@ -283,9 +277,18 @@ function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
 			info "creating empty ${nvars[$i:log_dir]}/sth-store"
-			go run ../cmd/sigsum-mktree \
-			   -sth-path=${nvars[$i:log_dir]}/sth-store \
-			   -key=${nvars[$i:log_dir]}/ssrv.key
+			if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
+				ssh-agent sh <<EOF
+				ssh-add ${nvars[$i:log_dir]}/ssrv.key
+				go run ../cmd/sigsum-mktree \
+				   -sth-path=${nvars[$i:log_dir]}/sth-store \
+				   -key=${nvars[$i:log_dir]}/ssrv.key.pub
+EOF
+			else
+				go run ../cmd/sigsum-mktree \
+				   -sth-path=${nvars[$i:log_dir]}/sth-store \
+				   -key=${nvars[$i:log_dir]}/ssrv.key
+			fi
 		fi
 	done
 }
@@ -320,9 +323,21 @@ function sigsum_start() {
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		# Can't use go run, because then we don't get the right pid to kill for cleanup.
 		go build -o $binary ../cmd/$binary/main.go
-		./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
-			2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
-		nvars[$i:ssrv_pid]=$!
+		if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
+			info "enabling ssh-agent for $role node ($i)"
+			read nvars[$i:ssrv_pid] < <(
+				ssh-agent sh <<EOF
+			ssh-add ${nvars[$i:log_dir]}/ssrv.key
+			echo \$\$
+			exec ./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
+				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
+EOF
+)
+		else
+			./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
+				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
+			nvars[$i:ssrv_pid]=$!
+		fi
 
 		info "started Sigsum log server on ${nvars[$i:ssrv_endpoint]} / ${nvars[$i:ssrv_internal]} (pid ${nvars[$i:ssrv_pid]})"
 	done
@@ -743,7 +758,7 @@ function add_leaf() {
 	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
 	echo "signature=$(echo $data |
 		./sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)" >> $log_dir/req
-	echo "public_key=$(cat ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
+	echo "public_key=$(./sigsum-key hex -k ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
 
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" -H "sigsum-token: test.sigsum.org ${nvars[$s:token]}" \
