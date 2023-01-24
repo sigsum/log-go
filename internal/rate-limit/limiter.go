@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 // This domain has the following registered rate limit key pair
@@ -102,9 +103,10 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 		// Skip all domain-based checks.
 		return nil
 	}
-	/* TODO: Also perform dns-specific normalization, see
-	   RFC 3491 and RFC 3454. */
-	domain := strings.ToLower(*submitDomain)
+	domain, err := token.NormalizeDomainName(*submitDomain)
+	if err != nil {
+		return nil
+	}
 	if relax, ok := l.domainAllowed(domain); ok {
 		return relax
 	}
@@ -112,7 +114,7 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 		return nil
 	}
 
-	domain, err := l.domainDb.GetRegisteredDomain(domain)
+	domain, err = l.domainDb.GetRegisteredDomain(domain)
 	if err != nil {
 		// Reject unknown domains.
 		return nil

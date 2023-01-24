@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
+
+	submitToken "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 type Config struct {
@@ -97,15 +98,15 @@ func parseLine(line []byte) (configToken, string, int, error) {
 		}
 		item = string(b)
 	case configDomain:
-		/* TODO: Is there some firm rule for domains that can
-		   be used for sanity checking? E.g, I seem to recall
-		   that a top domain must start with an ascii letter
-		   (to have an easy way distinguish it from a literal
-		   IPv4 address, but haven't found any authoritative
-		   reference for that. */
-		/* TODO: Also perform dns-specific normalization, see
-		   RFC 3491 and RFC 3454. */
-		item = strings.ToLower(item)
+		// Normalize, to be consistent with IDNA2008 (two
+		// different-looking domains that will ultimately be
+		// looked up to the same DNS records should be
+		// normalized to the same string).
+		var err error
+		item, err = submitToken.NormalizeDomainName(item)
+		if err != nil {
+			return 0, "", 0, err
+		}
 	}
 	return token, item, limit, nil
 }
