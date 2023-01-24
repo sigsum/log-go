@@ -33,7 +33,6 @@ integration-default:
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script:
-  - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
   - cd integration
   - bash ./test.sh
 
@@ -45,6 +44,5 @@ integration-extended:
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script:
-  - go install github.com/google/trillian/cmd/{trillian_log_signer,trillian_log_server,createtree,deletetree,updatetree}
   - cd integration
   - bash ./test.sh --extended

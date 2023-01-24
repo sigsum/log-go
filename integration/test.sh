@@ -1,11 +1,5 @@
 #!/bin/bash
 
-#
-# Requirements to run
-#
-#   - Install required dependencies, see check_go_deps()
-#   - Fill in the empty values in conf/client.config
-#
 # Example usage:
 #
 #     $ ./test.sh
@@ -41,7 +35,7 @@ function main() {
 		esac
 		shift
 	done
-	check_go_deps
+	install_go_deps
 
 	node_setup $loga $logb
 
@@ -95,17 +89,11 @@ function main() {
 	fi
 }
 
-function check_go_deps() {
+function install_go_deps() {
+	GOBIN=$(pwd) go install sigsum.org/sigsum-go/cmd/...
 	if [[ "$testflavor" != ephemeral ]] ; then
-		[[ $(command -v trillian_log_signer)  ]] || die "Hint: go install github.com/google/trillian/cmd/trillian_log_signer"
-		[[ $(command -v trillian_log_server)  ]] || die "Hint: go install github.com/google/trillian/cmd/trillian_log_server"
-		[[ $(command -v createtree)           ]] || die "Hint: go install github.com/google/trillian/cmd/createtree"
-		[[ $(command -v deletetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/deletetree"
-		[[ $(command -v updatetree)           ]] || die "Hint: go install github.com/google/trillian/cmd/updatetree"
+		GOBIN=$(pwd) go install github.com/google/trillian/cmd/...
 	fi
-	go build -o sigsum-debug sigsum.org/sigsum-go/cmd/sigsum-debug
-	go build -o sigsum-key sigsum.org/sigsum-go/cmd/sigsum-key
-	go build -o sigsum-token sigsum.org/sigsum-go/cmd/sigsum-token
 }
 
 function client_setup() {
@@ -162,11 +150,11 @@ function node_promote() {
 
 	# NOTE: updatetree doesn't seem to exit with !=0 when failing
 	# TODO: try combining the first two invocations into one
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr 2>/dev/null) == FROZEN ]] || \
+	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to freeze tree $tree_id"
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr 2>/dev/null) == FROZEN ]] || \
+	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to change tree type to LOG for tree $tree_id"
-	[[ $(updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr 2>/dev/null) == ACTIVE ]] || \
+	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr 2>/dev/null) == ACTIVE ]] || \
 		die "unable to unfreeze tree $tree_id"
 	info "tree $tree_id type changed from PREORDERED_LOG to LOG"
 
@@ -205,7 +193,7 @@ function trillian_start_server() {
 	for i in $@; do
 		info "starting up Trillian server ($i)"
 
-		trillian_log_server\
+		./trillian_log_server\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tsrv_rpc]}\
 			-http_endpoint=""\
@@ -221,7 +209,7 @@ function trillian_start_sequencer() {
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && continue
 
 		info "starting up Trillian sequencer ($i)"
-		trillian_log_signer\
+		./trillian_log_signer\
 			-force_master\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
@@ -237,7 +225,7 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		nvars[$i:ssrv_tree_id]=$(createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
+		nvars[$i:ssrv_tree_id]=$(./createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
 		info "provisioned Merkle tree with id ${nvars[$i:ssrv_tree_id]}"
@@ -352,7 +340,7 @@ function node_stop() {
 function node_destroy() {
 	if [[ "$testflavor" != ephemeral ]] ; then
 		for i in $@; do
-			if ! deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
+			if ! ./deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
 				warn "failed deleting provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
 			else
 				info "deleted provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
@@ -389,15 +377,7 @@ function node_stop_be() {
 			while :; do
 				sleep 1
 
-				# The Trillian log server doesn't exit
-				# properly on first SIGTERM, so we repeat it,
-				# rather than just waiting for the process to
-				# shut down.
-				if pp ${nvars[$i:tsrv_pid]}; then
-					info "Resending SIGTERM to process ${nvars[$i:tsrv_pid]}"
-					kill ${nvars[$i:tsrv_pid]}
-					continue
-				fi
+				pp ${nvars[$i:tsrv_pid]} && continue
 
 				break
 			done
