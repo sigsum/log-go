@@ -4,16 +4,6 @@ These tests start a sigsum-log-primary and sigsum-log-secondary, and
 corresponding trillian servers, to verify basic functionality of the
 complete system.
 
-## Dependencies
-
-Before running tests, first install the tools listed in
-`check_go_deps` in `test.sh`. The trillian servers also need a
-database, see next section.
-
-To test unreleased changes to one of the dependencies, e.g.,
-sigsum-log-primary, you must run `go install` in that directory, e.g,
-`cd ../cmd/sigsum-log-primary && go install`.
-
 ## Database
 
 First install the database server. E.g., on a Debian GNU/Linux system,
@@ -31,5 +21,7 @@ If successful, the script creates a user `sigsum_test` and a database
 
 ## Running tests
 
-There are two modes of running the tests, basic mode `./test.sh`, and
-extensive mode, `./test.sh extended`.
+There are three modes of running the tests, basic mode `./test.sh`,
+extensive mode testing failover, `./test.sh --extended`, and ephemeral
+mode which doesn't store any data to disk and doesn't use trillian,
+`./test.sh --ephemeral`.
