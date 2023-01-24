@@ -1,5 +1,10 @@
 # Setting up a sigsum log server
 
+This documents describes how to setup and configure the individual
+components components needed for operating a log instance. See
+[ansible](https://git.glasklar.is/sigsum/admin/ansible) for recipies
+for more automated deployment.
+
 ## Installing server and dependencies
 
 To install sigsum tools and the log server, run
@@ -20,6 +25,11 @@ trillian, run
 ```
 go install github.com/google/trillian/cmd/...@latest
 ```
+For further information on trillian, see [Introduction to
+Trillian](https://www.rgdd.se/post/observations-from-a-trillian-play-date/)
+and (https://github.com/google/trillian/blob/master/README.md). In
+Trillian terminology, the sigsum log server is a _Trillian
+personality_.
 
 To install MariaDB, on debian-based systems you may use a command like
 ```
@@ -43,7 +53,8 @@ environment variables, see comments in the script.
 
 The log servers look for a configuration file
 `/etc/sigsum/config.toml`, to change the location, set the
-`$SIGSUM_LOGSERVER_CONFIG` environment variable.
+`$SIGSUM_LOGSERVER_CONFIG` environment variable. See
+[example](./config.toml.example).
 
 ## Starting trillian
 
@@ -84,6 +95,11 @@ On the secondary node, instead run
 ```
 createtree -admin_server=localhost:6962 -tree_type PREORDERED_LOG
 ```
+The `PREORDERED_LOG` type means that entries already have indices (and
+hence order) assigned passed to Trillian, which is needed because
+the secondary node replicates the tree at the primary node, and it's
+the primary node that determine the order of entries. That is also why
+the secondary node doesn't need a trillian sequencer.
 
 ## Primary node
 

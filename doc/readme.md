@@ -17,4 +17,5 @@ Sections:
    of the primary.
 
 4. [Server-setup](./setup.md). How to manually setup a new log
-   instance (for deployment using ansible, see XXX),
+   instance (for deployment using ansible, see
+   [ansible](https://git.glasklar.is/sigsum/admin/ansible)),
