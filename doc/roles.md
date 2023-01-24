@@ -8,7 +8,7 @@ url that clients use to interact with the log instance.
 A log instance consistes of serveral nodes, each node running internal
 and/or external server components. There are two types of nodes,
 primary and secondary. The log instance has exactly one primary node
-(and if, at some point in time, the priamry node is down or not
+(and if, at some point in time, the primary node is down or not
 reachable, the log instance is considered down).
 
 A log instance can also have a single secondary node (support for

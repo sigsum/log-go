@@ -10,7 +10,7 @@ Sections:
    instance can have one primary and one secondary node.
 
 2. [Rate-limit configuration](./rate-limit.md), strongly recommended
-   for public log servers.
+   for public log servers to combat log spam.
 
 3. [Fail-over](./failover.md), instruction for setup and procedures to
    be able to fail over to the secondary node on catastrophic failure

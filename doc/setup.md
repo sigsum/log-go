@@ -14,7 +14,7 @@ executables in `$GOBIN`, `$GOPATH/bin`, or `$HOME/go/bin`, depending
 on which enviroment variables are set. You may want to add this
 directory to $PATH.
 
-The sigsum server depends on trillian service and mariadb, to install
+The sigsum server depends on a trillian service and mariadb, to install
 trillian, run
 
 ```
@@ -29,7 +29,7 @@ apt-get install mariadb-server
 ## One-time database setup
 
 To setup permissions on the database, run the
-`mysql_secure_installation`script, with default answers to all
+`mysql_secure_installation` script, with default answers to all
 questions.
 
 Next, to create the tables needed by trillian, run the `resetdb.sh`
@@ -72,7 +72,7 @@ trillian_log_signer \
 
 ## Creating the trillian merkle trees
 
-Primary and secondary nodes need different types of trees. On the
+Primary and secondary nodes need different types of trees to be configured in the database. On the
 primary, create a tree using
 ```
 createtree -admin_server=localhost:6962
@@ -118,13 +118,13 @@ are:
 6. `secondary-url`: base url to the secondary node's internal
    endpoint.
 
-7. `secondary-key`: public key for verifying th secondary's
+7. `secondary-key`: public key for verifying the secondary's
    signatures.
 
 8. `sth-path`: name of the file where the latest signed tree head is
    saved, by default, `/var/lib/sigsum-log/sth`.
 
-Before starting the primary, create an signed tree head corresponding
+Before starting the primary, create a signed tree head corresponding
 to the empty tree, by running `sigsum-mktree`, this will read the same
 config file to identify the signing key and the location of the file.
 
@@ -135,7 +135,7 @@ The primary server executable is `sigsum-log-primary`.
 The scondary node needs its own key pair, it is used only to sign
 responses to the primary server, so usually no need to back it up; it
 can be rotated at will by reconfiguring and restarting the primary
-node with secondary's new key.
+node with the secondary's new key.
 
 Configuration of `external-endpoint` (which returns HTTP 404 for
 everything), `internal-endpoint`, `rpc-backend`, `tree-id`, and `key`
