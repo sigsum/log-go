@@ -72,8 +72,8 @@ trillian_log_signer \
 
 ## Creating the trillian merkle trees
 
-Primary and secondary nodes need different types of trees to be configured in the database. On the
-primary, create a tree using
+Primary and secondary nodes need different types of trees to be
+configured in the database. On the primary, create a tree using
 ```
 createtree -admin_server=localhost:6962
 ```
@@ -132,7 +132,7 @@ The primary server executable is `sigsum-log-primary`.
 
 ## Secondary node
 
-The scondary node needs its own key pair, it is used only to sign
+The secondary node needs its own key pair, it is used only to sign
 responses to the primary server, so usually no need to back it up; it
 can be rotated at will by reconfiguring and restarting the primary
 node with the secondary's new key.
