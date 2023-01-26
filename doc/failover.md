@@ -12,7 +12,7 @@ log's append-only property beyond repair.
 
 ## Log's private key
 
-Since the log is identified by it's signing key, for the secondary
+Since the log is identified by its signing key, for the secondary
 node to take on the role of primary, it must have access to the
 corresponding private key. Hence, for failover to be possible in case
 of catastrophic failure, a secure backup of the private key is
@@ -42,7 +42,7 @@ log instance, the following things need to be done:
 
 ## The signed tree head auxiliary state
 
-The primary server stores it's latest signed tree head to a file
+The primary server stores its latest signed tree head to a file
 (`sth-path` config setting). If possible, this file should be backed
 up, and transferred to the secondary as part of the promotion.
 Alternatively, the promoted server could be started with an empty
@@ -58,7 +58,7 @@ tree heads, temporarily violating the append-only property, and
 witnesses are expected to refuse to cosign the log.
 
 TODO: This is unsatisfactory. One possible improvement is to start the
-promoted in a mode where it either advertises it's initial tree head
+promoted in a mode where it either advertises its initial tree head
 (since this is what the primary had published or was about to
 published at the taime it failed) or no tree head at all, until new
 secondary has caught up.
