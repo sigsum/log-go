@@ -6,7 +6,7 @@ server.
 
 Sections:
 
-1. [System architecture](./roles.md), in particular, how a log
+1. [System architecture](./architecture.md), in particular, how a log
    instance can have one primary and one secondary node.
 
 2. [Rate-limit configuration](./rate-limit.md), strongly recommended

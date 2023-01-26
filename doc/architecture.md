@@ -1,4 +1,4 @@
-# Log server roles
+# Log server architecture
 
 This document describes the system architecture of the log-go log
 server implementation. A log instance is identified by the public
