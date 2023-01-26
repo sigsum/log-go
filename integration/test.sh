@@ -168,8 +168,8 @@ function node_promote() {
 	nvars[$new_primary:token]=${nvars[$prev_primary:token]}
 	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
-	info "moving sth-store file"
-	mv ${nvars[$prev_primary:log_dir]}/sth-store ${nvars[$new_primary:log_dir]}/sth-store
+	info "creating sth startup=local-tree"
+	echo "startup=local-tree" > ${nvars[$new_primary:log_dir]}/sth-store.startup
 }
 
 function trillian_setup() {
@@ -264,19 +264,8 @@ function sigsum_setup() {
 function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
-			info "creating empty ${nvars[$i:log_dir]}/sth-store"
-			if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
-				ssh-agent sh <<EOF
-				ssh-add ${nvars[$i:log_dir]}/ssrv.key
-				go run ../cmd/sigsum-mktree \
-				   -sth-path=${nvars[$i:log_dir]}/sth-store \
-				   -key=${nvars[$i:log_dir]}/ssrv.key.pub
-EOF
-			else
-				go run ../cmd/sigsum-mktree \
-				   -sth-path=${nvars[$i:log_dir]}/sth-store \
-				   -key=${nvars[$i:log_dir]}/ssrv.key
-			fi
+			info "creating sth startup=empty"
+			echo "startup=empty" > ${nvars[$i:log_dir]}/sth-store.startup
 		fi
 	done
 }

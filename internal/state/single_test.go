@@ -50,8 +50,6 @@ func TestNewStateManagerSingle(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			trillianClient := db.NewMockClient(ctrl)
-			th := types.TreeHead{}
-			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(th, table.thErr)
 
 			tmpFile, err := os.CreateTemp("", "sigsum-log-test-sth")
 			if err != nil {
@@ -79,10 +77,10 @@ func TestNewStateManagerSingle(t *testing.T) {
 				return
 			}
 
-			if got, want := sm.signedTreeHead.Size, th.Size; got != want {
+			if got, want := sm.signedTreeHead.Size, emptyTh.Size; got != want {
 				t.Errorf("%q: got tree size %d but wanted %d", table.description, got, want)
 			}
-			if got, want := sm.signedTreeHead.RootHash[:], th.RootHash[:]; !bytes.Equal(got, want) {
+			if got, want := sm.signedTreeHead.RootHash[:], emptyTh.RootHash[:]; !bytes.Equal(got, want) {
 				t.Errorf("%q: got tree hash %x but wanted %x", table.description, got, want)
 			}
 			if got := len(sm.cosignedTreeHead.Cosignatures); got != 0 {
