@@ -1,6 +1,6 @@
 # Configuring and using the log server implementation
 
-The documents in this folder describe the `log_go` implementation of a
+The documents in this folder describe the `log-go` implementation of a
 [Sigsum](https://git.glasklar.is/sigsum/project/documentation) log
 server.
 

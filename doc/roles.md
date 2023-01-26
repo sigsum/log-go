@@ -1,15 +1,15 @@
 # Log server roles
 
-This document describes the system architecture of the log_go log
+This document describes the system architecture of the log-go log
 server implementation. A log instance is identified by the public
 signing key used for verifying tree head signatures, and by the base
 url that clients use to interact with the log instance.
 
 A log instance consists of several nodes, each node running internal
 and/or external server components. There are two types of nodes,
-primary and secondary. The log instance has exactly one primary node
-(and if, at some point in time, the primary node is down or not
-reachable, the log instance is considered down).
+primary and secondary. The log instance has exactly one primary node.
+If, at some point in time, the primary node is down or not reachable,
+the log instance is not usable.
 
 A log instance can also have a single secondary node (support for
 multiple secondaries is planned). Secondary nodes replicate the
@@ -24,7 +24,7 @@ configure a new secondary node). See [fail-over](./failover.md) for
 details on necessary setup and the promotion procedure.
 
 Besides the log server itself, each node also runs an internal
-trillian service and a mariadb database for storing the log state;
+Trillian service and a MariaDB database for storing the log state;
 these servers are not exposed outside of the node, in particular, data
 replication is not done at this level.
 
@@ -56,11 +56,11 @@ secondary node.
 
 A secondary node interacts only with the primary node. It is
 configured with its own signing key (corresponding signatures are seen
-and verified only by the primary), and the public key of the primary,
+and verified only by the primary), the public key of the primary,
 and the base url of the primary node's internal HTTP API.
 
 The secondary periodically polls the primary for new leaves, and
-copies them to the secondary's trillian instance. The trillian
+copies them to the secondary's Trillian instance. The trillian
 instance is configured with a `PREORDERED_LOG` tree and without a
 sequencer. Polling should use a frequency that is higher than the
 primary's publishing frequency, typically on the order of once every

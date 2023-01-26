@@ -1,6 +1,6 @@
 # Sigsum log rate limiting
 
-Documentation on how sigsum rate limiting works, and how it is
+Documentation on how Sigsum rate limiting works, and how it is
 configured.
 
 ## Objective
@@ -8,7 +8,7 @@ configured.
 The overall objective of the rate limit mechanism is to limit the rate
 at which new leaves are added to the log. Note that this does *not*
 provide any protection from more general denial of service attacks.
-Rate-limit applies only to `add-leaf` requests, and the mechanism is
+The rate limit applies only to `add-leaf` requests, and the mechanism is
 intended to make it feasible to operate a public log, which anyone can
 submit new leaves to.
 
@@ -16,8 +16,8 @@ submit new leaves to.
 
 Rate limits are enabled by using the `--rate-limit-config` command
 line option to the `sigsum-log-primary` server. Without this option,
-there are no rate-limits (appropriate only if access to the log server is
-restricted by other means). The config file specifies allow lists of
+there are no rate limits (appropriate only if access to the log server is
+restricted by other means). The config file specifies allow-lists of
 various kinds, and corresponding limits.
 
 ## Config file syntax
@@ -27,18 +27,18 @@ separated by white space. Comments are written with "#" and extend to
 the end of the line. International domain names are written in utf-8
 (no punycode).
 
-## Allow lists
+## Allow-lists
 
-The rate limit is based on counts of added leafs per 24 hours. Adding
+The rate limit is based on counts of added leaves per 24 hours. Adding
 a leaf usually takes several requests; the first one makes the leaf
 known to the log, yielding a 202 (Accepted) response. A typical client
 will then repeat the request until it gets a 200 response. For rate
 limiting purposes, only the first request for each leaf is counted.
 
 Which counter is used, and what limit it is compared to, depends on
-the configured allow lists. Each entry specifies a limit, an
-unsigned decimal integer specifying the maximum number of leafs that
-may be submitted per 24 hours. A limit of zero means that no leafs can
+the configured allow-lists. Each entry specifies a limit, an
+unsigned decimal integer specifying the maximum number of leaves that
+may be submitted per 24 hours. A limit of zero means that no leaves can
 be submitted.
 
 ### Allowed keys
@@ -55,7 +55,7 @@ signature in the request.
 Allowed submitter domains are configured with a config line of the
 form
 ```
-key <domain> <limit>
+domain <domain> <limit>
 ```
 The domain is a DNS domain in standard dotted notation, e.g.,
 `foo.example.org`. The domain associated with the request is based on
@@ -73,8 +73,8 @@ those domains are counted together towards the given limit.
 ### Enabling public access
 
 It's encouraged to enable public access, and allow anyone to submit
-leafs to the log, restricted only by rate limits. To do this,
-rate-limiting depends on a list of [public
+leaves to the log, restricted only by rate limits. To do this,
+rate limiting depends on a list of [public
 suffixes](https://publicsuffix.org/). It is enabled using a config
 line of the form
 ```
@@ -124,7 +124,7 @@ domain-based limits for a particular key.
 
 ## Test domain
 
-There's a test domain test.sigsum.org, with a public key
+There's a test domain `test.sigsum.org`, with a public key
 `4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29`
 registered in DNS. The corresponding private key is
 `0000000000000000000000000000000000000000000000000000000000000001`,
