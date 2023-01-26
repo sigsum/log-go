@@ -5,7 +5,7 @@ server implementation. A log instance is identified by the public
 signing key used for verifying tree head signatures, and by the base
 url that clients use to interact with the log instance.
 
-A log instance consistes of serveral nodes, each node running internal
+A log instance consists of several nodes, each node running internal
 and/or external server components. There are two types of nodes,
 primary and secondary. The log instance has exactly one primary node
 (and if, at some point in time, the primary node is down or not
