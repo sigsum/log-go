@@ -58,9 +58,9 @@ The log servers look for a configuration file
 
 ## Starting trillian
 
-Trillian is usually two separate servers, which we refer to as
-"server" and "sequencer". The sequencer is used only on the primary
-log node.
+Trillian is usually two separate processes, which we refer to as
+"trillian server" and "sequencer daemon". The sequencer is used only
+on the primary log node.
 
 To start the trillian server,
 ```
