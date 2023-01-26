@@ -1,6 +1,6 @@
 # Failover
 
-This document describes the needed setup and promotion procedure for
+This document describes the required setup and promotion procedure for
 promoting a secondary node to primary, in case the primary node fails.
 
 The primary ensures that it only signs and publishes tree heads that
