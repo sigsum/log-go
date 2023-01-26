@@ -48,17 +48,17 @@ up, and transferred to the secondary as part of the promotion.
 Alternatively, the promoted server could be started with an empty
 "latest" signed tree head.
 
-This matters for the promotes logs initial behavior, until the new
+This matters for the initial behavior of the promoted log, until the new
 secondary has been able to replicate the tree. If the latest signed
 tree is copied over properly, the promoted server will advertise the
-latest tree published by the old primary, and not advance until new
+latest tree published by the old primary, and not advance until a new
 secondary has caught up. If instead the promoted server is started
-with an empty "latest" signed tree head, may for some time publish old
+with an empty "latest" signed tree head, it may for some time publish old
 tree heads, temporarily violating the append-only property, and
 witnesses are expected to refuse to cosign the log.
 
 TODO: This is unsatisfactory. One possible improvement is to start the
-promoted in a mode where it either advertises its initial tree head
+promoted log in a mode where it either advertises its initial tree head
 (since this is what the primary had published or was about to
-published at the taime it failed) or no tree head at all, until new
+publish at the time of failure) or no tree head at all, until a new
 secondary has caught up.
