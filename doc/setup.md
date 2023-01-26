@@ -1,8 +1,8 @@
 # Setting up a sigsum log server
 
-This documents describes how to setup and configure the individual
-components components needed for operating a log instance. See
-[ansible](https://git.glasklar.is/sigsum/admin/ansible) for recipies
+This document describes how to setup and configure the individual
+components needed for operating a log instance. See
+[ansible](https://git.glasklar.is/sigsum/admin/ansible) for recipes
 for more automated deployment.
 
 ## Installing server and dependencies
@@ -19,7 +19,7 @@ executables in `$GOBIN`, `$GOPATH/bin`, or `$HOME/go/bin`, depending
 on which enviroment variables are set. You may want to add this
 directory to $PATH.
 
-The sigsum server depends on a trillian service and mariadb, to install
+The sigsum server depends on a trillian service and mariadb. To install
 trillian, run
 
 ```
@@ -51,7 +51,7 @@ environment variables, see comments in the script.
 
 ## Configuration file
 
-The log servers look for a configuration file
+The log server looks for a configuration file
 `/etc/sigsum/config.toml`, to change the location, set the
 `$SIGSUM_LOGSERVER_CONFIG` environment variable. See
 [example](./config.toml.example).
@@ -88,7 +88,7 @@ configured in the database. On the primary, create a tree using
 ```
 createtree -admin_server=localhost:6962
 ```
-Record the numerical id of the new tree, which is written to the
+Record the numerical id of the new tree, which is written on standard
 output, it should go in a `tree-id=...` line in the config file.
 
 On the secondary node, instead run
@@ -96,14 +96,14 @@ On the secondary node, instead run
 createtree -admin_server=localhost:6962 -tree_type PREORDERED_LOG
 ```
 The `PREORDERED_LOG` type means that entries already have indices (and
-hence order) assigned passed to Trillian, which is needed because
+hence order) assigned when passed to Trillian, which is needed because
 the secondary node replicates the tree at the primary node, and it's
 the primary node that determine the order of entries. That is also why
 the secondary node doesn't need a trillian sequencer.
 
 ## Primary node
 
-The primary node need its own key pair. Either generate a key using
+The primary node need its own signing key pair. Either generate a key using
 `sigsum-key gen -o KEY` (which generates a new keypair, stores the
 unencrypted private key in the file `KEY` and corresponding public key
 in `KEY.pub`). This uses openssh keyfile formats, and is equivalent to
@@ -129,7 +129,7 @@ are:
 
 5. `key`: identifies the log's signing key. Either the name of the
    private key file, or the name of a public key file, in case
-   corresponding private key is accessible via ssh-agent.
+   the corresponding private key is accessible via ssh-agent.
 
 6. `secondary-url`: base url to the secondary node's internal
    endpoint.
@@ -138,7 +138,7 @@ are:
    signatures.
 
 8. `sth-path`: name of the file where the latest signed tree head is
-   saved, by default, `/var/lib/sigsum-log/sth`.
+   stored, by default, `/var/lib/sigsum-log/sth`.
 
 Before starting the primary, create a signed tree head corresponding
 to the empty tree, by running `sigsum-mktree`, this will read the same
@@ -148,7 +148,7 @@ The primary server executable is `sigsum-log-primary`.
 
 ## Secondary node
 
-The secondary node needs its own key pair, it is used only to sign
+The secondary node needs its own signing key pair, it is used only to sign
 responses to the primary server, so usually no need to back it up; it
 can be rotated at will by reconfiguring and restarting the primary
 node with the secondary's new key.
