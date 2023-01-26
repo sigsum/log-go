@@ -45,7 +45,6 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		return nil, err
 	}
 
-	ctx := context.Background()
 	var sth types.SignedTreeHead
 	switch startupMode {
 	case startupSaved:
@@ -63,7 +62,7 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			return nil, err
 		}
 	case startupLocalTree:
-		th, err := primary.GetTreeHead(ctx)
+		th, err := primary.GetTreeHead(context.Background())
 		if err != nil {
 			return nil, err
 		}
