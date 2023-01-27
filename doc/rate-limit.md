@@ -15,8 +15,9 @@ submit new leaves to.
 ## Enabling rate limits
 
 Rate limits are enabled by using the `--rate-limit-config` command
-line option to the `sigsum-log-primary` server. Without this option,
-there are no rate limits (appropriate only if access to the log server is
+line option to the `sigsum-log-primary` server, or the corresponding
+setting in the main config file. Without this option, there are no
+rate limits (appropriate only if access to the log server is
 restricted by other means). The config file specifies allow-lists of
 various kinds, and corresponding limits.
 
@@ -73,16 +74,15 @@ those domains are counted together towards the given limit.
 ### Enabling public access
 
 It's encouraged to enable public access, and allow anyone to submit
-leaves to the log, restricted only by rate limits. To do this,
-rate limiting depends on a list of [public
-suffixes](https://publicsuffix.org/). It is enabled using a config
-line of the form
+leaves to the log, restricted only by rate limits. It is enabled using
+a config line of the form
 ```
-public <suffix file> limit
+public <suffix file> <limit>
 ```
-There can be only one of these lines.
-
-The suffix file should be the name of a a copy of
+There can be only one of these lines. The rate limiting for public
+access depends on a list of [public
+suffixes](https://publicsuffix.org/), and the configured suffix file
+should be the name of a copy of
 <https://publicsuffix.org/list/public_suffix_list.dat>. (Automatic
 updates of this list is under consideration, but not yet implemented).
 Like for allowed domains, above, a domain is associated with a request
@@ -111,8 +111,8 @@ matched as follows:
    longest domain applies.
 
 3. Otherwise, if public access is enabled, and the domain matches a
-   known public suffix, the public line applies, and the request count
-   associated with the registered domain.
+   known public suffix, then the request count associated with the
+   registered domain determines if the request is allowed.
 
 4. If none of the lines match, the request is refused.
 
