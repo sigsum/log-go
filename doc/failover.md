@@ -5,7 +5,9 @@ promoting a secondary node to primary, in case the primary node fails.
 
 The primary ensures that it only signs and publishes tree heads that
 are fully replicated by the secondary node. No similar synchronization
-happens with general backups of the primary's state. Therefore,
+happens with general backups of the primary's state.
+
+System backups are out of scope of the Sigsum software, but note that
 restoring the state of a failed primary node from backup is *not*
 recommended, since that may lose recent log entries, breaking the
 log's append-only property beyond repair.

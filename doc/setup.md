@@ -1,4 +1,4 @@
-# Setting up a sigsum log server
+# Setting up a Sigsum log server
 
 This document describes how to setup and configure the individual
 components needed for operating a log instance. See
@@ -7,7 +7,7 @@ for more automated deployment.
 
 ## Installing server and dependencies
 
-To install sigsum tools and the log server, run
+To install Sigsum tools and the log server, run
 
 ```
 go install sigsum.org/sigsum-go/cmd/...@latest
@@ -19,16 +19,16 @@ executables in `$GOBIN`, `$GOPATH/bin`, or `$HOME/go/bin`, depending
 on which enviroment variables are set. You may want to add this
 directory to $PATH.
 
-The sigsum server depends on a trillian service and mariadb. To install
-trillian, run
+The Sigsum server depends on a Trillian service and MariaDB. To install
+Trillian, run
 
 ```
 go install github.com/google/trillian/cmd/...@latest
 ```
-For further information on trillian, see [Introduction to
+For further information on Trillian, see [Introduction to
 Trillian](https://www.rgdd.se/post/observations-from-a-trillian-play-date/)
 and (https://github.com/google/trillian/blob/master/README.md). In
-Trillian terminology, the sigsum log server is a _Trillian
+Trillian terminology, the Sigsum log server is a _Trillian
 personality_.
 
 To install MariaDB, on debian-based systems you may use a command like
@@ -42,7 +42,7 @@ To setup permissions on the database, run the
 `mysql_secure_installation` script, with default answers to all
 questions.
 
-Next, to create the tables needed by trillian, run the `resetdb.sh`
+Next, to create the tables needed by Trillian, run the `resetdb.sh`
 script, located in the `log-go/integration/` directory. It will also
 use the `storage.sql` file (with table definitions) found in the same
 directory. By default, the script creates a user and a table both
@@ -56,23 +56,23 @@ The log server looks for a configuration file
 `$SIGSUM_LOGSERVER_CONFIG` environment variable. See
 [example](./config.toml.example).
 
-## Starting trillian
+## Starting Trillian
 
 Trillian is usually two separate processes, which we refer to as
-"trillian server" and "sequencer daemon". The sequencer is used only
+"Trillian server" and "Trillian sequencer". The sequencer is used only
 on the primary log node.
 
-To start the trillian server,
+To start the Trillian server,
 ```
 trillian_log_server \
   -mysql_uri=sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum_test \
   -rpc_endpoint=localhost:6962 \
   -http_endpoint=""
 ```
-See trillian documentation for further configuration, in particular,
+See Trillian documentation for further configuration, in particular,
 the `-log_dir` option can be used to specify where it stores logs.
 
-To start the sequencer, on primary log node only, run
+To start the Trillian sequencer, on primary log node only, run
 ```
 trillian_log_signer \
   -force_master \
@@ -81,7 +81,7 @@ trillian_log_signer \
   -http_endpoint=""
 ```
 
-## Creating the trillian merkle trees
+## Creating the Trillian merkle trees
 
 Primary and secondary nodes need different types of trees to be
 configured in the database. On the primary, create a tree using
@@ -99,21 +99,22 @@ The `PREORDERED_LOG` type means that entries already have indices (and
 hence order) assigned when passed to Trillian, which is needed because
 the secondary node replicates the tree at the primary node, and it's
 the primary node that determine the order of entries. That is also why
-the secondary node doesn't need a trillian sequencer.
+the secondary node doesn't need a Trillian sequencer.
 
 ## Primary node
 
-The primary node need its own signing key pair. Either generate a key using
-`sigsum-key gen -o KEY` (which generates a new keypair, stores the
-unencrypted private key in the file `KEY` and corresponding public key
-in `KEY.pub`). This uses openssh keyfile formats, and is equivalent to
-`ssh-keygen -q -N '' -t ed25519 -f KEY`. To use a hardware key, you
-need to set it up so that the private key can be accessed via
-ssh-agent.
+The primary node need its own signing key pair. This can be an
+unencrypted privae key file, generated using `sigsum-key gen -o KEY`
+(which generates a new keypair, stores the unencrypted private key in
+the file `KEY` and corresponding public key in `KEY.pub`). This uses
+openssh keyfile formats, and is equivalent to `ssh-keygen -q -N '' -t
+ed25519 -f KEY`. Alternatively, the server can access the private key
+via the ssh-agent protocol, which is particularly useful for hardware
+keys.
 
 To enable failover to a secondary node in case of catastrophic failure
-of the primary node, the private key must be safely and securely
-backed up elsewhere.
+of the primary node, the private key must be securely backed up
+elsewhere.
 
 The most important settings in the config file for the primary server
 are:
@@ -123,7 +124,8 @@ are:
 2. `internal-endpoint`: ip-address:port for secondary node to connect
    to.
 
-3. `rpc-backend=localhost:6962`: if trillian is configured as above.
+3. `rpc-backend=localhost:6962`: ip-address:port where the Trillian
+   server responds to gRPC requests.
 
 4. `tree-id`: the number produced by `createtree`.
 
@@ -141,8 +143,9 @@ are:
    stored, by default, `/var/lib/sigsum-log/sth`.
 
 Before starting the primary, create a signed tree head corresponding
-to the empty tree, by running `sigsum-mktree`, this will read the same
-config file to identify the signing key and the location of the file.
+to the empty tree, by running `sigsum-mktree`. This tool reads the
+same config file to identify the signing key and the location of the
+file.
 
 The primary server executable is `sigsum-log-primary`.
 
