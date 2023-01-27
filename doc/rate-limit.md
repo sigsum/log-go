@@ -14,12 +14,26 @@ submit new leaves to.
 
 ## Enabling rate limits
 
-Rate limits are enabled by using the `--rate-limit-config` command
-line option to the `sigsum-log-primary` server, or the corresponding
-setting in the main config file. Without this option, there are no
-rate limits (appropriate only if access to the log server is
-restricted by other means). The config file specifies allow-lists of
-various kinds, and corresponding limits.
+Rate limits are enabled by using the `--rate-limit-config=<file>`
+command line option to the `sigsum-log-primary` server, or the
+corresponding setting in the main configuration file. The given file
+specifies allow-lists of various kinds, and corresponding limits.
+Without this option, there are no rate limits.
+
+With respect to public access, there are three modes of operation:
+
+1. Unlimited access. To get this behaviour, don't enable rate limiting
+   at all. This mode of operation is also appropriate if access to the
+   log server is restricted by other means.
+
+2. Limited access, subject to configured rate limit. To get this
+   behavior, enable rate limiting, and include a `public ...` line in
+   the configuration file, as described below.
+
+3. No access. To get this behavoir, enable rate limiting, but don't
+   include any `public ...` line in the configuration file. Then only
+   explicitly allow-listed keys and domains are allowed to submit new
+   leaves to the log.
 
 ## Config file syntax
 
