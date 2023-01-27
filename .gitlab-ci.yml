@@ -13,7 +13,7 @@ go-build:
 # go-test runs tests with the data-race detector enabled.
 go-test:
   stage: test
-  script: go test -race ./...
+  script: go test -v -race ./...
 
 # There are three flavors of the integration tests, "default" with
 # primary and secondary, "extended" where secondary is promoted to new

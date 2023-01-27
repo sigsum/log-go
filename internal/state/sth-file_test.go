@@ -50,6 +50,9 @@ func TestStartupNoFile(t *testing.T) {
 			t.Errorf("got unexpected mode %d with missing startup file",
 				mode)
 		}
+		if os.Geteuid() == 0 {
+			t.Skip("skipping test with supposedly unreadable file, because we appear to run with root privileges")
+		}
 		// Create a file that can't be read.
 		os.WriteFile(dir+"foo.startup", []byte{}, 0)
 		mode, err = sthFile.Startup()
