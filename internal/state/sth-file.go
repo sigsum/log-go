@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"strings"
@@ -35,6 +36,35 @@ func (s sthFile) newFileName() string {
 	return s.name + ".new"
 }
 
+func parseStartupFile(f io.Reader) (startupMode, error) {
+	// TODO: Add a GetString method to sigsum-go's ascii.Parser?
+	scanner := bufio.NewScanner(f)
+	// Only read first line.
+	if !scanner.Scan() {
+		err := scanner.Err()
+		if err == nil {
+			err = fmt.Errorf("startup file empty")
+		}
+		return startupSaved, err
+	}
+
+	line := strings.SplitN(
+		strings.TrimSpace(scanner.Text()),
+		"=", 2)
+	if len(line) != 2 || line[0] != "startup" {
+		return startupSaved, fmt.Errorf("missing startup= keyword in startup file")
+	}
+	mode := line[1]
+	switch mode {
+	case "empty":
+		return startupEmpty, nil
+	case "local-tree":
+		return startupLocalTree, nil
+	default:
+		return startupSaved, fmt.Errorf("invalid startup mode %q", mode)
+	}
+}
+
 func (s sthFile) Startup() (startupMode, error) {
 	name := s.startupFileName()
 	f, err := os.Open(name)
@@ -45,33 +75,7 @@ func (s sthFile) Startup() (startupMode, error) {
 		return startupSaved, err
 	}
 	defer f.Close()
-
-	// TODO: Add a GetString method to sigsum-go's ascii.Parser?
-	scanner := bufio.NewScanner(f)
-	// Only read first line.
-	if !scanner.Scan() {
-		err := scanner.Err()
-		if err == nil {
-			err = fmt.Errorf("startup file %q empty", name)
-		}
-		return startupSaved, err
-	}
-
-	line := strings.SplitN(
-		strings.TrimSpace(scanner.Text()),
-		"=", 2)
-	if len(line) != 2 || line[0] != "startup" {
-		return startupSaved, fmt.Errorf("missing startup= keyword in startup file %q", name)
-	}
-	mode := line[1]
-	switch mode {
-	case "empty":
-		return startupEmpty, nil
-	case "local-tree":
-		return startupLocalTree, nil
-	default:
-		return startupSaved, fmt.Errorf("invalid startup mode %q in startup file %q", mode, name)
-	}
+	return parseStartupFile(f)
 }
 
 func (s sthFile) Load(pub *crypto.PublicKey) (types.SignedTreeHead, error) {
