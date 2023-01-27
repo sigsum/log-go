@@ -492,10 +492,16 @@ func TestGetLeaves(t *testing.T) {
 			wantCode:    http.StatusBadRequest,
 		},
 		{
-			description: "invalid: bad request (EndIndex > current tree size)",
+			description: "valid: EndIndex > current tree size",
 			params:      "0/3",
 			sth:         sth2,
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusOK,
+		},
+		{
+			description: "valid: StartIndex == current tree size",
+			params:      "2/3",
+			sth:         sth2,
+			wantCode:    http.StatusNoContent,
 		},
 		{
 			description: "invalid: backend failure",

@@ -5,6 +5,7 @@ package primary
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 
 	"sigsum.org/log-go/internal/db"
@@ -134,8 +135,8 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 
 func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
 	log.Debug("handling get-leaves request")
-	// TODO: Use math.MaxUint64, available from golang 1.17.
-	maxIndex := ^uint64(0)
+
+	maxIndex := uint64(math.MaxUint64)
 	if doLimitToCurrentTree {
 		curTree := p.Stateman.NextTreeHead()
 		treeSize := curTree.TreeHead.Size
@@ -148,10 +149,15 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-
+	if req.StartIndex == req.EndIndex {
+		return http.StatusNoContent, nil
+	}
 	leaves, err := p.DbClient.GetLeaves(ctx, req)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	if len(leaves) == 0 {
+		return http.StatusInternalServerError, fmt.Errorf("internal get leaves returned an empty list")
 	}
 	if err = types.LeavesToASCII(w, leaves); err != nil {
 		return http.StatusInternalServerError, err
