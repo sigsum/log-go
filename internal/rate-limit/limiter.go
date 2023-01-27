@@ -11,8 +11,10 @@ import (
 )
 
 // This domain has the following registered rate limit key pair
-//   private: 0000000000000000000000000000000000000000000000000000000000000001
-//   public:  4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29
+//
+//	private: 0000000000000000000000000000000000000000000000000000000000000001
+//	public:  4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29
+//
 // for test purposes.
 const testDomain = "test.sigsum.org"
 
