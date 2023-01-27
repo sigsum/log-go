@@ -71,7 +71,7 @@ func TestAddLeaf(t *testing.T) {
 					table.inclusionProofErr,
 				)
 			}
-			client := TrillianClient{GRPC: grpc}
+			client := TrillianClient{logClient: grpc}
 
 			status, err := client.AddLeaf(context.Background(), table.leaf, 0)
 			if got, want := err != nil, table.wantErr; got != want {
@@ -170,7 +170,7 @@ func TestGetTreeHead(t *testing.T) {
 			defer ctrl.Finish()
 			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
 			grpc.EXPECT().GetLatestSignedLogRoot(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
-			client := TrillianClient{GRPC: grpc}
+			client := TrillianClient{logClient: grpc}
 
 			th, err := client.GetTreeHead(context.Background())
 			if got, want := err != nil, table.wantErr; got != want {
@@ -270,7 +270,7 @@ func TestGetConsistencyProof(t *testing.T) {
 			defer ctrl.Finish()
 			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
 			grpc.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
-			client := TrillianClient{GRPC: grpc}
+			client := TrillianClient{logClient: grpc}
 
 			proof, err := client.GetConsistencyProof(context.Background(), table.req)
 			if got, want := err != nil, table.wantErr; got != want {
@@ -380,7 +380,7 @@ func TestGetInclusionProof(t *testing.T) {
 			defer ctrl.Finish()
 			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
 			grpc.EXPECT().GetInclusionProofByHash(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
-			client := TrillianClient{GRPC: grpc}
+			client := TrillianClient{logClient: grpc}
 
 			proof, err := client.GetInclusionProof(context.Background(), table.req)
 			if got, want := err != nil, table.wantErr; got != want {
@@ -505,7 +505,7 @@ func TestGetLeaves(t *testing.T) {
 			defer ctrl.Finish()
 			grpc := mocksTrillian.NewMockTrillianLogClient(ctrl)
 			grpc.EXPECT().GetLeavesByRange(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
-			client := TrillianClient{GRPC: grpc}
+			client := TrillianClient{logClient: grpc}
 
 			leaves, err := client.GetLeaves(context.Background(), table.req)
 			if got, want := err != nil, table.wantErr; got != want {
