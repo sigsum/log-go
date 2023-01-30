@@ -123,7 +123,7 @@ func (s sthFile) Create(sth *types.SignedTreeHead) error {
 
 	// Ensure startup file is deleted before we create the sth
 	// file.
-	if err := os.Remove(s.startupFileName()); !errors.Is(err, fs.ErrNotExist) {
+	if err := os.Remove(s.startupFileName()); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	// Unlike os.Rename, os.Link fails if the file already exists.

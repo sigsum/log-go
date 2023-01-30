@@ -7,6 +7,9 @@ import (
 	"io/fs"
 	"os"
 	"testing"
+
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func TestParseStartup(t *testing.T) {
@@ -63,6 +66,77 @@ func TestStartupNoFile(t *testing.T) {
 	})
 }
 
+func TestStore(t *testing.T) {
+	withTmpDir(t, func(dir string) {
+		sthFile := sthFile{dir + "foo"}
+		signer := crypto.NewEd25519Signer(&crypto.PrivateKey{7})
+		pub := signer.Public()
+		sth0 := mustSignTh(t, &types.TreeHead{}, signer)
+		sth1 := mustSignTh(t, &types.TreeHead{Size: 1}, signer)
+		invalidSth := sth1
+		invalidSth.Size++ // Invalidates signature
+		for _, table := range []struct {
+			sth    *types.SignedTreeHead
+			expErr bool
+		}{
+			{&sth0, false},
+			{&sth1, false},
+			{&invalidSth, true},
+		} {
+			if err := sthFile.Store(table.sth); err != nil {
+				t.Fatalf("storing sth, size %d, failed", table.sth.Size)
+			}
+			sth, err := sthFile.Load(&pub)
+			if table.expErr {
+				if err == nil {
+					t.Errorf("unexpected success loading invalid sth")
+				}
+			} else if err != nil {
+				t.Errorf("loading sth, size %d, failed: %v",
+					table.sth.Size, err)
+			} else if sth != *table.sth {
+				t.Errorf("loading sth incorrectly, got: %v, wanted: %v",
+					sth, *table.sth)
+			}
+		}
+	})
+}
+
+func TestCreate(t *testing.T) {
+	withTmpDir(t, func(dir string) {
+		sthFile := sthFile{dir + "foo"}
+		startupFileName := dir + "foo.startup"
+		// Create file to be deleted.
+		if err := os.WriteFile(startupFileName, []byte("foo"), 0666); err != nil {
+			t.Fatalf("creating startup file %q failed: %v", startupFileName, err)
+		}
+		if _, err := os.ReadFile(startupFileName); err != nil {
+			t.Fatalf("reading startup file %q failed: %v", startupFileName, err)
+		}
+		signer := crypto.NewEd25519Signer(&crypto.PrivateKey{7})
+		pub := signer.Public()
+		sth0 := mustSignTh(t, &types.TreeHead{}, signer)
+		sth1 := mustSignTh(t, &types.TreeHead{Size: 1}, signer)
+		if err := sthFile.Create(&sth0); err != nil {
+			t.Fatalf("creating sth file failed: %v", err)
+		}
+		if _, err := os.ReadFile(startupFileName); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("startup file is still around after sth was created, err: %v", err)
+		}
+		if sth, err := sthFile.Load(&pub); err != nil || sth != sth0 {
+			if err != nil {
+				t.Errorf("loading sth, failed: %v", err)
+			} else if sth != sth0 {
+				t.Errorf("loading sth incorrectly, got: %v, wanted: %v",
+					sth, sth0)
+			}
+		}
+		if err := sthFile.Create(&sth1); err == nil || !errors.Is(err.(*os.LinkError).Unwrap(), fs.ErrExist) {
+			t.Fatalf("creating sth should have failed with EEXIST, got err: %v", err)
+		}
+	})
+}
+
 // Creates temporary directory, runs function, end then removes files
 // and directory.
 func withTmpDir(t *testing.T, f func(dir string)) {
@@ -73,4 +147,12 @@ func withTmpDir(t *testing.T, f func(dir string)) {
 	}
 	defer os.RemoveAll(dir)
 	f(fmt.Sprintf("%s%c", dir, os.PathSeparator))
+}
+
+func mustSignTh(t *testing.T, th *types.TreeHead, signer crypto.Signer) types.SignedTreeHead {
+	sth, err := th.Sign(signer)
+	if err != nil {
+		t.Fatalf("signing failed: %v", err)
+	}
+	return sth
 }
