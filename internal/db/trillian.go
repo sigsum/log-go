@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/trillian"
 	trillianTypes "github.com/google/trillian/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -18,11 +19,24 @@ import (
 
 // TrillianClient implements the Client interface for Trillian's gRPC backend
 type TrillianClient struct {
-	// TreeID is a Merkle tree identifier that Trillian uses
-	TreeID int64
+	// treeID is a Merkle tree identifier that Trillian uses
+	treeID int64
 
-	// GRPC is a Trillian gRPC client
-	GRPC trillian.TrillianLogClient
+	// logClient is a Trillian gRPC client
+	logClient trillian.TrillianLogClient
+}
+
+func DialTrillian(target string, timeout time.Duration, treeId int64) (*TrillianClient, error) {
+	conn, err := grpc.Dial(target,
+		grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithTimeout(timeout))
+	if err != nil {
+		return nil, fmt.Errorf("Connection to trillian failed: %v", err)
+	}
+	return &TrillianClient{
+		treeID:    treeId,
+		logClient: trillian.NewTrillianLogClient(conn),
+	}, nil
 }
 
 // AddLeaf adds a leaf to the tree and returns true if the leaf has
@@ -31,8 +45,8 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	serialized := leaf.ToBinary()
 
 	log.Debug("queueing leaf request: %x", merkle.HashLeafNode(serialized))
-	_, err := c.GRPC.QueueLeaf(ctx, &trillian.QueueLeafRequest{
-		LogId: c.TreeID,
+	_, err := c.logClient.QueueLeaf(ctx, &trillian.QueueLeafRequest{
+		LogId: c.treeID,
 		Leaf: &trillian.LogLeaf{
 			LeafValue: serialized,
 		},
@@ -62,14 +76,14 @@ func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves []types.
 	}
 
 	req := trillian.AddSequencedLeavesRequest{
-		LogId:  c.TreeID,
+		LogId:  c.treeID,
 		Leaves: trilLeaves,
 	}
 	log.Debug("adding sequenced leaves: count %d", len(trilLeaves))
 	var err error
 	for wait := 1; wait < 30; wait *= 2 {
 		var rsp *trillian.AddSequencedLeavesResponse
-		rsp, err = c.GRPC.AddSequencedLeaves(ctx, &req)
+		rsp, err = c.logClient.AddSequencedLeaves(ctx, &req)
 		switch status.Code(err) {
 		case codes.ResourceExhausted:
 			log.Info("waiting %d seconds before retrying to add %d leaves, reason: %v", wait, len(trilLeaves), err)
@@ -77,12 +91,12 @@ func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves []types.
 			continue
 		case codes.OK:
 			if rsp == nil {
-				return fmt.Errorf("GRPC.AddSequencedLeaves no response")
+				return fmt.Errorf("logClient.AddSequencedLeaves no response")
 			}
 			// FIXME: check rsp.Results.QueuedLogLeaf
 			return nil
 		default:
-			return fmt.Errorf("GRPC.AddSequencedLeaves error: %v", err)
+			return fmt.Errorf("logClient.AddSequencedLeaves error: %v", err)
 		}
 	}
 
@@ -90,8 +104,8 @@ func (c *TrillianClient) AddSequencedLeaves(ctx context.Context, leaves []types.
 }
 
 func (c *TrillianClient) GetTreeHead(ctx context.Context) (types.TreeHead, error) {
-	rsp, err := c.GRPC.GetLatestSignedLogRoot(ctx, &trillian.GetLatestSignedLogRootRequest{
-		LogId: c.TreeID,
+	rsp, err := c.logClient.GetLatestSignedLogRoot(ctx, &trillian.GetLatestSignedLogRootRequest{
+		LogId: c.treeID,
 	})
 	if err != nil {
 		return types.TreeHead{}, fmt.Errorf("backend failure: %v", err)
@@ -116,8 +130,8 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (types.TreeHead, error
 }
 
 func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error) {
-	rsp, err := c.GRPC.GetConsistencyProof(ctx, &trillian.GetConsistencyProofRequest{
-		LogId:          c.TreeID,
+	rsp, err := c.logClient.GetConsistencyProof(ctx, &trillian.GetConsistencyProofRequest{
+		LogId:          c.treeID,
 		FirstTreeSize:  int64(req.OldSize),
 		SecondTreeSize: int64(req.NewSize),
 	})
@@ -145,8 +159,8 @@ func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.
 }
 
 func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.InclusionProof) (types.InclusionProof, error) {
-	rsp, err := c.GRPC.GetInclusionProofByHash(ctx, &trillian.GetInclusionProofByHashRequest{
-		LogId:           c.TreeID,
+	rsp, err := c.logClient.GetInclusionProofByHash(ctx, &trillian.GetInclusionProofByHashRequest{
+		LogId:           c.treeID,
 		LeafHash:        req.LeafHash[:],
 		TreeSize:        int64(req.Size),
 		OrderBySequence: true,
@@ -176,8 +190,8 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 }
 
 func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([]types.Leaf, error) {
-	rsp, err := c.GRPC.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
-		LogId:      c.TreeID,
+	rsp, err := c.logClient.GetLeavesByRange(ctx, &trillian.GetLeavesByRangeRequest{
+		LogId:      c.treeID,
 		StartIndex: int64(req.StartIndex),
 		Count:      int64(req.EndIndex - req.StartIndex),
 	})

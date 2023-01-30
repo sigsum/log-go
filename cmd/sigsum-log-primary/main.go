@@ -14,9 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/trillian"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc"
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/db"
@@ -158,16 +156,11 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	if conf.EphemeralBackend {
 		p.DbClient = db.NewMemoryDb()
 	} else {
-		// Setup trillian client.
-		dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(p.Config.Timeout)}
-		conn, err := grpc.Dial(conf.RpcBackend, dialOpts...)
+		trillianClient, err := db.DialTrillian(conf.RpcBackend, p.Config.Timeout, conf.TreeID)
 		if err != nil {
-			return nil, fmt.Errorf("Dial: %v", err)
+			return nil, err
 		}
-		p.DbClient = &db.TrillianClient{
-			TreeID: conf.TreeID,
-			GRPC:   trillian.NewTrillianLogClient(conn),
-		}
+		p.DbClient = trillianClient
 	}
 	// Setup secondary node configuration.
 	var secondary client.Client
