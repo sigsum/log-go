@@ -40,7 +40,43 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 	secondary SecondaryTree, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sthFile := sthFile{name: sthFileName}
-	sm := &StateManagerSingle{
+	startupMode, err := sthFile.Startup()
+	if err != nil {
+		return nil, err
+	}
+
+	var sth types.SignedTreeHead
+	switch startupMode {
+	case startupSaved:
+		sth, err = sthFile.Load(&pub)
+		if err != nil {
+			return nil, err
+		}
+	case startupEmpty:
+		th := types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
+		sth, err = th.Sign(signer)
+		if err != nil {
+			return nil, err
+		}
+		if err := sthFile.Create(&sth); err != nil {
+			return nil, err
+		}
+	case startupLocalTree:
+		th, err := primary.GetTreeHead(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		sth, err = th.Sign(signer)
+		if err != nil {
+			return nil, err
+		}
+		if err := sthFile.Create(&sth); err != nil {
+			return nil, err
+		}
+	default:
+		panic(fmt.Sprintf("internal error, unknown startup mode %d", startupMode))
+	}
+	return &StateManagerSingle{
 		signer:   signer,
 		keyHash:  crypto.HashBytes(pub[:]),
 		storeSth: sthFile.Store,
@@ -49,27 +85,11 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			secondary: secondary,
 			timeout:   timeout,
 		},
-		witnesses: witnesses,
-	}
-	var err error
-	sm.signedTreeHead, err = sthFile.Load(&pub)
-	if err != nil {
-		return nil, err
-	}
-
-	// No cosignatures available at startup.
-	sm.cosignedTreeHead = types.CosignedTreeHead{SignedTreeHead: sm.signedTreeHead}
-
-	ctx := context.Background()
-	for {
-		err := sm.tryRotate(ctx)
-		if err == nil {
-			break
-		}
-		log.Warning("restore signed tree head: %v", err)
-		time.Sleep(time.Second * 3)
-	}
-	return sm, nil
+		signedTreeHead: sth,
+		// No cosignatures available at startup.
+		cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
+		witnesses:        witnesses,
+	}, nil
 }
 
 func (sm *StateManagerSingle) NextTreeHead() types.SignedTreeHead {
