@@ -99,16 +99,16 @@ func OpenConfigFile() (io.Reader, error) {
 }
 
 func ServerFlags(c *Config) {
-	flag.StringVar(&c.ExternalEndpoint, "external-endpoint", "localhost:6965", "host:port specification of where sigsum-log-primary serves clients")
-	flag.StringVar(&c.InternalEndpoint, "internal-endpoint", "localhost:6967", "host:port specification of where sigsum-log-primary serves other log nodes")
-	flag.StringVar(&c.RpcBackend, "trillian-rpc-server", "localhost:6962", "host:port specification of where Trillian serves clients")
-	flag.BoolVar(&c.EphemeralBackend, "ephemeral-test-backend", false, "if set, enables in-memory backend, with NO persistent storage")
-	flag.StringVar(&c.Prefix, "url-prefix", "", "a prefix that precedes /<endpoint>")
-	flag.Int64Var(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database") // time
-	flag.DurationVar(&c.Timeout, "timeout", time.Second*10, "timeout for backend requests")
-	flag.StringVar(&c.Key, "key", "", "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
-	flag.DurationVar(&c.Interval, "interval", time.Second*30, "interval used to rotate the log's cosigned STH")
-	flag.StringVar(&c.LogFile, "log-file", "", "file to write logs to (Default: stderr)")
-	flag.StringVar(&c.LogLevel, "log-level", "info", "log level (Available options: debug, info, warning, error. Default: info)")
-	flag.Int64Var(&c.MaxRange, "max-range", 10, "maximum number of entries that can be retrived in a single request")
+	flag.StringVar(&c.ExternalEndpoint, "external-endpoint", c.ExternalEndpoint, "host:port specification of where sigsum-log-primary serves clients")
+	flag.StringVar(&c.InternalEndpoint, "internal-endpoint", c.InternalEndpoint, "host:port specification of where sigsum-log-primary serves other log nodes")
+	flag.StringVar(&c.RpcBackend, "trillian-rpc-server", c.RpcBackend, "host:port specification of where Trillian serves clients")
+	flag.BoolVar(&c.EphemeralBackend, "ephemeral-test-backend", c.EphemeralBackend, "if set, enables in-memory backend, with NO persistent storage")
+	flag.StringVar(&c.Prefix, "url-prefix", c.Prefix, "a prefix that precedes /<endpoint>")
+	flag.Int64Var(&c.TreeID, "tree-id", c.TreeID, "tree identifier in the Trillian database")
+	flag.DurationVar(&c.Timeout, "timeout", c.Timeout, "timeout for backend requests")
+	flag.StringVar(&c.Key, "key", c.Key, "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
+	flag.DurationVar(&c.Interval, "interval", c.Interval, "interval used to rotate the log's cosigned STH")
+	flag.StringVar(&c.LogFile, "log-file", c.LogFile, "file to write logs to (Default: stderr)")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "log level (Available options: debug, info, warning, error. Default: info)")
+	flag.Int64Var(&c.MaxRange, "max-range", c.MaxRange, "maximum number of entries that can be retrived in a single request")
 }
