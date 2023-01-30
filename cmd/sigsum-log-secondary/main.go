@@ -158,8 +158,6 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		LogPub: pubkey,
 	})
 
-	// TODO: verify that GRPC.TreeType() == PREORDERED_LOG.
-
 	// Register HTTP endpoints.
 	return &s, nil
 }

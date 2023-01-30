@@ -196,8 +196,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 		p.RateLimiter = rateLimit.NoLimit{}
 	}
 
-	// TODO: verify that GRPC.TreeType() == LOG.
-
 	return &p, nil
 }
 
