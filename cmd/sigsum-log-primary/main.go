@@ -156,7 +156,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	if conf.EphemeralBackend {
 		p.DbClient = db.NewMemoryDb()
 	} else {
-		trillianClient, err := db.DialTrillian(conf.RpcBackend, p.Config.Timeout, conf.TreeID)
+		trillianClient, err := db.DialTrillian(conf.RpcBackend, p.Config.Timeout, db.PrimaryTree, conf.TreeID)
 		if err != nil {
 			return nil, err
 		}
@@ -195,8 +195,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	} else {
 		p.RateLimiter = rateLimit.NoLimit{}
 	}
-
-	// TODO: verify that GRPC.TreeType() == LOG.
 
 	return &p, nil
 }

@@ -142,7 +142,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	if conf.EphemeralBackend {
 		s.DbClient = db.NewMemoryDb()
 	} else {
-		trillianClient, err := db.DialTrillian(conf.RpcBackend, s.Config.Timeout, conf.TreeID)
+		trillianClient, err := db.DialTrillian(conf.RpcBackend, s.Config.Timeout, db.SecondaryTree, conf.TreeID)
 		if err != nil {
 			return nil, err
 		}
@@ -157,8 +157,6 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		LogURL: conf.Secondary.PrimaryURL,
 		LogPub: pubkey,
 	})
-
-	// TODO: verify that GRPC.TreeType() == PREORDERED_LOG.
 
 	// Register HTTP endpoints.
 	return &s, nil

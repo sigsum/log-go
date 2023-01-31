@@ -26,13 +26,47 @@ type TrillianClient struct {
 	logClient trillian.TrillianLogClient
 }
 
-func DialTrillian(target string, timeout time.Duration, treeId int64) (*TrillianClient, error) {
+type TreeType int
+
+const (
+	PrimaryTree TreeType = iota
+	SecondaryTree
+)
+
+func (treeType TreeType) checkTrillianTreeType(trillianType trillian.TreeType) error {
+	switch treeType {
+	case PrimaryTree:
+		if trillianType != trillian.TreeType_LOG {
+			return fmt.Errorf("trillian tree of type %s, but must be of type LOG for a Sigsum primary",
+				trillianType.String())
+		}
+	case SecondaryTree:
+		if trillianType != trillian.TreeType_PREORDERED_LOG {
+			return fmt.Errorf("trillian tree of type %s, but must be of type PREORDERED_LOG for a Sigsum secondary",
+				trillianType.String())
+		}
+	default:
+		panic(fmt.Sprintf("internal error, invalid tree type %d", treeType))
+	}
+	return nil
+}
+
+func DialTrillian(target string, timeout time.Duration, treeType TreeType, treeId int64) (*TrillianClient, error) {
 	conn, err := grpc.Dial(target,
 		grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(timeout))
 	if err != nil {
 		return nil, fmt.Errorf("Connection to trillian failed: %v", err)
 	}
+	tree, err := trillian.NewTrillianAdminClient(conn).GetTree(
+		context.Background(), &trillian.GetTreeRequest{TreeId: treeId})
+	if err != nil {
+		return nil, err
+	}
+	if err := treeType.checkTrillianTreeType(tree.TreeType); err != nil {
+		return nil, err
+	}
+
 	return &TrillianClient{
 		treeID:    treeId,
 		logClient: trillian.NewTrillianLogClient(conn),
