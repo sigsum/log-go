@@ -22,9 +22,8 @@ type TrillianClient struct {
 	// treeID is a Merkle tree identifier that Trillian uses
 	treeID int64
 
-	// Wrappers for the Trillian gRPC client
-	logClient   trillian.TrillianLogClient
-	adminClient trillian.TrillianAdminClient
+	// logClient is a Trillian gRPC client
+	logClient trillian.TrillianLogClient
 }
 
 type TreeType int
@@ -69,9 +68,8 @@ func DialTrillian(target string, timeout time.Duration, treeType TreeType, treeI
 	}
 
 	return &TrillianClient{
-		treeID:      treeId,
-		logClient:   trillian.NewTrillianLogClient(conn),
-		adminClient: trillian.NewTrillianAdminClient(conn),
+		treeID:    treeId,
+		logClient: trillian.NewTrillianLogClient(conn),
 	}, nil
 }
 
