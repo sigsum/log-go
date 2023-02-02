@@ -10,6 +10,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/trillian"
 	ttypes "github.com/google/trillian/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	mocksTrillian "sigsum.org/log-go/internal/mocks/trillian"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
@@ -43,7 +45,7 @@ func TestAddLeaf(t *testing.T) {
 			description:       "unsequenced",
 			leaf:              leaf,
 			queueLeafErr:      nil,
-			inclusionProofErr: fmt.Errorf("not found"),
+			inclusionProofErr: status.Error(codes.NotFound, "not found"),
 			wantErr:           false,
 			wantSequenced:     false,
 		},
@@ -73,7 +75,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 			client := TrillianClient{logClient: grpc}
 
-			status, err := client.AddLeaf(context.Background(), table.leaf, 0)
+			status, err := client.AddLeaf(context.Background(), table.leaf, 1)
 			if got, want := err != nil, table.wantErr; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}

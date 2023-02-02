@@ -92,11 +92,20 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	case codes.AlreadyExists:
 		alreadyExists = true
 	default:
-		log.Warning("gRPC error: %v", err)
-		return AddLeafStatus{}, fmt.Errorf("back-end failure")
+		return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
+	}
+	if treeSize == 0 {
+		// Certainly not sequenced, and passing treeSize = 0 to Trillian results in an InvalidArgument response.
+		return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: false}, nil
 	}
 	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, merkle.HashLeafNode(serialized)})
-	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: err == nil}, nil
+	if err != nil {
+		if err != ErrNotIncluded {
+			return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
+		}
+		return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: false}, nil
+	}
+	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: true}, nil
 }
 
 // AddSequencedLeaves adds a set of already sequenced leaves to the tree.
@@ -200,6 +209,9 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 		OrderBySequence: true,
 	})
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return types.InclusionProof{}, ErrNotIncluded
+		}
 		return types.InclusionProof{}, fmt.Errorf("backend failure: %v", err)
 	}
 	if rsp == nil {
