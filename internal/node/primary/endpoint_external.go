@@ -144,7 +144,7 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 		}
 		maxIndex = treeSize
 	}
-	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, uint64(p.MaxRange))
+	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}

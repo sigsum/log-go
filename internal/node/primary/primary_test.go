@@ -16,7 +16,7 @@ var (
 		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
 		Timeout: 10,
 	}
-	testMaxRange = int64(3)
+	testMaxRange = 3
 )
 
 // TestPublicHandlers checks that the expected external handlers are configured
