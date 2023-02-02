@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 type DomainDb struct {
@@ -66,13 +68,12 @@ type exception struct {
 	wildcard string
 }
 
-func parseException(b []byte, lineno int) (exception, error) {
-	e := bytes.TrimPrefix(b, []byte{'!'})
-	dot := bytes.Index(e, []byte{'.'})
+func parseException(e string) (exception, error) {
+	dot := strings.Index(e, ".")
 	if dot < 0 {
-		return exception{}, fmt.Errorf("invalid exception rule %q on line %d", b, lineno)
+		return exception{}, fmt.Errorf("must have at least one dot, got %q", e)
 	}
-	return exception{label: string(e[:dot]), wildcard: string(e[dot+1:])}, nil
+	return exception{label: e[:dot], wildcard: e[dot+1:]}, nil
 }
 
 func parseSuffixFile(suffixFile io.Reader) (map[string]bool, map[string]map[string]bool, error) {
@@ -96,18 +97,31 @@ func parseSuffixFile(suffixFile io.Reader) (map[string]bool, map[string]map[stri
 			}
 			continue
 		case '!':
-			exception, err := parseException(b[1:], lineno)
+			e, err := token.NormalizeDomainName(string(b[1:]))
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, fmt.Errorf("invalid domain %q on line %d", b[1:], lineno)
+			}
+			exception, err := parseException(e)
+			if err != nil {
+				return nil, nil, fmt.Errorf("invalid exception rule on line %d: %v", lineno, err)
 			}
 			exceptions = append(exceptions, exception)
 		case '*':
 			if !bytes.HasPrefix(b, []byte("*.")) {
 				return nil, nil, fmt.Errorf("invalid wildcard rule %q on line %d", b, lineno)
 			}
-			wildcards[string(b[2:])] = make(map[string]bool)
+			d, err := token.NormalizeDomainName(string(b[2:]))
+			if err != nil {
+				return nil, nil, fmt.Errorf("invalid domain %q on line %d", b[2:], lineno)
+			}
+			wildcards[d] = make(map[string]bool)
 		default:
-			suffixes[string(b)] = true
+			d, err := token.NormalizeDomainName(string(b))
+			if err != nil {
+				return nil, nil, fmt.Errorf("invalid domain %q on line %d", b, lineno)
+			}
+
+			suffixes[d] = true
 		}
 	}
 	for _, e := range exceptions {
