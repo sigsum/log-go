@@ -61,7 +61,7 @@ func TestValidMethod(t *testing.T) {
 			// Invalid method
 			badMethod,
 		} {
-			url := h.Endpoint.Path("http://log.example.com", "fixme")
+			url := h.Endpoint.Path("http://log.example.com")
 			req, err := http.NewRequest(method, url, nil)
 			if err != nil {
 				t.Fatalf("must create HTTP request: %v", err)

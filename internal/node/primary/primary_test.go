@@ -58,7 +58,7 @@ func TestIntHandlers(t *testing.T) {
 		types.EndpointGetConsistencyProof,
 		types.EndpointGetLeaves,
 	} {
-		req, err := http.NewRequest(http.MethodGet, endpoint.Path("", prefix), nil)
+		req, err := http.NewRequest(http.MethodGet, "/"+endpoint.Path(prefix), nil)
 		if err != nil {
 			t.Fatalf("create http request failed: %v", err)
 		}
