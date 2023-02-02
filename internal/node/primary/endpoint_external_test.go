@@ -2,11 +2,11 @@ package primary
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -16,6 +16,7 @@ import (
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -473,10 +474,10 @@ func TestGetLeaves(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sth         types.SignedTreeHead
-		expect      bool         // set if a mock answer is expected
-		rsp         []types.Leaf // list of leaves from Trillian client
-		err         error        // error from Trillian client
-		wantCode    int          // HTTP status ok
+		expect      bool  // set if a mock answer is expected
+		leafCount   int   // expected number of leaves
+		err         error // error from Trillian client
+		wantCode    int   // HTTP status ok
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -515,36 +516,16 @@ func TestGetLeaves(t *testing.T) {
 			params:      "1/4",
 			sth:         sth5,
 			expect:      true,
-			rsp: func() []types.Leaf {
-				var list []types.Leaf
-				for i := int64(0); i < testMaxRange; i++ {
-					list = append(list[:], types.Leaf{
-						Checksum:  crypto.Hash{},
-						Signature: crypto.Signature{},
-						KeyHash:   crypto.Hash{},
-					})
-				}
-				return list
-			}(),
-			wantCode: http.StatusOK,
+			leafCount:   3,
+			wantCode:    http.StatusOK,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			params:      fmt.Sprintf("%d/%d", 0, testMaxRange), // query will be pruned
+			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
 			sth:         sth5,
 			expect:      true,
-			rsp: func() []types.Leaf {
-				var list []types.Leaf
-				for i := int64(0); i < testMaxRange; i++ {
-					list = append(list[:], types.Leaf{
-						Checksum:  crypto.Hash{},
-						Signature: crypto.Signature{},
-						KeyHash:   crypto.Hash{},
-					})
-				}
-				return list
-			}(),
-			wantCode: http.StatusOK,
+			leafCount:   testMaxRange,
+			wantCode:    http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -553,7 +534,25 @@ func TestGetLeaves(t *testing.T) {
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
 			if table.expect {
-				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
+				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
+						if table.err != nil {
+							return nil, table.err
+						}
+						if req.EndIndex <= req.StartIndex {
+							t.Fatalf("invalid call to GetLeaves")
+						}
+						count := int(req.EndIndex - req.StartIndex)
+						var list []types.Leaf
+						for i := 0; i < count; i++ {
+							list = append(list, types.Leaf{
+								Checksum:  crypto.Hash{},
+								Signature: crypto.Signature{},
+								KeyHash:   crypto.Hash{},
+							})
+						}
+						return list, nil
+					})
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			stateman.EXPECT().NextTreeHead().Return(table.sth)
@@ -562,6 +561,7 @@ func TestGetLeaves(t *testing.T) {
 				Config:   testConfig,
 				DbClient: client,
 				Stateman: stateman,
+				MaxRange: testMaxRange,
 			}
 
 			// Create HTTP request
@@ -585,8 +585,8 @@ func TestGetLeaves(t *testing.T) {
 			if err != nil {
 				t.Fatalf("must unmarshal leaf list: %v", err)
 			}
-			if got, want := list, table.rsp; !reflect.DeepEqual(got, want) {
-				t.Errorf("got leaf list\n\t%v\nbut wanted\n\t%v\nin test %q", got, want, table.description)
+			if got, want := len(list), table.leafCount; got != want {
+				t.Errorf("got %d leaves, but wanted %d in test %q", got, want, table.description)
 			}
 		}()
 	}

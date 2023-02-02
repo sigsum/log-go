@@ -14,7 +14,7 @@ import (
 // Primary is an instance of the log's primary node
 type Primary struct {
 	Config        handler.Config
-	MaxRange      int64              // Maximum number of leaves per get-leaves request
+	MaxRange      int                // Maximum number of leaves per get-leaves request
 	DbClient      db.Client          // provides access to the backend, usually Trillian
 	Stateman      state.StateManager // coordinates access to (co)signed tree heads
 	TokenVerifier token.Verifier     // checks if domain name knows a public key

@@ -151,7 +151,7 @@ func TestInclusionProofRequestFromHTTP(t *testing.T) {
 }
 
 func TestGetLeaves(t *testing.T) {
-	maxRange := uint64(10)
+	maxRange := 10
 	for _, table := range []struct {
 		desc    string
 		params  string
@@ -159,7 +159,7 @@ func TestGetLeaves(t *testing.T) {
 	}{
 		{"invalid: bad request (parser error)", "a/1", nil},
 		{"invalid: bad request (StartIndex >= EndIndex)", "1/1", nil},
-		{"valid", "0/10", &sigsumreq.Leaves{0, maxRange}},
+		{"valid", "0/10", &sigsumreq.Leaves{0, uint64(maxRange)}},
 	} {
 		url := types.EndpointGetLeaves.Path("http://example.org/sigsum/")
 		req, err := http.NewRequest(http.MethodGet, url+table.params, nil)

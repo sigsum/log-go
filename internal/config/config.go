@@ -27,7 +27,7 @@ type Secondary struct {
 
 type Config struct {
 	Prefix           string        `toml:"url-prefix"`
-	MaxRange         int64         `toml:"max-range"`
+	MaxRange         int           `toml:"max-range"`
 	Timeout          time.Duration `toml:"timeout"`
 	Interval         time.Duration `toml:"interval"`
 	LogFile          string        `toml:"log-file"`
@@ -110,5 +110,5 @@ func ServerFlags(c *Config) {
 	flag.DurationVar(&c.Interval, "interval", c.Interval, "interval used to rotate the log's cosigned STH")
 	flag.StringVar(&c.LogFile, "log-file", c.LogFile, "file to write logs to (Default: stderr)")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "log level (Available options: debug, info, warning, error. Default: info)")
-	flag.Int64Var(&c.MaxRange, "max-range", c.MaxRange, "maximum number of entries that can be retrived in a single request")
+	flag.IntVar(&c.MaxRange, "max-range", c.MaxRange, "maximum number of entries that can be retrived in a single request")
 }
