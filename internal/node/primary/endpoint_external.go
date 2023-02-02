@@ -140,9 +140,6 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 	if doLimitToCurrentTree {
 		curTree := p.Stateman.NextTreeHead()
 		treeSize := curTree.TreeHead.Size
-		if treeSize == 0 {
-			return http.StatusBadRequest, fmt.Errorf("tree is empty")
-		}
 		maxIndex = treeSize
 	}
 	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange)

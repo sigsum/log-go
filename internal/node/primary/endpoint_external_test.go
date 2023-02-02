@@ -474,7 +474,6 @@ func TestGetLeaves(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sth         types.SignedTreeHead
-		expect      bool  // set if a mock answer is expected
 		leafCount   int   // expected number of leaves
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
@@ -495,6 +494,7 @@ func TestGetLeaves(t *testing.T) {
 			description: "valid: EndIndex > current tree size",
 			params:      "0/3",
 			sth:         sth2,
+			leafCount:   2,
 			wantCode:    http.StatusOK,
 		},
 		{
@@ -507,13 +507,18 @@ func TestGetLeaves(t *testing.T) {
 			description: "invalid: backend failure",
 			params:      "0/1",
 			sth:         sth2,
-			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
+			description: "valid: empty tree",
+			params:      "0/10",
+			sth:         sth0,
+			wantCode:    http.StatusNoContent,
+		},
+		{
 			description: "invalid: empty tree",
-			params:      "0/1",
+			params:      "1/10",
 			sth:         sth0,
 			wantCode:    http.StatusBadRequest,
 		},
@@ -521,7 +526,6 @@ func TestGetLeaves(t *testing.T) {
 			description: "valid: three middle elements",
 			params:      "1/4",
 			sth:         sth5,
-			expect:      true,
 			leafCount:   3,
 			wantCode:    http.StatusOK,
 		},
@@ -529,7 +533,6 @@ func TestGetLeaves(t *testing.T) {
 			description: "valid: one more entry than the configured MaxRange",
 			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
 			sth:         sth5,
-			expect:      true,
 			leafCount:   testMaxRange,
 			wantCode:    http.StatusOK,
 		},
@@ -539,7 +542,7 @@ func TestGetLeaves(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
-			if table.expect {
+			if table.leafCount > 0 || table.err != nil {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
 						if table.err != nil {
