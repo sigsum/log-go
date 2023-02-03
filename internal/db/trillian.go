@@ -35,8 +35,8 @@ const (
 )
 
 // This is an error if it happens for a get-inclusion-proof request
-// from a log clients, but will happen when we internally ask for an
-// inclusion proof for the very first leaf.
+// from a log client, but we must accept it when we internally ask for
+// an inclusion proof for the very first leaf.
 var errEmptyInclusionProof = errors.New("not an inclusion proof: empty")
 
 func (treeType TreeType) checkTrillianTreeType(trillianType trillian.TreeType) error {
