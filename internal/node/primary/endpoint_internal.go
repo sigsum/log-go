@@ -24,5 +24,9 @@ func (p Primary) getTreeHeadUnsigned(ctx context.Context, w http.ResponseWriter,
 }
 
 func (p Primary) getLeavesInternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, p, w, r, false)
+	th, err := p.DbClient.GetTreeHead(ctx)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("failed getting tree head: %v", err)
+	}
+	return getLeavesGeneral(ctx, p, w, r, th.Size)
 }

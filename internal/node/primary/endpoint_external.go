@@ -5,7 +5,6 @@ package primary
 import (
 	"context"
 	"fmt"
-	"math"
 	"net/http"
 
 	"sigsum.org/log-go/internal/db"
@@ -133,15 +132,9 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 	}
 }
 
-func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
+func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, maxIndex uint64) (int, error) {
 	log.Debug("handling get-leaves request")
 
-	maxIndex := uint64(math.MaxUint64)
-	if doLimitToCurrentTree {
-		curTree := p.Stateman.NextTreeHead()
-		treeSize := curTree.TreeHead.Size
-		maxIndex = treeSize
-	}
 	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange)
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -163,5 +156,6 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 }
 
 func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, p, w, r, true)
+	// TODO: Use GetTreeHead instead?
+	return getLeavesGeneral(ctx, p, w, r, p.Stateman.NextTreeHead().Size)
 }

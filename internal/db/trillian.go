@@ -260,7 +260,7 @@ func (c *TrillianClient) GetLeaves(ctx context.Context, req *requests.Leaves) ([
 	if rsp == nil {
 		return nil, fmt.Errorf("no response")
 	}
-	if got, want := len(rsp.Leaves), int(req.EndIndex-req.StartIndex); got > want {
+	if got, want := len(rsp.Leaves), int(req.EndIndex-req.StartIndex); got != want {
 		return nil, fmt.Errorf("unexpected number of leaves: %d", got)
 	}
 	list := make([]types.Leaf, 0, len(rsp.Leaves))
