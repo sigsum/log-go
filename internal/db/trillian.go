@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,6 +33,11 @@ const (
 	PrimaryTree TreeType = iota
 	SecondaryTree
 )
+
+// This is an error if it happens for a get-inclusion-proof request
+// from a log clients, but will happen when we internally ask for an
+// inclusion proof for the very first leaf.
+var errEmptyInclusionProof = errors.New("not an inclusion proof: empty")
 
 func (treeType TreeType) checkTrillianTreeType(trillianType trillian.TreeType) error {
 	switch treeType {
@@ -99,13 +105,20 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 		return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: false}, nil
 	}
 	_, err = c.GetInclusionProof(ctx, &requests.InclusionProof{treeSize, merkle.HashLeafNode(serialized)})
-	if err != nil {
-		if err != ErrNotIncluded {
-			return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
-		}
+	switch err {
+	case nil:
+		return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: true}, nil
+	case ErrNotIncluded:
 		return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: false}, nil
+	case errEmptyInclusionProof:
+		if treeSize == 1 {
+			// An empty proof is expected, and means that the leaf is present.
+			return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: true}, nil
+		}
+		fallthrough
+	default:
+		return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
 	}
-	return AddLeafStatus{AlreadyExists: alreadyExists, IsSequenced: true}, nil
 }
 
 // AddSequencedLeaves adds a set of already sequenced leaves to the tree.
@@ -222,7 +235,7 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 	}
 	proof := rsp.Proof[0]
 	if len(proof.Hashes) == 0 {
-		return types.InclusionProof{}, fmt.Errorf("not an inclusion proof: empty")
+		return types.InclusionProof{}, errEmptyInclusionProof
 	}
 	path, err := nodePathFromHashes(proof.Hashes)
 	if err != nil {
