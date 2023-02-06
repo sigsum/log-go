@@ -10,6 +10,11 @@ go-build:
   stage: build
   script: go build ./...
 
+# Succeeds if no changes are suggested by gofmt -d .
+gofmt:
+  stage: test
+  script: if gofmt -d . | grep . ; then false ; else true ; fi
+
 # go-test runs tests with the data-race detector enabled.
 go-test:
   stage: test
