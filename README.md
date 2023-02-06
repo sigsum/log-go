@@ -9,7 +9,7 @@ and
 
 ## Server docs
 
-The `doc/` subdirectory [documents](./doc/readme.md) how to setup and
+See [docs](./doc/readme.md) for information on how to setup and
 configure an Sigsum log instance.
 
 ## Public prototype
@@ -38,7 +38,7 @@ leaf=cd446a8537e59056c999aeb7ecd47f6b4f82f86309d08789b169d43e9ce53935 ba6c8ee7ad
 
 Go tooling that makes it easier to interact with sigsum logs will appear in a
 separate repository in the near future, see
-	[sigsum-go](https://gitlab.sigsum.org/sigsum/core/sigsum-go/).
+	[sigsum-go](https://git.glasklar.is/sigsum/core/sigsum-go/).
 
 
 ## Development
@@ -46,4 +46,4 @@ separate repository in the near future, see
 ### Integration tests
 
 There's an integration test script in `integration/test.sh`, see
-`integration/README.md` for details.
+[docs](./integration/README.md) for details.
