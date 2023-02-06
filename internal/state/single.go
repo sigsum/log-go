@@ -25,7 +25,7 @@ type StateManagerSingle struct {
 	witnesses map[crypto.Hash]crypto.PublicKey
 
 	// Lock-protected access to pointers. All endpoints are readers.
-	sync.RWMutex
+sync.RWMutex
 	signedTreeHead   types.SignedTreeHead
 	cosignedTreeHead types.CosignedTreeHead
 
