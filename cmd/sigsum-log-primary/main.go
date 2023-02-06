@@ -24,6 +24,7 @@ import (
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
@@ -138,10 +139,11 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
-	publicKey, signer, err := utils.ReadPrivateKeyFile(conf.Key)
+	signer, err := key.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
+	publicKey := signer.Public()
 
 	// Proxy over values from config.Config to the old Config struct
 	// TODO: Refactor this handling
@@ -165,7 +167,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	// Setup secondary node configuration.
 	var secondary client.Client
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkey != "" {
-		pubkey, err := utils.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
+		pubkey, err := key.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
@@ -204,7 +206,7 @@ func newWitnessMap(witnesses string) (map[crypto.Hash]crypto.PublicKey, error) {
 	w := make(map[crypto.Hash]crypto.PublicKey)
 	if len(witnesses) > 0 {
 		for _, witness := range strings.Split(witnesses, ",") {
-			vk, err := utils.ReadPublicKeyFile(witness)
+			vk, err := key.ReadPublicKeyFile(witness)
 			if err != nil {
 				return nil, fmt.Errorf("failed reading witness key file %q: %v",
 					witness, err)

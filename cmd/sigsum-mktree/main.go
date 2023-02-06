@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"sigsum.org/log-go/internal/config"
-	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -33,7 +33,7 @@ func main() {
 
 	ParseFlags(conf)
 
-	_, signer, err := utils.ReadPrivateKeyFile(conf.Key)
+	signer, err := key.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		log.Fatal("failed to read private key: %v", err)
 	}

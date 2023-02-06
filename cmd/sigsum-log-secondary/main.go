@@ -20,7 +20,7 @@ import (
 	"sigsum.org/log-go/internal/node/secondary"
 	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
-	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
 )
 
@@ -128,13 +128,14 @@ func main() {
 func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
-	var publicKey crypto.PublicKey
 
 	// Setup logging configuration.
-	publicKey, s.Signer, err = utils.ReadPrivateKeyFile(conf.Key)
+	s.Signer, err = key.ReadPrivateKeyFile(conf.Key)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
+	publicKey := s.Signer.Public()
+
 	s.Config.LogID = hex.EncodeToString(publicKey[:])
 	s.Config.Timeout = conf.Timeout
 	s.Interval = conf.Interval
@@ -149,7 +150,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		s.DbClient = trillianClient
 	}
 	// Setup primary node configuration.
-	pubkey, err := utils.ReadPublicKeyFile(conf.Secondary.PrimaryPubkey)
+	pubkey, err := key.ReadPublicKeyFile(conf.Secondary.PrimaryPubkey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read primary node pubkey: %v", err)
 	}
