@@ -16,7 +16,7 @@ configure an Sigsum log instance.
 There is a public prototype running with zero promises of uptime,
 stability, etc.  Relevant log information:
 
-- Base URL: https://poc.sigsum.org/jellyfish
+- Log URL: https://poc.sigsum.org/jellyfish
 - Public key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINmewJUQl/97RtbjM6sPemj0Q4RryBxEuXp4iLauwxBA`
 
 At the moment, the witness protocol is being reworked, so there are no
