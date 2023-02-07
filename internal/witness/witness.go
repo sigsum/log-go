@@ -50,45 +50,36 @@ type CosignatureResponse struct {
 }
 
 // Not concurrency safe
-type SignatureCollector struct {
-	signer    crypto.Signer // Log's private key
+type CosignatureCollector struct {
 	witnesses []func(ctx context.Context, sth *types.SignedTreeHead) (types.Cosignature, error)
 }
 
-func NewSignatureCollector(signer crypto.Signer, witnessConfigs []WitnessConfig,
+func NewCosignatureCollector(logKeyHash *crypto.Hash, witnessConfigs []WitnessConfig,
 	getConsistencyProof func(
 		ctx context.Context,
-		req *requests.ConsistencyProof) (types.ConsistencyProof, error)) *SignatureCollector {
-	pub := signer.Public()
-	logKeyHash := crypto.HashBytes(pub[:])
-	collector := SignatureCollector{
-		signer: signer,
-	}
+		req *requests.ConsistencyProof) (types.ConsistencyProof, error)) *CosignatureCollector {
+	collector := CosignatureCollector{}
 	for _, w := range witnessConfigs {
 		collector.witnesses = append(collector.witnesses,
-			witnessClient(&w, &logKeyHash, getConsistencyProof))
+			witnessClient(&w, logKeyHash, getConsistencyProof))
 	}
 	return &collector
 }
 
 // Queries all witnesses in parallel, blocks until we have result or error from each of them.
-func (c *SignatureCollector) GetSignatures(th *types.TreeHead, timeout time.Duration) (types.CosignedTreeHead, error) {
-	sth, err := th.Sign(c.signer)
-	if err != nil {
-		return types.CosignedTreeHead{}, err
-	}
+func (c *CosignatureCollector) GetCosignatures(sth *types.SignedTreeHead, timeout time.Duration) types.CosignedTreeHead {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cth := types.CosignedTreeHead{SignedTreeHead: sth}
+	cth := types.CosignedTreeHead{SignedTreeHead: *sth}
 	ch := make(chan CosignatureResponse)
 
 	// Query witnesses in parallel
 	for _, w := range c.witnesses {
-		go func() {
-			cs, err := w(ctx, &sth)
+		go func(ctx context.Context, sth *types.SignedTreeHead) {
+			cs, err := w(ctx, sth)
 			ch <- CosignatureResponse{Cosignature: cs, Err: err}
-		}()
+		}(ctx, sth)
 	}
 	for i, _ := range c.witnesses {
 		rsp := <-ch
@@ -100,5 +91,5 @@ func (c *SignatureCollector) GetSignatures(th *types.TreeHead, timeout time.Dura
 		cth.Cosignatures = append(cth.Cosignatures, rsp.Cosignature)
 	}
 	close(ch)
-	return cth, nil
+	return cth
 }
