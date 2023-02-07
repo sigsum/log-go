@@ -23,6 +23,12 @@ var (
 	errBadOldsize       = errors.New("bad old size")
 )
 
+type WitnessConfig struct {
+	Url    string // Base url
+	PubKey crypto.PublicKey
+}
+
+// Not concurrency safe (assuming http.Client isn't safe).
 type client struct {
 	cli            http.Client
 	pubKey         crypto.PublicKey
@@ -31,12 +37,12 @@ type client struct {
 	getTreeSizeUrl string
 }
 
-func NewClient(url string, pubKey *crypto.PublicKey, logKeyHash *crypto.Hash) *client {
+func NewClient(config *WitnessConfig, logKeyHash *crypto.Hash) *client {
 	return &client{
-		pubKey:         *pubKey,
+		pubKey:         config.PubKey,
 		logKeyHash:     *logKeyHash,
-		addTreeHeadUrl: endpointAddTreeHead.Path(url),
-		getTreeSizeUrl: endpointGetTreeSize.Path(url),
+		addTreeHeadUrl: endpointAddTreeHead.Path(config.Url),
+		getTreeSizeUrl: endpointGetTreeSize.Path(config.Url),
 	}
 }
 
