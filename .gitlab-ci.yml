@@ -26,12 +26,14 @@ go-test:
 # and trillian.
 integration-ephemeral:
   stage: integration
+  needs: ["go-test"]
   script:
   - cd integration
   - bash ./test.sh --ephemeral
 
 integration-default:
   stage: integration
+  needs: ["go-test"]
   services:
   - alias: mysql
     name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
@@ -43,6 +45,7 @@ integration-default:
 
 integration-extended:
   stage: integration
+  needs: ["go-test"]
   services:
   - alias: mysql
     name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
