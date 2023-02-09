@@ -47,12 +47,12 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 
 	var sth types.SignedTreeHead
 	switch startupMode {
-	case startupSaved:
+	case StartupSaved:
 		sth, err = sthFile.Load(&pub)
 		if err != nil {
 			return nil, err
 		}
-	case startupEmpty:
+	case StartupEmpty:
 		th := types.TreeHead{RootHash: crypto.HashBytes([]byte(""))}
 		sth, err = th.Sign(signer)
 		if err != nil {
@@ -61,7 +61,7 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		if err := sthFile.Create(&sth); err != nil {
 			return nil, err
 		}
-	case startupLocalTree:
+	case StartupLocalTree:
 		th, err := primary.GetTreeHead(context.Background())
 		if err != nil {
 			return nil, err
