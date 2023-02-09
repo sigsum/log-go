@@ -80,21 +80,6 @@ func (mr *MockClientMockRecorder) GetConsistencyProof(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsistencyProof", reflect.TypeOf((*MockClient)(nil).GetConsistencyProof), arg0, arg1)
 }
 
-// GetCosignedTreeHead mocks base method.
-func (m *MockClient) GetCosignedTreeHead(arg0 context.Context) (types.CosignedTreeHead, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCosignedTreeHead", arg0)
-	ret0, _ := ret[0].(types.CosignedTreeHead)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCosignedTreeHead indicates an expected call of GetCosignedTreeHead.
-func (mr *MockClientMockRecorder) GetCosignedTreeHead(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCosignedTreeHead", reflect.TypeOf((*MockClient)(nil).GetCosignedTreeHead), arg0)
-}
-
 // GetInclusionProof mocks base method.
 func (m *MockClient) GetInclusionProof(arg0 context.Context, arg1 requests.InclusionProof) (types.InclusionProof, error) {
 	m.ctrl.T.Helper()
@@ -125,19 +110,34 @@ func (mr *MockClientMockRecorder) GetLeaves(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLeaves", reflect.TypeOf((*MockClient)(nil).GetLeaves), arg0, arg1)
 }
 
-// GetToCosignTreeHead mocks base method.
-func (m *MockClient) GetToCosignTreeHead(arg0 context.Context) (types.SignedTreeHead, error) {
+// GetNextTreeHead mocks base method.
+func (m *MockClient) GetNextTreeHead(arg0 context.Context) (types.SignedTreeHead, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetToCosignTreeHead", arg0)
+	ret := m.ctrl.Call(m, "GetNextTreeHead", arg0)
 	ret0, _ := ret[0].(types.SignedTreeHead)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetToCosignTreeHead indicates an expected call of GetToCosignTreeHead.
-func (mr *MockClientMockRecorder) GetToCosignTreeHead(arg0 interface{}) *gomock.Call {
+// GetNextTreeHead indicates an expected call of GetNextTreeHead.
+func (mr *MockClientMockRecorder) GetNextTreeHead(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToCosignTreeHead", reflect.TypeOf((*MockClient)(nil).GetToCosignTreeHead), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNextTreeHead", reflect.TypeOf((*MockClient)(nil).GetNextTreeHead), arg0)
+}
+
+// GetTreeHead mocks base method.
+func (m *MockClient) GetTreeHead(arg0 context.Context) (types.CosignedTreeHead, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTreeHead", arg0)
+	ret0, _ := ret[0].(types.CosignedTreeHead)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTreeHead indicates an expected call of GetTreeHead.
+func (mr *MockClientMockRecorder) GetTreeHead(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTreeHead", reflect.TypeOf((*MockClient)(nil).GetTreeHead), arg0)
 }
 
 // GetUnsignedTreeHead mocks base method.
@@ -153,18 +153,4 @@ func (m *MockClient) GetUnsignedTreeHead(arg0 context.Context) (types.TreeHead, 
 func (mr *MockClientMockRecorder) GetUnsignedTreeHead(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnsignedTreeHead", reflect.TypeOf((*MockClient)(nil).GetUnsignedTreeHead), arg0)
-}
-
-// Initiated mocks base method.
-func (m *MockClient) Initiated() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Initiated")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Initiated indicates an expected call of Initiated.
-func (mr *MockClientMockRecorder) Initiated() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initiated", reflect.TypeOf((*MockClient)(nil).Initiated))
 }

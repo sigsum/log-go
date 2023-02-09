@@ -52,7 +52,7 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 	th := types.TreeHead{Size: 5}
 
 	secondary := client.NewMockClient(ctrl)
-	secondary.EXPECT().GetToCosignTreeHead(gomock.Any()).MinTimes(1).Return(
+	secondary.EXPECT().GetNextTreeHead(gomock.Any()).MinTimes(1).Return(
 		types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}, nil)
 
 	state := ReplicationState{secondary: secondary}

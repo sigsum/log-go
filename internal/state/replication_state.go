@@ -18,7 +18,7 @@ type PrimaryTree interface {
 
 // Subset of the sigsum-go pkg/client interface.
 type SecondaryTree interface {
-	GetToCosignTreeHead(context.Context) (types.SignedTreeHead, error)
+	GetNextTreeHead(context.Context) (types.SignedTreeHead, error)
 }
 
 type ReplicationState struct {
@@ -42,7 +42,7 @@ func (r ReplicationState) getPrimaryTreeHead(ctx context.Context, minSize uint64
 
 // Return the latest secondary tree head with size at least minSize.
 func (r ReplicationState) getSecondaryTreeHead(ctx context.Context, minSize uint64, maxSize uint64) (types.TreeHead, error) {
-	sth, err := r.secondary.GetToCosignTreeHead(ctx)
+	sth, err := r.secondary.GetNextTreeHead(ctx)
 	if err != nil {
 		return types.TreeHead{}, fmt.Errorf("failed fetching tree head from secondary: %w", err)
 	}
