@@ -169,7 +169,7 @@ function node_promote() {
 	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "creating sth startup=local-tree"
-	echo "startup=local-tree" > ${nvars[$new_primary:log_dir]}/sth-store.startup
+	go run ../cmd/sigsum-mktree -mode=local-tree -sth-path=${nvars[$new_primary:log_dir]}/sth-store
 }
 
 function trillian_setup() {
@@ -265,7 +265,7 @@ function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
 			info "creating sth startup=empty"
-			echo "startup=empty" > ${nvars[$i:log_dir]}/sth-store.startup
+			go run ../cmd/sigsum-mktree -sth-path=${nvars[$i:log_dir]}/sth-store
 		fi
 	done
 }

@@ -17,26 +17,28 @@ type sthFile struct {
 	name string
 }
 
-type startupMode int
+type StartupMode int
 
 const (
 	// Use previously saved sth file.
-	startupSaved startupMode = iota
+	StartupSaved StartupMode = iota
 	// Create sth file representing an empty tree
-	startupEmpty
+	StartupEmpty
 	// Create sth file representing latest local tree head.
-	startupLocalTree
+	StartupLocalTree
+
+	StartupFileSuffix = ".startup"
 )
 
 func (s sthFile) startupFileName() string {
-	return s.name + ".startup"
+	return s.name + StartupFileSuffix
 }
 
 func (s sthFile) newFileName() string {
 	return s.name + ".new"
 }
 
-func parseStartupFile(f io.Reader) (startupMode, error) {
+func parseStartupFile(f io.Reader) (StartupMode, error) {
 	// TODO: Add a GetString method to sigsum-go's ascii.Parser?
 	scanner := bufio.NewScanner(f)
 	// Only read first line.
@@ -45,34 +47,34 @@ func parseStartupFile(f io.Reader) (startupMode, error) {
 		if err == nil {
 			err = fmt.Errorf("startup file empty")
 		}
-		return startupSaved, err
+		return StartupSaved, err
 	}
 
 	line := strings.SplitN(
 		strings.TrimSpace(scanner.Text()),
 		"=", 2)
 	if len(line) != 2 || line[0] != "startup" {
-		return startupSaved, fmt.Errorf("missing startup= keyword in startup file")
+		return StartupSaved, fmt.Errorf("missing startup= keyword in startup file")
 	}
 	mode := line[1]
 	switch mode {
 	case "empty":
-		return startupEmpty, nil
+		return StartupEmpty, nil
 	case "local-tree":
-		return startupLocalTree, nil
+		return StartupLocalTree, nil
 	default:
-		return startupSaved, fmt.Errorf("invalid startup mode %q", mode)
+		return StartupSaved, fmt.Errorf("invalid startup mode %q", mode)
 	}
 }
 
-func (s sthFile) Startup() (startupMode, error) {
+func (s sthFile) Startup() (StartupMode, error) {
 	name := s.startupFileName()
 	f, err := os.Open(name)
 	if errors.Is(err, fs.ErrNotExist) {
-		return startupSaved, nil
+		return StartupSaved, nil
 	}
 	if err != nil {
-		return startupSaved, err
+		return StartupSaved, err
 	}
 	defer f.Close()
 	return parseStartupFile(f)

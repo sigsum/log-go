@@ -16,11 +16,11 @@ func TestParseStartup(t *testing.T) {
 	// Valid inputs, with and without trailing data.
 	for _, table := range []struct {
 		input  string
-		output startupMode
+		output StartupMode
 	}{
-		{"startup=empty", startupEmpty},
-		{"startup=empty\nother line", startupEmpty},
-		{"startup=local-tree\n", startupLocalTree},
+		{"startup=empty", StartupEmpty},
+		{"startup=empty\nother line", StartupEmpty},
+		{"startup=local-tree\n", StartupLocalTree},
 	} {
 		mode, err := parseStartupFile(bytes.NewBufferString(table.input))
 		if err != nil {
@@ -49,7 +49,7 @@ func TestStartupNoFile(t *testing.T) {
 		mode, err := sthFile.Startup()
 		if err != nil {
 			t.Errorf("error with missing startup file: %v", err)
-		} else if mode != startupSaved {
+		} else if mode != StartupSaved {
 			t.Errorf("got unexpected mode %d with missing startup file",
 				mode)
 		}
