@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -19,9 +20,10 @@ type StateManagerSingle struct {
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
-	// Lock-protected access to tree head. All endpoints are readers.
+	// Lock-protected access to tree heads. All endpoints are readers.
 	sync.RWMutex
-	signedTreeHead types.SignedTreeHead
+	signedTreeHead   types.SignedTreeHead
+	cosignedTreeHead types.CosignedTreeHead
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
@@ -78,6 +80,8 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			timeout:      timeout,
 		},
 		signedTreeHead: sth,
+		// No cosignatures available at startup.
+		cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
 	}, nil
 }
 
@@ -87,33 +91,44 @@ func (sm *StateManagerSingle) SignedTreeHead() types.SignedTreeHead {
 	return sm.signedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, interval time.Duration) {
+func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.WitnessConfig, interval time.Duration) {
+	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
+		sm.replicationState.primary.GetConsistencyProof)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := sm.tryRotate(ctx); err != nil {
+			// TODO: There should be a better way to
+			// arrange this; if the rotate call blocks
+			// until timeout, we might get soemwhat outof
+			// sync. It would be better if at each tick,
+			// we cancel any outstanding witness accesses,
+			// complete the previous rotation with
+			// whatever cosignatures we got, and then
+			// start over with the next rotation.
+			rotateCtx, cancel := context.WithTimeout(ctx, interval)
+			defer cancel()
+			if err := sm.rotate(rotateCtx, collector); err != nil {
 				log.Warning("failed rotating tree heads: %v", err)
 			}
+			cancel()
+
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
+func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.CosignatureCollector) error {
 	nextTH, err := sm.replicationState.ReplicatedTreeHead(
 		ctx, sm.signedTreeHead.Size)
 	if err != nil {
 		log.Error("no new replicated tree head: %v", err)
 		nextTH = sm.signedTreeHead.TreeHead
 	}
-	return sm.rotate(&nextTH)
-}
-
-func (sm *StateManagerSingle) rotate(nextTH *types.TreeHead) error {
 	nextSTH, err := nextTH.Sign(sm.signer)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
@@ -122,6 +137,11 @@ func (sm *StateManagerSingle) rotate(nextTH *types.TreeHead) error {
 	if err := sm.storeSth(&nextSTH); err != nil {
 		return err
 	}
+
+	sm.setSignedTreeHead(&nextSTH)
+
+	// Blocks, potentially until context times out.
+	cosignatures := collector.GetCosignatures(ctx, &nextSTH)
 
 	sm.Lock()
 	defer sm.Unlock()

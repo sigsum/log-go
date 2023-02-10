@@ -2,7 +2,6 @@ package witness
 
 import (
 	"context"
-	"time"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
@@ -67,11 +66,7 @@ func NewCosignatureCollector(logKeyHash *crypto.Hash, witnessConfigs []WitnessCo
 }
 
 // Queries all witnesses in parallel, blocks until we have result or error from each of them.
-func (c *CosignatureCollector) GetCosignatures(sth *types.SignedTreeHead, timeout time.Duration) types.CosignedTreeHead {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	cth := types.CosignedTreeHead{SignedTreeHead: *sth}
+func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.SignedTreeHead) (cosignatures []types.Cosignature) {
 	ch := make(chan CosignatureResponse)
 
 	// Query witnesses in parallel
@@ -88,8 +83,9 @@ func (c *CosignatureCollector) GetCosignatures(sth *types.SignedTreeHead, timeou
 			// TODO: Temporarily stop querying this witness?
 			continue
 		}
-		cth.Cosignatures = append(cth.Cosignatures, rsp.Cosignature)
+		// TODO: Check that cosignature timestamp is reasonable?
+		cosignatures = append(cosignatures, rsp.Cosignature)
 	}
 	close(ch)
-	return cth
+	return
 }

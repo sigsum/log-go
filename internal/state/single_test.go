@@ -2,7 +2,7 @@ package state
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/hex"
 	"os"
 	"reflect"
 	"testing"

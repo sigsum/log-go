@@ -92,7 +92,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx, conf.Interval)
+		node.Stateman.Run(ctx, nil /* TODO: Pass witness configs */, conf.Interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -182,6 +182,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
+	_ = witnessMap
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
 		secondary, &secondaryPub, conf.Primary.SthFile)
 	if err != nil {
