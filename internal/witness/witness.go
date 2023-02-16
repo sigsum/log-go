@@ -2,6 +2,7 @@ package witness
 
 import (
 	"context"
+	"sync"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
@@ -43,11 +44,6 @@ func witnessClient(
 	}
 }
 
-type CosignatureResponse struct {
-	Cosignature types.Cosignature
-	Err         error
-}
-
 // Not concurrency safe
 type CosignatureCollector struct {
 	witnesses []func(ctx context.Context, sth *types.SignedTreeHead) (types.Cosignature, error)
@@ -67,24 +63,30 @@ func NewCosignatureCollector(logKeyHash *crypto.Hash, witnessConfigs []WitnessCo
 
 // Queries all witnesses in parallel, blocks until we have result or error from each of them.
 func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.SignedTreeHead) (cosignatures []types.Cosignature) {
-	ch := make(chan CosignatureResponse)
+	wg := sync.WaitGroup{}
+
+	ch := make(chan types.Cosignature)
 
 	// Query witnesses in parallel
-	for _, w := range c.witnesses {
-		go func(ctx context.Context, sth *types.SignedTreeHead) {
+	for i, w := range c.witnesses {
+		i, w := i, w // New variables for each round through the loop.
+		wg.Add(1)
+		go func() {
 			cs, err := w(ctx, sth)
-			ch <- CosignatureResponse{Cosignature: cs, Err: err}
-		}(ctx, sth)
+			if err != nil {
+				log.Error("Querying witness %d failed: %v", i, err)
+				// TODO: Temporarily stop querying this witness?
+			} else {
+				ch <- cs
+			}
+			wg.Done()
+		}()
 	}
-	for i, _ := range c.witnesses {
-		rsp := <-ch
-		if rsp.Err != nil {
-			log.Error("Querying witness %d failed: %v", i, rsp.Err)
-			// TODO: Temporarily stop querying this witness?
-			continue
-		}
+	go func() { wg.Wait(); close(ch) }()
+
+	for cs := range ch {
 		// TODO: Check that cosignature timestamp is reasonable?
-		cosignatures = append(cosignatures, rsp.Cosignature)
+		cosignatures = append(cosignatures, cs)
 	}
 	close(ch)
 	return
