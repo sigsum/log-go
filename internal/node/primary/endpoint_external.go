@@ -132,17 +132,23 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 	}
 }
 
-func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, maxIndex uint64) (int, error) {
+func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request,
+	maxIndex uint64, strictEnd bool) (int, error) {
 	log.Debug("handling get-leaves request")
 
-	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange)
+	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange, strictEnd)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+
+	// May happen only when strictEnd is false.
 	if req.StartIndex == req.EndIndex {
-		return http.StatusNoContent, nil
+		if strictEnd {
+			return http.StatusInternalServerError, fmt.Errorf("invalid range")
+		}
+		return http.StatusNotFound, fmt.Errorf("at end of tree")
 	}
-	leaves, err := p.DbClient.GetLeaves(ctx, req)
+	leaves, err := p.DbClient.GetLeaves(ctx, &req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -157,5 +163,5 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 
 func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	// TODO: Use GetTreeHead instead?
-	return getLeavesGeneral(ctx, p, w, r, p.Stateman.NextTreeHead().Size)
+	return getLeavesGeneral(ctx, p, w, r, p.Stateman.NextTreeHead().Size, true)
 }

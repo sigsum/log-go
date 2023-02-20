@@ -37,7 +37,6 @@ func (p Primary) PublicHTTPMux(prefix string) *http.ServeMux {
 // InternalHTTPMux() regsiters all internal handlers
 func (p Primary) InternalHTTPMux(prefix string) *http.ServeMux {
 	mux := http.NewServeMux()
-	handler.Handler{p.Config, p.getTreeHeadUnsigned, types.EndpointGetTreeHeadUnsigned, http.MethodGet}.Register(mux, prefix)
 	handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet}.Register(mux, prefix)
 	handler.Handler{p.Config, p.getLeavesInternal, types.EndpointGetLeaves, http.MethodGet}.Register(mux, prefix)
 	return mux

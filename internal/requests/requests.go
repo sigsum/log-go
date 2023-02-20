@@ -59,23 +59,26 @@ func InclusionProofRequestFromHTTP(r *http.Request) (*sigsumreq.InclusionProof, 
 	return &req, nil
 }
 
-func LeavesRequestFromHTTP(r *http.Request, maxIndex uint64, maxRange int) (*sigsumreq.Leaves, error) {
+func LeavesRequestFromHTTP(r *http.Request, maxIndex uint64, maxRange int, strictEnd bool) (sigsumreq.Leaves, error) {
 	var req sigsumreq.Leaves
 	if err := req.FromURL(r.URL.Path); err != nil {
-		return nil, fmt.Errorf("parse url: %w", err)
+		return req, fmt.Errorf("parse url: %w", err)
 	}
 
 	if req.StartIndex >= req.EndIndex {
-		return nil, fmt.Errorf("start_index(%d) must be less than end_index(%d)", req.StartIndex, req.EndIndex)
+		return req, fmt.Errorf("start_index(%d) must be less than end_index(%d)", req.StartIndex, req.EndIndex)
 	}
-	if req.StartIndex > maxIndex {
-		return nil, fmt.Errorf("start_index(%d) outside of current tree", req.StartIndex)
+	if req.StartIndex > maxIndex || (strictEnd && req.StartIndex >= maxIndex) {
+		return req, fmt.Errorf("start_index(%d) outside of current tree", req.StartIndex)
 	}
 	if req.EndIndex > maxIndex {
+		if strictEnd {
+			return req, fmt.Errorf("end_index(%d) outside of current tree", req.EndIndex)
+		}
 		req.EndIndex = maxIndex
 	}
 	if req.EndIndex-req.StartIndex > uint64(maxRange) {
 		req.EndIndex = req.StartIndex + uint64(maxRange)
 	}
-	return &req, nil
+	return req, nil
 }
