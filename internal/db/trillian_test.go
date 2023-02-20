@@ -442,14 +442,6 @@ func TestGetLeaves(t *testing.T) {
 						LeafValue: firstLeaf.ToBinary(),
 						LeafIndex: 1,
 					},
-					&trillian.LogLeaf{
-						LeafValue: secondLeaf.ToBinary(),
-						LeafIndex: 2,
-					},
-					&trillian.LogLeaf{
-						LeafValue: firstLeaf.ToBinary(),
-						LeafIndex: 3,
-					},
 				},
 			},
 			wantErr: true,

@@ -153,7 +153,7 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 		return http.StatusInternalServerError, err
 	}
 	if len(leaves) == 0 {
-		return http.StatusInternalServerError, fmt.Errorf("internal get leaves returned an empty list")
+		return http.StatusInternalServerError, fmt.Errorf("backend get leaves returned an empty list")
 	}
 	if err = types.LeavesToASCII(w, leaves); err != nil {
 		return http.StatusInternalServerError, err
@@ -162,6 +162,5 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 }
 
 func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	// TODO: Use GetTreeHead instead?
 	return getLeavesGeneral(ctx, p, w, r, p.Stateman.NextTreeHead().Size, true)
 }

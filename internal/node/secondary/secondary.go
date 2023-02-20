@@ -59,14 +59,14 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 			log.Warning("unable to get tree head from trillian: %v", err)
 			return
 		}
-		// TODO: set context per request
 		req := requests.Leaves{
 			StartIndex: curTH.Size,
 			EndIndex:   curTH.Size + leavesBatchSize,
 		}
 		leaves, err := s.Primary.GetLeaves(ctx, req)
-		// Can we have a specific HTTP code for the case that StartSize equals size,
-		// which would be the normal way to exit this loop?
+		// TODO: Recognize HTTP status 404 as meaning that
+		// we're at the end of the tree, and hence the normal
+		// way to exit this loop.
 		if err != nil {
 			log.Warning("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
 			return

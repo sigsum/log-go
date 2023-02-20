@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksDB "sigsum.org/log-go/internal/mocks/db"
+	"sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -88,12 +88,11 @@ func TestInternalGetLeaves(t *testing.T) {
 			wantCode:    http.StatusOK,
 		},
 	} {
-		fmt.Printf("XXX desc: %s\n", table.description)
 		// Run deferred functions at the end of each iteration
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			client := mocksDB.NewMockClient(ctrl)
+			client := db.NewMockClient(ctrl)
 			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil)
 			if table.expect {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
