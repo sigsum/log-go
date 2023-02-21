@@ -14,19 +14,11 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-var (
-	testTH = types.TreeHead{
-		Size:     0,
-		RootHash: crypto.HashBytes([]byte("root hash")),
-	}
-)
-
 func TestInternalGetLeaves(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		params      string // params is the query's url params
 		th          types.TreeHead
-		expect      bool  // set if a mock answer is expected
 		leafCount   int   // expected number of leaves
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
@@ -47,7 +39,6 @@ func TestInternalGetLeaves(t *testing.T) {
 			description: "valid: (EndIndex > current tree size)",
 			params:      "0/3",
 			th:          types.TreeHead{Size: 2},
-			expect:      true,
 			leafCount:   2,
 			wantCode:    http.StatusOK,
 		},
@@ -61,7 +52,6 @@ func TestInternalGetLeaves(t *testing.T) {
 			description: "invalid: backend failure",
 			params:      "0/1",
 			th:          types.TreeHead{Size: 2},
-			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
@@ -75,7 +65,6 @@ func TestInternalGetLeaves(t *testing.T) {
 			description: "valid: three middle elements",
 			params:      "1/4",
 			th:          types.TreeHead{Size: 5},
-			expect:      true,
 			leafCount:   3,
 			wantCode:    http.StatusOK,
 		},
@@ -83,7 +72,6 @@ func TestInternalGetLeaves(t *testing.T) {
 			description: "valid: one more entry than the configured MaxRange",
 			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
 			th:          types.TreeHead{Size: 5},
-			expect:      true,
 			leafCount:   testMaxRange,
 			wantCode:    http.StatusOK,
 		},
@@ -94,7 +82,7 @@ func TestInternalGetLeaves(t *testing.T) {
 			defer ctrl.Finish()
 			client := db.NewMockClient(ctrl)
 			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil)
-			if table.expect {
+			if table.err != nil || table.leafCount > 0 {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
 						if table.err != nil {

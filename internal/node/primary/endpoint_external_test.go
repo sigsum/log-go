@@ -20,21 +20,6 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-var (
-	testSTH = types.SignedTreeHead{
-		TreeHead:  testTH,
-		Signature: crypto.Signature{},
-	}
-	testCTH = types.CosignedTreeHead{
-		SignedTreeHead: testSTH,
-		Cosignatures:   make([]types.Cosignature, 1),
-	}
-	sth0 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 0}}
-	sth1 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 1}}
-	sth2 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 2}} // 2 < testConfig.MaxRange
-	sth5 = types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}} // 5 >= testConfig.MaxRange+1
-)
-
 // TODO: remove tests that are now located in internal/requests instead
 
 func TestAddLeaf(t *testing.T) {
@@ -49,7 +34,6 @@ func TestAddLeaf(t *testing.T) {
 		wantCode       int       // HTTP status ok
 		expectStateman bool
 		leafStatus     db.AddLeafStatus // return value from db.AddLeaf()
-		sthStateman    types.SignedTreeHead
 	}{
 		{
 			description: "invalid: bad request (parser error)",
@@ -65,7 +49,6 @@ func TestAddLeaf(t *testing.T) {
 			description:    "invalid: backend failure",
 			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
-			sthStateman:    testSTH,
 			expectTrillian: true,
 			errTrillian:    fmt.Errorf("something went wrong"),
 			wantCode:       http.StatusInternalServerError,
@@ -74,7 +57,6 @@ func TestAddLeaf(t *testing.T) {
 			description:    "valid: 202",
 			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
-			sthStateman:    testSTH,
 			expectTrillian: true,
 			wantCode:       http.StatusAccepted,
 		},
@@ -82,7 +64,6 @@ func TestAddLeaf(t *testing.T) {
 			description:    "valid: 200",
 			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
 			expectStateman: true,
-			sthStateman:    testSTH,
 			expectTrillian: true,
 			leafStatus:     db.AddLeafStatus{IsSequenced: true},
 			wantCode:       http.StatusOK,
@@ -98,7 +79,7 @@ func TestAddLeaf(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expectStateman {
-				stateman.EXPECT().NextTreeHead().Return(table.sthStateman)
+				stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
 			}
 			node := Primary{
 				Config:      testConfig,
@@ -203,15 +184,13 @@ func TestAddCosignature(t *testing.T) {
 func TestGetTreeToCosign(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool                 // set if a mock answer is expected
-		rsp         types.SignedTreeHead // signed tree head from Trillian client
-		err         error                // error from Trillian client
-		wantCode    int                  // HTTP status ok
+		expect      bool  // set if a mock answer is expected
+		err         error // error from Trillian client
+		wantCode    int   // HTTP status ok
 	}{
 		{
 			description: "valid",
 			expect:      true,
-			rsp:         testSTH,
 			wantCode:    http.StatusOK,
 		},
 	} {
@@ -221,7 +200,7 @@ func TestGetTreeToCosign(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().NextTreeHead().Return(table.rsp)
+				stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -248,15 +227,13 @@ func TestGetTreeToCosign(t *testing.T) {
 func TestGetTreeCosigned(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool                   // set if a mock answer is expected
-		rsp         types.CosignedTreeHead // cosigned tree head from Trillian client
-		err         error                  // error from Trillian client
-		wantCode    int                    // HTTP status ok
+		expect      bool  // set if a mock answer is expected
+		err         error // error from Trillian client
+		wantCode    int   // HTTP status ok
 	}{
 		{
 			description: "valid",
 			expect:      true,
-			rsp:         testCTH,
 			wantCode:    http.StatusOK,
 		},
 	} {
@@ -266,7 +243,10 @@ func TestGetTreeCosigned(t *testing.T) {
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
 			if table.expect {
-				stateman.EXPECT().CosignedTreeHead().Return(table.rsp)
+				stateman.EXPECT().CosignedTreeHead().Return(
+					types.CosignedTreeHead{
+						Cosignatures: make([]types.Cosignature, 1),
+					})
 			}
 			node := Primary{
 				Config:   testConfig,
@@ -294,7 +274,7 @@ func TestGetConsistencyProof(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		params      string // params is the query's url params
-		sth         types.SignedTreeHead
+		sthSize     uint64
 		expect      bool                   // set if a mock answer is expected
 		rsp         types.ConsistencyProof // consistency proof from Trillian client
 		err         error                  // error from Trillian client
@@ -318,13 +298,13 @@ func TestGetConsistencyProof(t *testing.T) {
 		{
 			description: "invalid: bad request (NewSize > tree size)",
 			params:      "1/2",
-			sth:         sth1,
+			sthSize:     1,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
 			params:      "1/2",
-			sth:         sth2,
+			sthSize:     2,
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
@@ -332,7 +312,7 @@ func TestGetConsistencyProof(t *testing.T) {
 		{
 			description: "valid",
 			params:      "1/2",
-			sth:         sth2,
+			sthSize:     2,
 			expect:      true,
 			rsp: types.ConsistencyProof{
 				OldSize: 1,
@@ -353,7 +333,8 @@ func TestGetConsistencyProof(t *testing.T) {
 				client.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(table.sth).AnyTimes()
+			stateman.EXPECT().NextTreeHead().Return(
+				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}).AnyTimes()
 
 			node := Primary{
 				Config:   testConfig,
@@ -382,7 +363,7 @@ func TestGetInclusionProof(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		params      string // params is the query's url params
-		sth         types.SignedTreeHead
+		sthSize     uint64
 		expect      bool                 // set if a mock answer is expected
 		rsp         types.InclusionProof // inclusion proof from Trillian client
 		err         error                // error from Trillian client
@@ -401,13 +382,13 @@ func TestGetInclusionProof(t *testing.T) {
 		{
 			description: "invalid: bad request (request outside current tree size)",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
-			sth:         sth1,
+			sthSize:     1,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
-			sth:         sth2,
+			sthSize:     2,
 			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
@@ -415,7 +396,7 @@ func TestGetInclusionProof(t *testing.T) {
 		{
 			description: "invalid: not included",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
-			sth:         sth2,
+			sthSize:     2,
 			expect:      true,
 			err:         db.ErrNotIncluded,
 			wantCode:    http.StatusNotFound,
@@ -423,7 +404,7 @@ func TestGetInclusionProof(t *testing.T) {
 		{
 			description: "valid",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
-			sth:         sth2,
+			sthSize:     2,
 			expect:      true,
 			rsp: types.InclusionProof{
 				Size:      2,
@@ -444,7 +425,8 @@ func TestGetInclusionProof(t *testing.T) {
 				client.EXPECT().GetInclusionProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(table.sth).AnyTimes()
+			stateman.EXPECT().NextTreeHead().Return(
+				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}).AnyTimes()
 
 			node := Primary{
 				Config:   testConfig,
@@ -473,8 +455,7 @@ func TestGetLeaves(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		params      string // params is the query's url params
-		sth         types.SignedTreeHead
-		expect      bool  // set if a mock answer is expected
+		sthSize     uint64
 		leafCount   int   // expected number of leaves
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
@@ -482,48 +463,45 @@ func TestGetLeaves(t *testing.T) {
 		{
 			description: "invalid: bad request (parser error)",
 			params:      "a/1",
-			sth:         sth2,
+			sthSize:     2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (StartIndex >= EndIndex)",
 			params:      "1/1",
-			sth:         sth2,
+			sthSize:     2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (EndIndex > current tree size)",
 			params:      "0/3",
-			sth:         sth2,
+			sthSize:     2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
 			params:      "0/1",
-			sth:         sth2,
-			expect:      true,
+			sthSize:     2,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "invalid: empty tree",
 			params:      "0/1",
-			sth:         sth0,
+			sthSize:     0,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid: three middle elements",
 			params:      "1/4",
-			sth:         sth5,
-			expect:      true,
+			sthSize:     5,
 			leafCount:   3,
 			wantCode:    http.StatusOK,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
 			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
-			sth:         sth5,
-			expect:      true,
+			sthSize:     5,                                       // >= testConfig.MaxRange+1
 			leafCount:   testMaxRange,
 			wantCode:    http.StatusOK,
 		},
@@ -533,7 +511,7 @@ func TestGetLeaves(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
-			if table.expect {
+			if table.err != nil || table.leafCount > 0 {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
 						if table.err != nil {
@@ -555,7 +533,8 @@ func TestGetLeaves(t *testing.T) {
 					})
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().NextTreeHead().Return(table.sth)
+			stateman.EXPECT().NextTreeHead().Return(
+				types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}})
 
 			node := Primary{
 				Config:   testConfig,
