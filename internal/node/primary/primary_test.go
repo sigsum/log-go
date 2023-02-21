@@ -54,7 +54,6 @@ func TestIntHandlers(t *testing.T) {
 	prefix := "int"
 	mux := node.InternalHTTPMux(prefix)
 	for _, endpoint := range []types.Endpoint{
-		types.EndpointGetTreeHeadUnsigned,
 		types.EndpointGetConsistencyProof,
 		types.EndpointGetLeaves,
 	} {

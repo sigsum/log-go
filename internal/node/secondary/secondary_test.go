@@ -43,9 +43,6 @@ func TestIntHandlers(t *testing.T) {
 func TestFetchLeavesFromPrimary(t *testing.T) {
 	for _, tbl := range []struct {
 		desc string
-		// client.GetUnsignedTreeHead()
-		primaryTHRet types.TreeHead
-		primaryTHErr error
 		// db.GetTreeHead()
 		trillianGetTHExp bool
 		trillianTHRet    types.TreeHead
@@ -58,25 +55,18 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		trillianAddLeavesErr error
 	}{
 		{
-			desc:         "no tree head from primary",
-			primaryTHErr: fmt.Errorf("mocked error"),
-		},
-		{
 			desc:             "no tree head from trillian",
-			primaryTHRet:     types.TreeHead{},
 			trillianGetTHExp: true,
 			trillianTHErr:    fmt.Errorf("mocked error"),
 		},
 		{
 			desc:                "error fetching leaves",
-			primaryTHRet:        types.TreeHead{Size: 6},
 			trillianGetTHExp:    true,
 			trillianTHRet:       types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesErr: fmt.Errorf("mocked error"),
 		},
 		{
 			desc:             "error adding leaves",
-			primaryTHRet:     types.TreeHead{Size: 6},
 			trillianGetTHExp: true,
 			trillianTHRet:    types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesRet: []types.Leaf{
@@ -86,7 +76,6 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		},
 		{
 			desc:             "success",
-			primaryTHRet:     types.TreeHead{Size: 10},
 			trillianGetTHExp: true,
 			trillianTHRet:    types.TreeHead{Size: 5},
 			primaryGetLeavesRet: []types.Leaf{
@@ -99,30 +88,29 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			fmt.Printf("desc: %s\n", tbl.desc)
 			primaryClient := mocksClient.NewMockClient(ctrl)
-			primaryClient.EXPECT().GetUnsignedTreeHead(gomock.Any()).Return(tbl.primaryTHRet, tbl.primaryTHErr)
 
 			trillianClient := mocksDB.NewMockClient(ctrl)
 			if tbl.trillianGetTHExp {
 				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
+				if tbl.trillianTHErr == nil && tbl.primaryGetLeavesErr == nil && tbl.trillianAddLeavesErr == nil {
+					updatedSize := tbl.trillianTHRet.Size + uint64(len(tbl.primaryGetLeavesRet))
+					trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(
+						types.TreeHead{Size: updatedSize}, tbl.trillianTHErr)
+				}
 			}
 
 			if tbl.primaryGetLeavesErr != nil || tbl.primaryGetLeavesRet != nil {
 				primaryClient.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(tbl.primaryGetLeavesRet, tbl.primaryGetLeavesErr)
 				if tbl.trillianAddLeavesExp {
-					for i := tbl.trillianTHRet.Size; i < tbl.primaryTHRet.Size-1; i++ {
-						primaryClient.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(tbl.primaryGetLeavesRet, tbl.primaryGetLeavesErr)
-					}
+					// XXX End-of-data condition
+					primaryClient.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("mocked error"))
 				}
 			}
 
 			if tbl.trillianAddLeavesErr != nil || tbl.trillianAddLeavesExp {
 				trillianClient.EXPECT().AddSequencedLeaves(gomock.Any(), gomock.Any(), gomock.Any()).Return(tbl.trillianAddLeavesErr)
-				if tbl.trillianAddLeavesExp {
-					for i := tbl.trillianTHRet.Size; i < tbl.primaryTHRet.Size-1; i++ {
-						trillianClient.EXPECT().AddSequencedLeaves(gomock.Any(), gomock.Any(), gomock.Any()).Return(tbl.trillianAddLeavesErr)
-					}
-				}
 			}
 
 			node := Secondary{
