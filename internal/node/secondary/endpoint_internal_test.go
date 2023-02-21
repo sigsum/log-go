@@ -17,34 +17,22 @@ import (
 // signature, and error.
 // NOTE: Code duplication with internal/state/single_test.go
 type TestSigner struct {
-	PublicKey crypto.PublicKey
-	Signature crypto.Signature
-	Error     error
+	Error error
 }
 
 func (ts *TestSigner) Public() crypto.PublicKey {
-	return ts.PublicKey
+	return crypto.PublicKey{}
 }
 
 func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
-	return ts.Signature, ts.Error
+	return crypto.Signature{}, ts.Error
 }
-
-var (
-	testTH = types.TreeHead{
-		Size:     0,
-		RootHash: crypto.HashBytes([]byte("root hash")),
-	}
-	testSignerFailing    = TestSigner{crypto.PublicKey{}, crypto.Signature{}, fmt.Errorf("mocked error")}
-	testSignerSucceeding = TestSigner{crypto.PublicKey{}, crypto.Signature{}, nil}
-)
 
 func TestGetTreeHeadToCosign(t *testing.T) {
 	for _, tbl := range []struct {
 		desc          string
 		trillianTHErr error
-		trillianTHRet types.TreeHead
-		signer        crypto.Signer
+		signErr       error
 		httpStatus    int
 	}{
 		{
@@ -53,16 +41,13 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			httpStatus:    http.StatusInternalServerError,
 		},
 		{
-			desc:          "signer error",
-			trillianTHRet: testTH,
-			signer:        &testSignerFailing,
-			httpStatus:    http.StatusInternalServerError,
+			desc:       "signer error",
+			signErr:    fmt.Errorf("mocked error"),
+			httpStatus: http.StatusInternalServerError,
 		},
 		{
-			desc:          "success",
-			trillianTHRet: testTH,
-			signer:        &testSignerSucceeding,
-			httpStatus:    http.StatusOK,
+			desc:       "success",
+			httpStatus: http.StatusOK,
 		},
 	} {
 		func() {
@@ -70,12 +55,12 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			defer ctrl.Finish()
 
 			trillianClient := db.NewMockClient(ctrl)
-			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
+			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(types.TreeHead{}, tbl.trillianTHErr)
 
 			node := Secondary{
 				Config:   testConfig,
 				DbClient: trillianClient,
-				Signer:   tbl.signer,
+				Signer:   &TestSigner{Error: tbl.signErr},
 			}
 
 			// Create HTTP request
