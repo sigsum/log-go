@@ -132,26 +132,28 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 	}
 }
 
-func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request, doLimitToCurrentTree bool) (int, error) {
+func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request,
+	maxIndex uint64, strictEnd bool) (int, error) {
 	log.Debug("handling get-leaves request")
-	// TODO: Use math.MaxUint64, available from golang 1.17.
-	maxIndex := ^uint64(0)
-	if doLimitToCurrentTree {
-		curTree := p.Stateman.NextTreeHead()
-		treeSize := curTree.TreeHead.Size
-		if treeSize == 0 {
-			return http.StatusBadRequest, fmt.Errorf("tree is empty")
-		}
-		maxIndex = treeSize
-	}
-	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange)
+
+	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange, strictEnd)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
 
-	leaves, err := p.DbClient.GetLeaves(ctx, req)
+	// May happen only when strictEnd is false.
+	if req.StartIndex == req.EndIndex {
+		if strictEnd {
+			return http.StatusInternalServerError, fmt.Errorf("invalid range")
+		}
+		return http.StatusNotFound, fmt.Errorf("at end of tree")
+	}
+	leaves, err := p.DbClient.GetLeaves(ctx, &req)
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	if len(leaves) == 0 {
+		return http.StatusInternalServerError, fmt.Errorf("backend get leaves returned an empty list")
 	}
 	if err = types.LeavesToASCII(w, leaves); err != nil {
 		return http.StatusInternalServerError, err
@@ -160,5 +162,5 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 }
 
 func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, p, w, r, true)
+	return getLeavesGeneral(ctx, p, w, r, p.Stateman.NextTreeHead().Size, true)
 }
