@@ -166,20 +166,22 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 	// Setup secondary node configuration.
 	var secondary client.Client
+	var secondaryPub crypto.PublicKey
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkey != "" {
-		pubkey, err := key.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
+		var err error
+		secondaryPub, err = key.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
 		secondary = client.New(client.Config{
 			LogURL: conf.Primary.SecondaryURL,
-			LogPub: pubkey,
+			LogPub: secondaryPub, // TODO: This field is going away.
 		})
 	}
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
-		secondary, conf.Primary.SthStorePath, witnessMap)
+		secondary, &secondaryPub, conf.Primary.SthStorePath, witnessMap)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
