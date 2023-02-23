@@ -51,7 +51,6 @@ function main() {
 
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
-	nvars[$logb:ssrv_extra_args]+=" -primary-pubkey=${nvars[$loga:log_dir]}/ssrv.key.pub"
 	if [[ "$testflavor" = ephemeral ]] ; then
 		nvars[$logb:ssrv_extra_args]+=" -ephemeral-test-backend"
 	fi
@@ -80,7 +79,6 @@ function main() {
 		node_start_fe $logb
 
 		nvars[$logc:ssrv_extra_args]="-primary-url=http://${nvars[$logb:int_url]}"
-		nvars[$logc:ssrv_extra_args]+=" -primary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
 		nodes+=" logc"
 		node_start $logc
 

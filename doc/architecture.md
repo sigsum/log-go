@@ -56,8 +56,8 @@ secondary node.
 
 A secondary node interacts only with the primary node. It is
 configured with its own signing key (corresponding signatures are seen
-and verified only by the primary), the public key of the primary,
-and the base url of the primary node's internal HTTP API.
+and verified only by the primary), and the base url of the primary
+node's internal HTTP API.
 
 The secondary periodically polls the primary for new leaves, and
 copies them to the secondary's Trillian instance. The trillian
