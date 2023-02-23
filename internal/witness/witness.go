@@ -88,6 +88,5 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 		// TODO: Check that cosignature timestamp is reasonable?
 		cosignatures = append(cosignatures, cs)
 	}
-	close(ch)
 	return
 }

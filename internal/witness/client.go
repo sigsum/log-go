@@ -28,17 +28,17 @@ type WitnessConfig struct {
 	PubKey crypto.PublicKey
 }
 
-// Not concurrency safe (assuming http.Client isn't safe).
-type client struct {
-	cli            http.Client
+type Client struct {
+	cli            *http.Client
 	pubKey         crypto.PublicKey
 	logKeyHash     crypto.Hash
 	addTreeHeadUrl string
 	getTreeSizeUrl string
 }
 
-func NewClient(config *WitnessConfig, logKeyHash *crypto.Hash) *client {
-	return &client{
+func NewClient(config *WitnessConfig, logKeyHash *crypto.Hash) *Client {
+	return &Client{
+		cli:            &http.Client{},
 		pubKey:         config.PubKey,
 		logKeyHash:     *logKeyHash,
 		addTreeHeadUrl: endpointAddTreeHead.Path(config.Url),
@@ -64,7 +64,7 @@ func reqToASCII(logKeyHash *crypto.Hash, sth *types.SignedTreeHead,
 	return &buf, nil
 }
 
-func (c *client) AddTreeHead(ctx context.Context,
+func (c *Client) AddTreeHead(ctx context.Context,
 	sth *types.SignedTreeHead, oldSize uint64,
 	proof *types.ConsistencyProof) (types.Cosignature, error) {
 	body, err := reqToASCII(&c.logKeyHash, sth, oldSize, proof)
@@ -104,7 +104,7 @@ func (c *client) AddTreeHead(ctx context.Context,
 	}
 }
 
-func (c *client) GetTreeSize(ctx context.Context) (uint64, error) {
+func (c *Client) GetTreeSize(ctx context.Context) (uint64, error) {
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet,
 		fmt.Sprintf("%s/%x", c.getTreeSizeUrl, c.logKeyHash),
