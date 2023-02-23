@@ -315,8 +315,6 @@ func TestGetConsistencyProof(t *testing.T) {
 			sthSize:     2,
 			expect:      true,
 			rsp: types.ConsistencyProof{
-				OldSize: 1,
-				NewSize: 2,
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),
 				},

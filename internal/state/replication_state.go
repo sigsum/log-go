@@ -57,19 +57,9 @@ func (r ReplicationState) getSecondaryTreeHead(ctx context.Context, minSize uint
 }
 
 // Check consistency
-func (r ReplicationState) checkConsistency(ctx context.Context, old types.TreeHead, new types.TreeHead) error {
+func (r ReplicationState) checkConsistency(ctx context.Context, old *types.TreeHead, new *types.TreeHead) error {
 	if old.Size > new.Size {
 		panic(fmt.Errorf("internal error old.Size (%d) > new.Size (%d)", old.Size, new.Size))
-	}
-	if old.Size == new.Size {
-		if old.RootHash != new.RootHash {
-			return fmt.Errorf("primary and secondary root hash doesn't match at tree size %d", old.Size)
-		}
-		return nil
-	}
-	// Anything is consistent with an empty tree.
-	if old.Size == 0 {
-		return nil
 	}
 	proof, err := r.primary.GetConsistencyProof(ctx, &requests.ConsistencyProof{
 		OldSize: old.Size,
@@ -78,7 +68,7 @@ func (r ReplicationState) checkConsistency(ctx context.Context, old types.TreeHe
 	if err != nil {
 		return fmt.Errorf("unable to get consistency proof from %d to %d: %w", old.Size, new.Size, err)
 	}
-	return proof.Verify(&old.RootHash, &new.RootHash)
+	return proof.Verify(old, new)
 }
 
 // Identifies the latest tree head replicated by the secondary, and
@@ -101,7 +91,7 @@ func (r ReplicationState) ReplicatedTreeHead(ctx context.Context, minSize uint64
 		return types.TreeHead{}, fmt.Errorf("failed fetching tree head from secondary: %w", err)
 	}
 
-	if err := r.checkConsistency(ctx, secTreeHead, primaryTreeHead); err != nil {
+	if err := r.checkConsistency(ctx, &secTreeHead, &primaryTreeHead); err != nil {
 		return types.TreeHead{}, err
 	}
 	log.Debug("using latest tree head from secondary: size %d", secTreeHead.Size)

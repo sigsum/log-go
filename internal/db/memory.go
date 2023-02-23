@@ -76,11 +76,7 @@ func (db *MemoryDb) GetConsistencyProof(_ context.Context, req *requests.Consist
 	if err != nil {
 		return types.ConsistencyProof{}, err
 	}
-	return types.ConsistencyProof{
-		OldSize: req.OldSize,
-		NewSize: req.NewSize,
-		Path:    path,
-	}, nil
+	return types.ConsistencyProof{Path: path}, nil
 }
 
 func (db *MemoryDb) GetInclusionProof(_ context.Context, req *requests.InclusionProof) (types.InclusionProof, error) {
