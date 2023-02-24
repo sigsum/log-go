@@ -37,7 +37,7 @@ type StateManagerSingle struct {
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
 func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
-	secondary SecondaryTree, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
+	secondary SecondaryTree, secondaryPub *crypto.PublicKey, sthFileName string, witnesses map[crypto.Hash]crypto.PublicKey) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sthFile := sthFile{name: sthFileName}
 	startupMode, err := sthFile.Startup()
@@ -81,9 +81,10 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		keyHash:  crypto.HashBytes(pub[:]),
 		storeSth: sthFile.Store,
 		replicationState: ReplicationState{
-			primary:   primary,
-			secondary: secondary,
-			timeout:   timeout,
+			primary:      primary,
+			secondary:    secondary,
+			secondaryPub: *secondaryPub,
+			timeout:      timeout,
 		},
 		signedTreeHead: sth,
 		// No cosignatures available at startup.

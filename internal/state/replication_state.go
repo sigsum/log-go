@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -23,9 +24,10 @@ type SecondaryTree interface {
 
 type ReplicationState struct {
 	// Timeout for interaction with primary and secondary.
-	timeout   time.Duration
-	primary   PrimaryTree
-	secondary SecondaryTree
+	timeout      time.Duration
+	primary      PrimaryTree
+	secondaryPub crypto.PublicKey
+	secondary    SecondaryTree
 }
 
 // Return the latest primary tree head with size at least minSize.
@@ -45,6 +47,9 @@ func (r ReplicationState) getSecondaryTreeHead(ctx context.Context, minSize uint
 	sth, err := r.secondary.GetNextTreeHead(ctx)
 	if err != nil {
 		return types.TreeHead{}, fmt.Errorf("failed fetching tree head from secondary: %w", err)
+	}
+	if !sth.Verify(&r.secondaryPub) {
+		return types.TreeHead{}, fmt.Errorf("invalid signature on secondary's tree head")
 	}
 	if sth.Size > maxSize {
 		return types.TreeHead{}, fmt.Errorf("secondary is ahead: %d > %d", sth.Size, maxSize)

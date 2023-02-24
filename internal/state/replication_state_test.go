@@ -49,13 +49,20 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	pub, signer, err := crypto.NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
 	th := types.TreeHead{Size: 5}
+	sth, err := th.Sign(signer)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	secondary := client.NewMockClient(ctrl)
-	secondary.EXPECT().GetNextTreeHead(gomock.Any()).MinTimes(1).Return(
-		types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}, nil)
+	secondary.EXPECT().GetNextTreeHead(gomock.Any()).MinTimes(1).Return(sth, nil)
 
-	state := ReplicationState{secondary: secondary}
+	state := ReplicationState{secondary: secondary, secondaryPub: pub}
 	ctx := context.Background()
 
 	for minSize := uint64(3); minSize < 7; minSize++ {

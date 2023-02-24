@@ -69,7 +69,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				t.Fatal(err)
 			}
 			// This test uses no secondary and no witnesses.
-			sm, err := NewStateManagerSingle(trillianClient, signer, time.Duration(0), nil, tmpFile.Name(), nil)
+			sm, err := NewStateManagerSingle(trillianClient, signer, time.Duration(0), nil, &crypto.PublicKey{}, tmpFile.Name(), nil)
 			if got, want := err != nil, table.description != "valid"; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
