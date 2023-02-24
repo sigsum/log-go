@@ -80,7 +80,7 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 }
 
 func TestCheckConsistency(t *testing.T) {
-	withConsistencyProof := func(old types.TreeHead, new types.TreeHead, consistencyProof []crypto.Hash) error {
+	withConsistencyProof := func(old *types.TreeHead, new *types.TreeHead, consistencyProof []crypto.Hash) error {
 		t.Helper()
 
 		state := ReplicationState{}
@@ -95,9 +95,7 @@ func TestCheckConsistency(t *testing.T) {
 					NewSize: new.Size,
 				}).Return(
 				types.ConsistencyProof{
-					OldSize: old.Size,
-					NewSize: new.Size,
-					Path:    consistencyProof,
+					Path: consistencyProof,
 				}, nil)
 			state.primary = primary
 		}
@@ -118,25 +116,21 @@ func TestCheckConsistency(t *testing.T) {
 	}
 	for oldSize := uint64(0); oldSize < 10; oldSize++ {
 		for newSize := oldSize; newSize < 10; newSize++ {
-			var consistencyProof []crypto.Hash
-			if oldSize > 0 && newSize > oldSize {
-				var err error
-				consistencyProof, err = tree.ProveConsistency(oldSize, newSize)
-				if err != nil {
-					t.Fatalf("no consistency %d %d: %v", oldSize, newSize, err)
-				}
+			consistencyProof, err := tree.ProveConsistency(oldSize, newSize)
+			if err != nil {
+				t.Fatalf("no consistency %d %d: %v", oldSize, newSize, err)
 			}
 			if err := withConsistencyProof(
-				treeHeads[oldSize], treeHeads[newSize], consistencyProof); err != nil {
+				&treeHeads[oldSize], &treeHeads[newSize], consistencyProof); err != nil {
 				t.Errorf("consistency check %d..%d failed: %v", oldSize, newSize, err)
 			}
 
 			// Invalidate consistency proof.
-			if consistencyProof != nil {
+			if len(consistencyProof) > 0 {
 				consistencyProof[0][0] ^= 1
 
 				if withConsistencyProof(
-					treeHeads[oldSize], treeHeads[newSize], consistencyProof) == nil {
+					&treeHeads[oldSize], &treeHeads[newSize], consistencyProof) == nil {
 					t.Errorf("consistency check %d..%d succeeded, with bad proof: ", oldSize, newSize)
 				}
 			}

@@ -223,16 +223,6 @@ func TestGetConsistencyProof(t *testing.T) {
 			wantErr:     true,
 		},
 		{
-			description: "invalid: not a consistency proof (1/2)",
-			req:         req,
-			rsp: &trillian.GetConsistencyProofResponse{
-				Proof: &trillian.Proof{
-					Hashes: [][]byte{},
-				},
-			},
-			wantErr: true,
-		},
-		{
 			description: "invalid: not a consistency proof (2/2)",
 			req:         req,
 			rsp: &trillian.GetConsistencyProofResponse{
@@ -257,8 +247,6 @@ func TestGetConsistencyProof(t *testing.T) {
 				},
 			},
 			wantProof: types.ConsistencyProof{
-				OldSize: 1,
-				NewSize: 3,
 				Path: []crypto.Hash{
 					crypto.Hash{},
 					crypto.Hash{},

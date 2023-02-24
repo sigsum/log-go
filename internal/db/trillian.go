@@ -200,18 +200,11 @@ func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.
 	if rsp.Proof == nil {
 		return types.ConsistencyProof{}, fmt.Errorf("no consistency proof")
 	}
-	if len(rsp.Proof.Hashes) == 0 {
-		return types.ConsistencyProof{}, fmt.Errorf("not a consistency proof: empty")
-	}
 	path, err := nodePathFromHashes(rsp.Proof.Hashes)
 	if err != nil {
 		return types.ConsistencyProof{}, fmt.Errorf("not a consistency proof: %v", err)
 	}
-	return types.ConsistencyProof{
-		OldSize: req.OldSize,
-		NewSize: req.NewSize,
-		Path:    path,
-	}, nil
+	return types.ConsistencyProof{Path: path}, nil
 }
 
 func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.InclusionProof) (types.InclusionProof, error) {

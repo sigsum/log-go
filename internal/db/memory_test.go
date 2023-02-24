@@ -136,11 +136,7 @@ func TestMemoryconsistencyProof(t *testing.T) {
 				OldSize: uint64(oldSize),
 				NewSize: uint64(newSize),
 			})
-			if oldSize == newSize {
-				if err == nil {
-					t.Errorf("no error for invalid oldSize = newSize = %d", oldSize)
-				}
-			} else if err != nil {
+			if err != nil {
 				t.Errorf("GetConsistencyProof failed for oldSize %d, newSize %d: %v", oldSize, newSize, err)
 			} else if err := merkle.VerifyConsistency(uint64(oldSize), uint64(newSize), &rootHashes[oldSize-1], &rootHashes[newSize-1],
 				proof.Path); err != nil {
