@@ -90,9 +90,10 @@ function main() {
 }
 
 function install_go_deps() {
-	GOBIN=$(pwd) go install sigsum.org/sigsum-go/cmd/...
+	GOBIN=$(pwd)/bin go install sigsum.org/sigsum-go/cmd/...
+	GOBIN=$(pwd)/bin go install ../cmd/...
 	if [[ "$testflavor" != ephemeral ]] ; then
-		GOBIN=$(pwd) go install github.com/google/trillian/cmd/...
+		GOBIN=$(pwd)/bin go install github.com/google/trillian/cmd/...
 	fi
 }
 
@@ -102,8 +103,8 @@ function client_setup() {
 		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
 		info "$i: logging to $dir"
 		nvars[$i:log_dir]=$dir
-		./sigsum-key gen -o ${nvars[$i:log_dir]}/cli.key
-		nvars[$i:cli_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/cli.key.pub)
+		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/cli.key
+		nvars[$i:cli_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/cli.key.pub)
 	done
 }
 
@@ -150,11 +151,11 @@ function node_promote() {
 
 	# NOTE: updatetree doesn't seem to exit with !=0 when failing
 	# TODO: try combining the first two invocations into one
-	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr 2>/dev/null) == FROZEN ]] || \
+	[[ $(./bin/updatetree --admin_server $srv -tree_id $tree_id -tree_state FROZEN -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to freeze tree $tree_id"
-	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr 2>/dev/null) == FROZEN ]] || \
+	[[ $(./bin/updatetree --admin_server $srv -tree_id $tree_id -tree_type LOG     -logtostderr 2>/dev/null) == FROZEN ]] || \
 		die "unable to change tree type to LOG for tree $tree_id"
-	[[ $(./updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr 2>/dev/null) == ACTIVE ]] || \
+	[[ $(./bin/updatetree --admin_server $srv -tree_id $tree_id -tree_state ACTIVE -logtostderr 2>/dev/null) == ACTIVE ]] || \
 		die "unable to unfreeze tree $tree_id"
 	info "tree $tree_id type changed from PREORDERED_LOG to LOG"
 
@@ -169,7 +170,7 @@ function node_promote() {
 	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "creating sth startup=local-tree"
-	go run ../cmd/sigsum-mktree -mode=local-tree -sth-path=${nvars[$new_primary:log_dir]}/sth-store
+	./bin/sigsum-mktree -mode=local-tree -sth-path=${nvars[$new_primary:log_dir]}/sth-store
 }
 
 function trillian_setup() {
@@ -193,7 +194,7 @@ function trillian_start_server() {
 	for i in $@; do
 		info "starting up Trillian server ($i)"
 
-		./trillian_log_server\
+		./bin/trillian_log_server\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tsrv_rpc]}\
 			-http_endpoint=""\
@@ -209,7 +210,7 @@ function trillian_start_sequencer() {
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && continue
 
 		info "starting up Trillian sequencer ($i)"
-		./trillian_log_signer\
+		./bin/trillian_log_signer\
 			-force_master\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
@@ -225,7 +226,7 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		nvars[$i:ssrv_tree_id]=$(./createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
+		nvars[$i:ssrv_tree_id]=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
 		info "provisioned Merkle tree with id ${nvars[$i:ssrv_tree_id]}"
@@ -247,17 +248,17 @@ function sigsum_setup() {
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 
-		./sigsum-key gen -o ${nvars[$i:log_dir]}/wit1.key
-		nvars[$i:wit1_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/wit1.key.pub)
-		./sigsum-key gen -o  ${nvars[$i:log_dir]}/wit2.key
-		nvars[$i:wit2_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/wit2.key.pub)
+		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/wit1.key
+		nvars[$i:wit1_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/wit1.key.pub)
+		./bin/sigsum-key gen -o  ${nvars[$i:log_dir]}/wit2.key
+		nvars[$i:wit2_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/wit2.key.pub)
 
 		nvars[$i:ssrv_witnesses]=${nvars[$i:log_dir]}/wit1.key.pub,${nvars[$i:log_dir]}/wit2.key.pub
 
-		./sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
-		nvars[$i:ssrv_key_hash]=$(./sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
+		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
+		nvars[$i:ssrv_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
 		# Use special test.sigsum.org test key to generate token.
-		nvars[$i:token]=$(./sigsum-token create -k <(printf '%064x' 1) --log ${nvars[$i:log_dir]}/ssrv.key.pub)
+		nvars[$i:token]=$(./bin/sigsum-token create -k <(printf '%064x' 1) --log ${nvars[$i:log_dir]}/ssrv.key.pub)
 	done
 }
 
@@ -265,7 +266,7 @@ function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
 			info "creating sth startup=empty"
-			go run ../cmd/sigsum-mktree -sth-path=${nvars[$i:log_dir]}/sth-store
+			./bin/sigsum-mktree -sth-path=${nvars[$i:log_dir]}/sth-store
 		fi
 	done
 }
@@ -298,20 +299,18 @@ function sigsum_start() {
 		      -internal-endpoint=${nvars[$i:ssrv_internal]} \
 		      -log-level=debug \
 		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
-		# Can't use go run, because then we don't get the right pid to kill for cleanup.
-		go build -o $binary ../cmd/$binary/main.go
 		if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
 			info "enabling ssh-agent for $role node ($i)"
 			read nvars[$i:ssrv_pid] < <(
 				ssh-agent sh <<EOF
 			ssh-add ${nvars[$i:log_dir]}/ssrv.key
 			echo \$\$
-			exec ./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
+			exec ./bin/$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
 EOF
 )
 		else
-			./$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
+			./bin/$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 			nvars[$i:ssrv_pid]=$!
 		fi
@@ -329,7 +328,7 @@ function node_stop() {
 function node_destroy() {
 	if [[ "$testflavor" != ephemeral ]] ; then
 		for i in $@; do
-			if ! ./deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
+			if ! ./bin/deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
 				warn "failed deleting provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
 			else
 				info "deleted provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
@@ -590,8 +589,8 @@ function test_inclusion_proof() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (size $size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | ./sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)
-	local leaf_hash=$(echo ${data} | ./sigsum-debug leaf hash -k ${nvars[$cli:cli_key_hash]} -s $signature)
+	local signature=$(echo ${data} | ./bin/sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)
+	local leaf_hash=$(echo ${data} | ./bin/sigsum-debug leaf hash -k ${nvars[$cli:cli_key_hash]} -s $signature)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -726,8 +725,8 @@ function add_leaf() {
 
 	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
 	echo "signature=$(echo $data |
-		./sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)" >> $log_dir/req
-	echo "public_key=$(./sigsum-key hex -k ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
+		./bin/sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)" >> $log_dir/req
+	echo "public_key=$(./bin/sigsum-key hex -k ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
 
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" -H "sigsum-token: test.sigsum.org ${nvars[$s:token]}" \
@@ -746,7 +745,7 @@ function test_cosignature() {
 	local now=$(date +%s)
 
 	echo "cosignature=${kh} $now $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
-		./sigsum-debug head sign -k ${key_file} -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
+		./bin/sigsum-debug head sign -k ${key_file} -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
 	cat $log_dir/req |
 		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
 		     >$log_dir/rsp
