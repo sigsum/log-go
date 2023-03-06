@@ -102,11 +102,9 @@ func TestMemoryInclusionProof(t *testing.T) {
 		})
 		if err != nil {
 			t.Errorf("GetInclusionProof for leaf %d failed: %v", i, err)
-		} else if proof.Size != 5 {
-			t.Errorf("GetInclusionProof size: got %d, wanted 5", proof.Size)
 		} else if proof.LeafIndex != uint64(i) {
 			t.Errorf("GetInclusionProof index: got %d, wanted %d", proof.LeafIndex, i)
-		} else if err := merkle.VerifyInclusion(&leafHash, uint64(i), 5, &th.RootHash, proof.Path); err != nil {
+		} else if err := proof.Verify(&leafHash, &th); err != nil {
 			t.Errorf("inclusion path for leaf %d is invalid: %v", i, err)
 		}
 	}

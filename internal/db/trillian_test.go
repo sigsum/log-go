@@ -355,7 +355,6 @@ func TestGetInclusionProof(t *testing.T) {
 				},
 			},
 			wantProof: types.InclusionProof{
-				Size:      4,
 				LeafIndex: 1,
 				Path: []crypto.Hash{
 					crypto.Hash{},

@@ -405,7 +405,6 @@ func TestGetInclusionProof(t *testing.T) {
 			sthSize:     2,
 			expect:      true,
 			rsp: types.InclusionProof{
-				Size:      2,
 				LeafIndex: 0,
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),

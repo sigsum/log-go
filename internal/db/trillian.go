@@ -235,7 +235,6 @@ func (c *TrillianClient) GetInclusionProof(ctx context.Context, req *requests.In
 		return types.InclusionProof{}, fmt.Errorf("not an inclusion proof: %v", err)
 	}
 	return types.InclusionProof{
-		Size:      req.Size,
 		LeafIndex: uint64(proof.LeafIndex),
 		Path:      path,
 	}, nil
