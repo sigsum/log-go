@@ -30,7 +30,6 @@ var (
 
 func ParseFlags(c *config.Config) {
 	flag.StringVar(&c.Secondary.PrimaryURL, "primary-url", c.Secondary.PrimaryURL, "primary node endpoint for fetching leaves")
-	flag.StringVar(&c.Secondary.PrimaryPubkey, "primary-pubkey", c.Secondary.PrimaryPubkey, "public key file for primary node")
 	flag.Parse()
 }
 
@@ -150,14 +149,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		s.DbClient = trillianClient
 	}
 	// Setup primary node configuration.
-	pubkey, err := key.ReadPublicKeyFile(conf.Secondary.PrimaryPubkey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read primary node pubkey: %v", err)
-	}
-	s.Primary = client.New(client.Config{
-		LogURL: conf.Secondary.PrimaryURL,
-		LogPub: pubkey,
-	})
+	s.Primary = client.New(client.Config{LogURL: conf.Secondary.PrimaryURL})
 
 	// Register HTTP endpoints.
 	return &s, nil

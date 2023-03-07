@@ -165,6 +165,4 @@ should be configured with:
 
 1. `primary-url`: base url for the primary node's internal endpoint.
 
-2. `primary-pubkey`: public key file for the primary's signing key.
-
 The secondary server executable is `sigsum-log-secondary`.

@@ -21,4 +21,3 @@ sth-path = "/var/lib/sigsum-log/sth"
 
 [secondary]
 primary-url = ""
-primary-pubkey = ""

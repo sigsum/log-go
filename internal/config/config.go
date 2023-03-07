@@ -21,8 +21,7 @@ type Primary struct {
 
 // Secondary Config
 type Secondary struct {
-	PrimaryURL    string `toml:"primary-url"`
-	PrimaryPubkey string `toml:"primary-pubkey"`
+	PrimaryURL string `toml:"primary-url"`
 }
 
 type Config struct {
@@ -66,8 +65,7 @@ func NewConfig() *Config {
 			SthStorePath:    "/var/lib/sigsum-log/sth",
 		},
 		Secondary: Secondary{
-			PrimaryURL:    "",
-			PrimaryPubkey: "",
+			PrimaryURL: "",
 		},
 	}
 }
