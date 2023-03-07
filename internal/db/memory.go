@@ -91,7 +91,6 @@ func (db *MemoryDb) GetInclusionProof(_ context.Context, req *requests.Inclusion
 		return types.InclusionProof{}, err
 	}
 	return types.InclusionProof{
-		Size:      req.Size,
 		LeafIndex: index,
 		Path:      path,
 	}, nil
