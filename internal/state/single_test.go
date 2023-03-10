@@ -104,10 +104,10 @@ func TestAddRotate(t *testing.T) {
 	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
 
 	for _, table := range []struct {
-		desc            string
-		signErr         bool
-		signedSize      uint64
-		nextSize        uint64
+		desc       string
+		signErr    bool
+		signedSize uint64
+		nextSize   uint64
 	}{
 		{
 			desc:     "empty",
@@ -135,8 +135,8 @@ func TestAddRotate(t *testing.T) {
 		nth := types.TreeHead{Size: table.nextSize}
 		var storedSth types.SignedTreeHead
 		sm := StateManagerSingle{
-			signer:           signer,
-			signedTreeHead:   sth,
+			signer:         signer,
+			signedTreeHead: sth,
 			storeSth: func(sth *types.SignedTreeHead) error {
 				storedSth = *sth
 				return nil

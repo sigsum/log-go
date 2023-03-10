@@ -20,7 +20,7 @@ type StateManagerSingle struct {
 
 	// Lock-protected access to tree head. All endpoints are readers.
 	sync.RWMutex
-	signedTreeHead   types.SignedTreeHead
+	signedTreeHead types.SignedTreeHead
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
@@ -131,8 +131,6 @@ func (sm *StateManagerSingle) rotate(nextTH *types.TreeHead) error {
 	return nil
 }
 
-
 func (sm *StateManagerSingle) treeStatusString() string {
 	return fmt.Sprintf("signed at %d", sm.signedTreeHead.Size)
 }
-
