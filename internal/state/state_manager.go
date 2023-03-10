@@ -14,5 +14,5 @@ type StateManager interface {
 	SignedTreeHead() types.SignedTreeHead
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
-	Run(context.Context, []witness.WitnessConfig, time.Duration)
+	Run(context.Context, []witness.Config, time.Duration)
 }

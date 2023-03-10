@@ -23,7 +23,7 @@ var (
 	errBadOldsize       = errors.New("bad old size")
 )
 
-type WitnessConfig struct {
+type Config struct {
 	Url    string // Base url
 	PubKey crypto.PublicKey
 }
@@ -36,7 +36,7 @@ type Client struct {
 	getTreeSizeUrl string
 }
 
-func NewClient(config *WitnessConfig, logKeyHash *crypto.Hash) *Client {
+func NewClient(config *Config, logKeyHash *crypto.Hash) *Client {
 	return &Client{
 		cli:            &http.Client{},
 		pubKey:         config.PubKey,

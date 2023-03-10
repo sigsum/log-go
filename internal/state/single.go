@@ -22,7 +22,6 @@ type StateManagerSingle struct {
 
 	// Lock-protected access to tree heads. All endpoints are readers.
 	sync.RWMutex
-	signedTreeHead   types.SignedTreeHead
 	cosignedTreeHead types.CosignedTreeHead
 }
 
@@ -79,7 +78,6 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			secondaryPub: *secondaryPub,
 			timeout:      timeout,
 		},
-		signedTreeHead: sth,
 		// No cosignatures available at startup.
 		cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
 	}, nil
@@ -95,27 +93,15 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Witne
 	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
 		sm.replicationState.primary.GetConsistencyProof)
 
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
 	for {
+		rotateCtx, _ := context.WithTimeout(ctx, interval)
+		if err := sm.rotate(rotateCtx, collector); err != nil {
+			log.Warning("failed rotating tree head: %v", err)
+		}
+		// Waits until end of interval
 		select {
-		case <-ticker.C:
-			// TODO: There should be a better way to
-			// arrange this; if the rotate call blocks
-			// until timeout, we might get soemwhat outof
-			// sync. It would be better if at each tick,
-			// we cancel any outstanding witness accesses,
-			// complete the previous rotation with
-			// whatever cosignatures we got, and then
-			// start over with the next rotation.
-			rotateCtx, cancel := context.WithTimeout(ctx, interval)
-			defer cancel()
-			if err := sm.rotate(rotateCtx, collector); err != nil {
-				log.Warning("failed rotating tree heads: %v", err)
-			}
-			cancel()
-
+		case <-rotateCtx.Done():
+			continue
 		case <-ctx.Done():
 			return
 		}
@@ -152,6 +138,7 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.Cos
 	return nil
 }
 
+// Must be called with write lock held.
 func (sm *StateManagerSingle) treeStatusString() string {
 	return fmt.Sprintf("signed at %d", sm.signedTreeHead.Size)
 }

@@ -20,6 +20,7 @@ import (
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
+	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -30,6 +31,8 @@ import (
 var (
 	gitCommit = "unknown"
 )
+
+var witnessUrls string
 
 func ParseFlags(c *config.Config) {
 	help := false
@@ -82,6 +85,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	witnessConfigs, err := newWitnessConfigs(conf.Primary.Witnesses, witnessUrls)
+	if err != nil {
+		log.Fatal("newWitnessConfigs: %v", err)
+	}
+
 	log.Debug("configuring log-go-primary")
 	node, err := setupPrimaryFromFlags(conf)
 	if err != nil {
@@ -92,7 +100,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx, nil /* TODO: Pass witness configs */, conf.Interval)
+		node.Stateman.Run(ctx, witnessConfigs, conf.Interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -182,7 +190,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	// Setup state manager.
-	_ = witnessMap
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
 		secondary, &secondaryPub, conf.Primary.SthFile)
 	if err != nil {
@@ -204,6 +211,27 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	return &p, nil
+}
+
+func newWitnessConfigs(witnesses, urls string) ([]witness.Config, error) {
+	w := []witness.Config{}
+	// TODO: Use policy file
+//	if len(witnesses) > 0 {
+//		witnesses := strings.Split(witnesses, ",")
+//		urls := strings.Split(urls, ",")
+//		if len(witnesses) != len(urls) {
+//			return nil, fmt.Errorf("witness pubkeys and urls don't match")
+//		}
+//		for i := 0; i < len(witnesses); i++ {
+//			vk, err := key.ReadPublicKeyFile(witnesses[i])
+//			if err != nil {
+//				return nil, fmt.Errorf("failed reading witness key file %q: %v",
+//					witnesses[i], err)
+//			}
+//			w = append(w, witness.Config{Url: urls[i], PubKey: vk})
+//		}
+//	}
+	return w, nil
 }
 
 // await waits for a shutdown signal and then runs a clean-up function
