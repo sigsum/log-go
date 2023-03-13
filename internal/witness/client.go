@@ -58,8 +58,12 @@ func reqToASCII(logKeyHash *crypto.Hash, sth *types.SignedTreeHead,
 	if err := ascii.WriteInt(&buf, "old_size", oldSize); err != nil {
 		return nil, err
 	}
-	if err := proof.ToASCII(&buf); err != nil {
-		return nil, err
+	// TODO: proof.ToASCII currently requires non-empty path, make
+	// it more liberal?
+	if len(proof.Path) > 0 {
+		if err := proof.ToASCII(&buf); err != nil {
+			return nil, err
+		}
 	}
 	return &buf, nil
 }
