@@ -112,7 +112,7 @@ func TestMemoryInclusionProof(t *testing.T) {
 
 func TestMemoryconsistencyProof(t *testing.T) {
 	leaves := newLeaves(5)
-	rootHashes := []crypto.Hash{}
+	treeHeads := []types.TreeHead{{Size: 0, RootHash: merkle.HashEmptyTree()}}
 
 	db := NewMemoryDb()
 	for i, leaf := range leaves {
@@ -126,9 +126,9 @@ func TestMemoryconsistencyProof(t *testing.T) {
 		if th.Size != uint64(i)+1 {
 			t.Fatalf("GetTreeHead return unexpected tree size %d after leaf %d", th.Size, i)
 		}
-		rootHashes = append(rootHashes, th.RootHash)
+		treeHeads = append(treeHeads, th)
 	}
-	for oldSize := 1; oldSize <= 5; oldSize++ {
+	for oldSize := 0; oldSize <= 5; oldSize++ {
 		for newSize := oldSize; newSize <= 5; newSize++ {
 			proof, err := db.GetConsistencyProof(nil, &requests.ConsistencyProof{
 				OldSize: uint64(oldSize),
@@ -136,8 +136,7 @@ func TestMemoryconsistencyProof(t *testing.T) {
 			})
 			if err != nil {
 				t.Errorf("GetConsistencyProof failed for oldSize %d, newSize %d: %v", oldSize, newSize, err)
-			} else if err := merkle.VerifyConsistency(uint64(oldSize), uint64(newSize), &rootHashes[oldSize-1], &rootHashes[newSize-1],
-				proof.Path); err != nil {
+			} else if err := proof.Verify(&treeHeads[oldSize], &treeHeads[newSize]); err != nil {
 				t.Errorf("consistent path for oldSize %d, newSize %d is invalid: %v", oldSize, newSize, err)
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,48 +24,38 @@ import (
 func TestAddLeaf(t *testing.T) {
 	// TODO: Set up a mock rate limiter.
 	for _, table := range []struct {
-		description    string
-		ascii          io.Reader // buffer used to populate HTTP request
-		expectTrillian bool      // expect Trillian client code path
-		errTrillian    error     // error from Trillian client
-		expectToken    bool      // expect token verifier code path
-		errToken       error     // error from token verifier
-		wantCode       int       // HTTP status ok
-		expectStateman bool
-		leafStatus     db.AddLeafStatus // return value from db.AddLeaf()
+		description string
+		ascii       string           // body of HTTP request
+		errTrillian error            // error from Trillian client
+		wantCode    int              // HTTP status ok
+		leafStatus  db.AddLeafStatus // return value from db.AddLeaf()
 	}{
 		{
 			description: "invalid: bad request (parser error)",
-			ascii:       bytes.NewBufferString("key=value\n"),
+			ascii:       "key=value\n",
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafBuffer(t, crypto.Hash{}, false),
+			ascii:       mustLeafAscii(t, crypto.Hash{}, false),
 			wantCode:    http.StatusForbidden,
 		},
 		{
-			description:    "invalid: backend failure",
-			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
-			expectStateman: true,
-			expectTrillian: true,
-			errTrillian:    fmt.Errorf("something went wrong"),
-			wantCode:       http.StatusInternalServerError,
+			description: "invalid: backend failure",
+			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
+			errTrillian: fmt.Errorf("something went wrong"),
+			wantCode:    http.StatusInternalServerError,
 		},
 		{
-			description:    "valid: 202",
-			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
-			expectStateman: true,
-			expectTrillian: true,
-			wantCode:       http.StatusAccepted,
+			description: "valid: 202",
+			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
+			wantCode:    http.StatusAccepted,
 		},
 		{
-			description:    "valid: 200",
-			ascii:          mustLeafBuffer(t, crypto.Hash{}, true),
-			expectStateman: true,
-			expectTrillian: true,
-			leafStatus:     db.AddLeafStatus{IsSequenced: true},
-			wantCode:       http.StatusOK,
+			description: "valid: 200",
+			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
+			leafStatus:  db.AddLeafStatus{IsSequenced: true},
+			wantCode:    http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -74,13 +63,11 @@ func TestAddLeaf(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
-			if table.expectTrillian {
-				client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian)
-			}
+			client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian).AnyTimes()
+
 			stateman := mocksState.NewMockStateManager(ctrl)
-			if table.expectStateman {
-				stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
-			}
+			stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{}).AnyTimes()
+
 			node := Primary{
 				Config:      testConfig,
 				DbClient:    client,
@@ -90,7 +77,7 @@ func TestAddLeaf(t *testing.T) {
 
 			// Create HTTP request
 			url := types.EndpointAddLeaf.Path("http://example.com")
-			req, err := http.NewRequest("POST", url, table.ascii)
+			req, err := http.NewRequest("POST", url, bytes.NewBufferString(table.ascii))
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
@@ -117,7 +104,6 @@ func TestAddCosignature(t *testing.T) {
 	for _, table := range []struct {
 		description string
 		ascii       string // HTTP request
-		expect      bool   // set if a mock answer is expected
 		err         error  // error from Trillian client
 		wantCode    int    // HTTP status ok
 	}{
@@ -133,21 +119,18 @@ func TestAddCosignature(t *testing.T) {
 				crypto.HashBytes([]byte{}),
 				crypto.Signature{},
 			),
-			expect:   true,
 			err:      state.ErrUnknownWitness,
 			wantCode: http.StatusForbidden,
 		},
 		{
 			description: "invalid: backend failure",
 			ascii:       buf(),
-			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid",
 			ascii:       buf(),
-			expect:      true,
 			wantCode:    http.StatusOK,
 		},
 	} {
@@ -156,9 +139,8 @@ func TestAddCosignature(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
-			if table.expect {
-				stateman.EXPECT().AddCosignature(gomock.Any()).Return(table.err)
-			}
+			stateman.EXPECT().AddCosignature(gomock.Any()).Return(table.err).AnyTimes()
+
 			node := Primary{
 				Config:   testConfig,
 				Stateman: stateman,
@@ -568,7 +550,7 @@ func TestGetLeaves(t *testing.T) {
 	}
 }
 
-func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {
+func mustLeafAscii(t *testing.T, message crypto.Hash, wantSig bool) string {
 	t.Helper()
 
 	vk, sk, err := crypto.NewKeyPair()
@@ -582,10 +564,10 @@ func mustLeafBuffer(t *testing.T, message crypto.Hash, wantSig bool) io.Reader {
 	if !wantSig {
 		sig[0] += 1
 	}
-	return bytes.NewBufferString(fmt.Sprintf(
+	return fmt.Sprintf(
 		"%s=%x\n"+"%s=%x\n"+"%s=%x\n",
 		"message", message[:],
 		"signature", sig,
 		"public_key", vk,
-	))
+	)
 }
