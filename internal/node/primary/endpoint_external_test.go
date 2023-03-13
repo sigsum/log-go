@@ -166,13 +166,11 @@ func TestAddCosignature(t *testing.T) {
 func TestGetTreeToCosign(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool  // set if a mock answer is expected
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
 	}{
 		{
 			description: "valid",
-			expect:      true,
 			wantCode:    http.StatusOK,
 		},
 	} {
@@ -181,9 +179,8 @@ func TestGetTreeToCosign(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
-			if table.expect {
-				stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
-			}
+			stateman.EXPECT().NextTreeHead().Return(types.SignedTreeHead{})
+
 			node := Primary{
 				Config:   testConfig,
 				Stateman: stateman,
@@ -209,13 +206,11 @@ func TestGetTreeToCosign(t *testing.T) {
 func TestGetTreeCosigned(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		expect      bool  // set if a mock answer is expected
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
 	}{
 		{
 			description: "valid",
-			expect:      true,
 			wantCode:    http.StatusOK,
 		},
 	} {
@@ -224,12 +219,11 @@ func TestGetTreeCosigned(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
-			if table.expect {
-				stateman.EXPECT().CosignedTreeHead().Return(
-					types.CosignedTreeHead{
-						Cosignatures: make([]types.Cosignature, 1),
-					})
-			}
+			stateman.EXPECT().CosignedTreeHead().Return(
+				types.CosignedTreeHead{
+					Cosignatures: make([]types.Cosignature, 1),
+				})
+
 			node := Primary{
 				Config:   testConfig,
 				Stateman: stateman,
@@ -257,7 +251,6 @@ func TestGetConsistencyProof(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sthSize     uint64
-		expect      bool                   // set if a mock answer is expected
 		rsp         types.ConsistencyProof // consistency proof from Trillian client
 		err         error                  // error from Trillian client
 		wantCode    int                    // HTTP status ok
@@ -287,7 +280,6 @@ func TestGetConsistencyProof(t *testing.T) {
 			description: "invalid: backend failure",
 			params:      "1/2",
 			sthSize:     2,
-			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
@@ -295,7 +287,6 @@ func TestGetConsistencyProof(t *testing.T) {
 			description: "valid",
 			params:      "1/2",
 			sthSize:     2,
-			expect:      true,
 			rsp: types.ConsistencyProof{
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),
@@ -309,7 +300,7 @@ func TestGetConsistencyProof(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
-			if table.expect {
+			if table.err != nil || table.rsp.Path != nil {
 				client.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
@@ -344,7 +335,6 @@ func TestGetInclusionProof(t *testing.T) {
 		description string
 		params      string // params is the query's url params
 		sthSize     uint64
-		expect      bool                 // set if a mock answer is expected
 		rsp         types.InclusionProof // inclusion proof from Trillian client
 		err         error                // error from Trillian client
 		wantCode    int                  // HTTP status ok
@@ -369,7 +359,6 @@ func TestGetInclusionProof(t *testing.T) {
 			description: "invalid: backend failure",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			sthSize:     2,
-			expect:      true,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
@@ -377,7 +366,6 @@ func TestGetInclusionProof(t *testing.T) {
 			description: "invalid: not included",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			sthSize:     2,
-			expect:      true,
 			err:         db.ErrNotIncluded,
 			wantCode:    http.StatusNotFound,
 		},
@@ -385,7 +373,6 @@ func TestGetInclusionProof(t *testing.T) {
 			description: "valid",
 			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
 			sthSize:     2,
-			expect:      true,
 			rsp: types.InclusionProof{
 				LeafIndex: 0,
 				Path: []crypto.Hash{
@@ -400,7 +387,7 @@ func TestGetInclusionProof(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := mocksDB.NewMockClient(ctrl)
-			if table.expect {
+			if table.err != nil || table.rsp.Path != nil {
 				client.EXPECT().GetInclusionProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
