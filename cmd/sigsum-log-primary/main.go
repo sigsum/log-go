@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	getopt "github.com/pborman/getopt/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/config"
@@ -34,13 +34,13 @@ var (
 )
 
 func ParseFlags(c *config.Config) {
-	flag.StringVar(&c.Primary.Witnesses, "witnesses", c.Primary.Witnesses, "comma-separated list of trusted witness public key files")
-	flag.StringVar(&c.Primary.RateLimitConfig, "rate-limit-config", c.Primary.RateLimitConfig, "enable rate limiting, based on given config file")
-	flag.BoolVar(&c.Primary.AllowTestDomain, "allow-test-domain", c.Primary.AllowTestDomain, "allow submit tokens from test.sigsum.org")
-	flag.StringVar(&c.Primary.SecondaryURL, "secondary-url", c.Primary.SecondaryURL, "secondary node endpoint for fetching latest replicated tree head")
-	flag.StringVar(&c.Primary.SecondaryPubkey, "secondary-pubkey", c.Primary.SecondaryPubkey, "public key file for secondary node")
-	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
-	flag.Parse()
+	getopt.FlagLong(&c.Primary.Witnesses, "witnesses", 0, "comma-separated list of trusted witness public key files")
+	getopt.FlagLong(&c.Primary.RateLimitConfig, "rate-limit-config", 0, "enable rate limiting, based on given config file")
+	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "allow submit tokens from test.sigsum.org")
+	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "secondary node endpoint for fetching latest replicated tree head")
+	getopt.FlagLong(&c.Primary.SecondaryPubkey, "secondary-pubkey", 0, "public key file for secondary node")
+	getopt.FlagLong(&c.Primary.SthStorePath, "sth-path", 0, "path to file where latest published STH is being stored")
+	getopt.Parse()
 }
 
 func main() {
@@ -59,7 +59,7 @@ func main() {
 	}
 
 	// Allow flags to override them
-	config.ServerFlags(conf)
+	conf.ServerFlags(getopt.CommandLine)
 	ParseFlags(conf)
 
 	if err := utils.LogToFile(conf.LogFile); err != nil {

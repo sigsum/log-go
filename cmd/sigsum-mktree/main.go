@@ -2,38 +2,34 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
-	"strings"
+
+	getopt "github.com/pborman/getopt/v2"
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/state"
 )
 
 func ParseFlags(c *config.Config) state.StartupMode {
-	// Default mode.
-	startupMode := state.StartupEmpty
+	mode := "empty"
+	getopt.FlagLong(&c.Primary.SthStorePath, "sth-path", 0, "path to file where latest published STH is being stored")
+	getopt.FlagLong(&mode, "mode", 0, "Mode of operation, 'empty' (default), 'local-tree', or 'saved' (no change, only check that a saved file exists)")
+	getopt.Parse()
 
-	flag.StringVar(&c.Primary.SthStorePath, "sth-path", c.Primary.SthStorePath, "path to file where latest published STH is being stored")
-	flag.Func("mode", "Mode of operation, empty (default), local-tree, or saved (no change, only check that a saved file exists).", func(mode string) error {
-		switch strings.ToLower(mode) {
-		case "empty":
-			startupMode = state.StartupEmpty
-		case "local-tree":
-			startupMode = state.StartupLocalTree
-		case "saved":
-			startupMode = state.StartupSaved
-		default:
-			return fmt.Errorf("unknown mode %q, must be one of \"empty\", \"local-tree\", or \"saved\"",
-				mode)
-		}
-		return nil
-	})
-	flag.Parse()
-	return startupMode
+	switch mode {
+	case "empty":
+		return state.StartupEmpty
+	case "local-tree":
+		return state.StartupLocalTree
+	case "saved":
+		return state.StartupSaved
+	default:
+		log.Fatalf("unknown mode %q, must be one of \"empty\", \"local-tree\", or \"saved\"", mode)
+		return state.StartupEmpty
+	}
 }
 
 func main() {
