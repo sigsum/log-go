@@ -44,9 +44,8 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 	for _, tbl := range []struct {
 		desc string
 		// db.GetTreeHead()
-		trillianGetTHExp bool
-		trillianTHRet    types.TreeHead
-		trillianTHErr    error
+		trillianTHRet types.TreeHead
+		trillianTHErr error
 		// client.GetLeaves()
 		primaryGetLeavesRet []types.Leaf
 		primaryGetLeavesErr error
@@ -55,29 +54,25 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 		trillianAddLeavesErr error
 	}{
 		{
-			desc:             "no tree head from trillian",
-			trillianGetTHExp: true,
-			trillianTHErr:    fmt.Errorf("mocked error"),
+			desc:          "no tree head from trillian",
+			trillianTHErr: fmt.Errorf("mocked error"),
 		},
 		{
 			desc:                "error fetching leaves",
-			trillianGetTHExp:    true,
 			trillianTHRet:       types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesErr: fmt.Errorf("mocked error"),
 		},
 		{
-			desc:             "error adding leaves",
-			trillianGetTHExp: true,
-			trillianTHRet:    types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
+			desc:          "error adding leaves",
+			trillianTHRet: types.TreeHead{Size: 5}, // 6-5 => 1 expected GetLeaves
 			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
 			trillianAddLeavesErr: fmt.Errorf("mocked error"),
 		},
 		{
-			desc:             "success",
-			trillianGetTHExp: true,
-			trillianTHRet:    types.TreeHead{Size: 5},
+			desc:          "success",
+			trillianTHRet: types.TreeHead{Size: 5},
 			primaryGetLeavesRet: []types.Leaf{
 				types.Leaf{},
 			},
@@ -92,13 +87,11 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			primaryClient := mocksClient.NewMockClient(ctrl)
 
 			trillianClient := mocksDB.NewMockClient(ctrl)
-			if tbl.trillianGetTHExp {
-				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
-				if tbl.trillianTHErr == nil && tbl.primaryGetLeavesErr == nil && tbl.trillianAddLeavesErr == nil {
-					updatedSize := tbl.trillianTHRet.Size + uint64(len(tbl.primaryGetLeavesRet))
-					trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(
-						types.TreeHead{Size: updatedSize}, tbl.trillianTHErr)
-				}
+			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
+			if tbl.trillianTHErr == nil && tbl.primaryGetLeavesErr == nil && tbl.trillianAddLeavesErr == nil {
+				updatedSize := tbl.trillianTHRet.Size + uint64(len(tbl.primaryGetLeavesRet))
+				trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(
+					types.TreeHead{Size: updatedSize}, tbl.trillianTHErr)
 			}
 
 			if tbl.primaryGetLeavesErr != nil || tbl.primaryGetLeavesRet != nil {
