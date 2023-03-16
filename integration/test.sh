@@ -284,7 +284,7 @@ function sigsum_start() {
 		if [[ "$testflavor" = ephemeral ]] ; then
 			extra_args+=" --ephemeral-test-backend"
 		else
-			extra_args+=" --rpc-backend=${nvars[$i:tsrv_rpc]}"
+			extra_args+=" --trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
 			extra_args+=" --tree-id=${nvars[$i:ssrv_tree_id]}"
 		fi
 
