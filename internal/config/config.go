@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ type Primary struct {
 	SecondaryURL    string `toml:"secondary-url"`
 	SecondaryPubkey string `toml:"secondary-pubkey"`
 	SthStorePath    string `toml:"sth-path"`
+	MaxRange        int    `toml:"max-range"`
 }
 
 // Secondary Config
@@ -26,7 +28,6 @@ type Secondary struct {
 
 type Config struct {
 	Prefix           string        `toml:"url-prefix"`
-	MaxRange         int           `toml:"max-range"`
 	Timeout          time.Duration `toml:"timeout"`
 	Interval         time.Duration `toml:"interval"`
 	LogFile          string        `toml:"log-file"`
@@ -55,7 +56,6 @@ func NewConfig() *Config {
 		Interval:         time.Second * 30,
 		LogFile:          "",
 		LogLevel:         "info",
-		MaxRange:         10,
 		Primary: Primary{
 			Witnesses:       "",
 			RateLimitConfig: "",
@@ -63,6 +63,7 @@ func NewConfig() *Config {
 			SecondaryURL:    "",
 			SecondaryPubkey: "",
 			SthStorePath:    "/var/lib/sigsum-log/sth",
+			MaxRange:        10,
 		},
 		Secondary: Secondary{
 			PrimaryURL: "",
@@ -72,9 +73,14 @@ func NewConfig() *Config {
 
 func LoadConfig(f io.Reader) (*Config, error) {
 	conf := NewConfig()
-	if _, err := toml.NewDecoder(f).Decode(&conf); err != nil {
+	metadata, err := toml.NewDecoder(f).Decode(&conf)
+	if err != nil {
 		return nil, err
 	}
+	if undecoded := metadata.Undecoded(); len(undecoded) > 0 {
+		return nil, fmt.Errorf("unknown keywords: %v", undecoded)
+	}
+
 	return conf, nil
 }
 
@@ -99,7 +105,7 @@ func OpenConfigFile() (io.Reader, error) {
 func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.ExternalEndpoint, "external-endpoint", 0, "host:port specification of where sigsum-log-primary serves clients")
 	set.FlagLong(&c.InternalEndpoint, "internal-endpoint", 0, "host:port specification of where sigsum-log-primary serves other log nodes")
-	set.FlagLong(&c.RpcBackend, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
+	set.FlagLong(&c.RpcBackend, "rpc-backend", 0, "host:port specification of where Trillian serves clients")
 	set.FlagLong(&c.EphemeralBackend, "ephemeral-test-backend", 0, "if set, enables in-memory backend, with NO persistent storage")
 	set.FlagLong(&c.Prefix, "url-prefix", 0, "a prefix that precedes /<endpoint>")
 	set.FlagLong(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database")

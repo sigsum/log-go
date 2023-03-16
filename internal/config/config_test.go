@@ -8,8 +8,8 @@ import (
 var testConfig = `
 external-endpoint = "localhost:6965"
 internal-endpoint = "localhost:6967"
-trillian-rpc-server = "localhost:6962"
-ephemeral-test-backend = false
+rpc-backend = "localhost:6962"
+ephemeral-backend = false
 url-prefix = ""
 tree-id = 0
 timeout = "10s"
@@ -29,15 +29,13 @@ sth-path = "/var/lib/sigsum-log/sth"
 
 [secondary]
 primary-url = "http://localhost:9091"
-primary-pubkey = ""
-test-mode = false
 `
 
 func TestReadConfig(t *testing.T) {
 	r := strings.NewReader(testConfig)
 	conf, err := LoadConfig(r)
 	if err != nil {
-		t.Fatalf("Failed read configuration")
+		t.Fatalf("Failed read configuration: %v", err)
 	}
 	if conf.Primary.SthStorePath != "/var/lib/sigsum-log/sth" {
 		t.Fatalf("Failed to parse primary configuration")
