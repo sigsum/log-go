@@ -12,12 +12,12 @@ import (
 
 // Primary Config
 type Primary struct {
-	RateLimitConfig string `toml:"rate-limit-config"`
-	AllowTestDomain bool   `toml:"allow-test-domain"`
-	SecondaryURL    string `toml:"secondary-url"`
-	SecondaryPubkey string `toml:"secondary-pubkey"`
-	SthStorePath    string `toml:"sth-path"`
-	MaxRange        int    `toml:"max-range"`
+	RateLimitConfigFile string `toml:"rate-limit-config-file"`
+	AllowTestDomain     bool   `toml:"allow-test-domain"`
+	SecondaryURL        string `toml:"secondary-url"`
+	SecondaryPubkeyFile string `toml:"secondary-pubkey-file"`
+	SthFile             string `toml:"sth-file"`
+	MaxRange            int    `toml:"max-range"`
 }
 
 // Secondary Config
@@ -35,7 +35,7 @@ type Config struct {
 	InternalEndpoint  string        `toml:"internal-endpoint"`
 	TrillianRpcServer string        `toml:"trillian-rpc-server"`
 	EphemeralBackend  bool          `toml:"ephemeral-backend"`
-	TreeID            int64         `toml:"tree-id"`
+	TreeIDFile        string        `toml:"tree-id-file"`
 	Key               string        `toml:"key"`
 	Primary           `toml:"primary"`
 	Secondary         `toml:"secondary"`
@@ -49,19 +49,19 @@ func NewConfig() *Config {
 		TrillianRpcServer: "localhost:6962",
 		EphemeralBackend:  false,
 		Prefix:            "",
-		TreeID:            0,
+		TreeIDFile:        "/var/lib/sigsum-log/tree-id",
 		Timeout:           time.Second * 10,
 		Key:               "",
 		Interval:          time.Second * 30,
 		LogFile:           "",
 		LogLevel:          "info",
 		Primary: Primary{
-			RateLimitConfig: "",
-			AllowTestDomain: false,
-			SecondaryURL:    "",
-			SecondaryPubkey: "",
-			SthStorePath:    "/var/lib/sigsum-log/sth",
-			MaxRange:        10,
+			RateLimitConfigFile: "",
+			AllowTestDomain:     false,
+			SecondaryURL:        "",
+			SecondaryPubkeyFile: "",
+			SthFile:             "/var/lib/sigsum-log/sth",
+			MaxRange:            10,
 		},
 		Secondary: Secondary{
 			PrimaryURL: "",
@@ -106,7 +106,7 @@ func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.TrillianRpcServer, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
 	set.FlagLong(&c.EphemeralBackend, "ephemeral-test-backend", 0, "if set, enables in-memory backend, with NO persistent storage")
 	set.FlagLong(&c.Prefix, "url-prefix", 0, "a prefix that precedes /<endpoint>")
-	set.FlagLong(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database")
+	set.FlagLong(&c.TreeIDFile, "tree-id-file", 0, "tree identifier in the Trillian database")
 	set.FlagLong(&c.Timeout, "timeout", 0, "timeout for backend requests")
 	set.FlagLong(&c.Key, "key", 0, "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
 	set.FlagLong(&c.Interval, "interval", 0, "interval used to rotate the log's cosigned STH")

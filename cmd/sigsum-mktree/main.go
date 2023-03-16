@@ -17,7 +17,7 @@ func ParseFlags(c *config.Config) state.StartupMode {
 	mode := "empty"
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Primary.SthStorePath, "sth-path", 0, "path to file where latest published STH is being stored")
+	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "file where latest published STH is being stored")
 	getopt.FlagLong(&mode, "mode", 0, "Mode of operation, 'empty' (default), 'local-tree', or 'saved' (no change, only check that a saved file exists)")
 	getopt.FlagLong(&help, "help", '?', "display help")
 	getopt.Parse()
@@ -55,21 +55,21 @@ func main() {
 	}
 
 	startupMode := ParseFlags(conf)
-	startupFile := conf.SthStorePath + state.StartupFileSuffix
+	startupFile := conf.SthFile + state.StartupFileSuffix
 	switch startupMode {
 	case state.StartupSaved:
-		if _, err := os.Stat(conf.SthStorePath); err != nil {
+		if _, err := os.Stat(conf.SthFile); err != nil {
 			log.Fatalf("Signed tree head file %q doesn't exist: %v",
-				conf.SthStorePath, err)
+				conf.SthFile, err)
 		}
 		checkNotExists(startupFile)
 
 	case state.StartupEmpty:
-		checkNotExists(conf.SthStorePath)
+		checkNotExists(conf.SthFile)
 		writeStartupFile(startupFile, "empty")
 
 	case state.StartupLocalTree:
-		checkNotExists(conf.SthStorePath)
+		checkNotExists(conf.SthFile)
 		writeStartupFile(startupFile, "local-tree")
 	}
 }

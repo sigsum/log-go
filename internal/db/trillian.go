@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/trillian"
@@ -11,6 +12,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"sigsum.org/sigsum-go/pkg/ascii"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/merkle"
@@ -57,15 +60,20 @@ func (treeType TreeType) checkTrillianTreeType(trillianType trillian.TreeType) e
 	return nil
 }
 
-func DialTrillian(target string, timeout time.Duration, treeType TreeType, treeId int64) (*TrillianClient, error) {
+func DialTrillian(target string, timeout time.Duration, treeType TreeType, treeIdFile string) (*TrillianClient, error) {
+	treeId, err := readTreeId(treeIdFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tree id: %v", err)
+	}
+
 	conn, err := grpc.Dial(target,
 		grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(timeout))
 	if err != nil {
-		return nil, fmt.Errorf("Connection to trillian failed: %v", err)
+		return nil, fmt.Errorf("connection to trillian failed: %v", err)
 	}
 	tree, err := trillian.NewTrillianAdminClient(conn).GetTree(
-		context.Background(), &trillian.GetTreeRequest{TreeId: treeId})
+		context.Background(), &trillian.GetTreeRequest{TreeId: int64(treeId)})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +82,7 @@ func DialTrillian(target string, timeout time.Duration, treeType TreeType, treeI
 	}
 
 	return &TrillianClient{
-		treeID:    treeId,
+		treeID:    int64(treeId),
 		logClient: trillian.NewTrillianLogClient(conn),
 	}, nil
 }
@@ -289,4 +297,14 @@ func nodePathFromHashes(hashes [][]byte) ([]crypto.Hash, error) {
 		copy(path[i][:], hashes[i])
 	}
 	return path, nil
+}
+
+func readTreeId(file string) (uint64, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	p := ascii.NewParser(f)
+	return p.GetInt("tree-id")
 }
