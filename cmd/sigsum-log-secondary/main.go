@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	getopt "github.com/pborman/getopt/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/config"
@@ -29,8 +29,14 @@ var (
 )
 
 func ParseFlags(c *config.Config) {
-	flag.StringVar(&c.Secondary.PrimaryURL, "primary-url", c.Secondary.PrimaryURL, "primary node endpoint for fetching leaves")
-	flag.Parse()
+	help := false
+	getopt.SetParameters("")
+	getopt.FlagLong(&c.Secondary.PrimaryURL, "primary-url", 0, "primary node endpoint for fetching leaves")
+	getopt.Parse()
+	if help {
+		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
 }
 
 func main() {
@@ -49,7 +55,7 @@ func main() {
 	}
 
 	// Allow flags to override them
-	config.ServerFlags(conf)
+	conf.ServerFlags(getopt.CommandLine)
 	ParseFlags(conf)
 
 	if err := utils.LogToFile(conf.LogFile); err != nil {

@@ -40,19 +40,19 @@ function main() {
 	node_setup $loga $logb
 
 	# Primary
-	nvars[$loga:ssrv_extra_args]="-secondary-url=http://${nvars[$logb:int_url]}"
-	nvars[$loga:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
-	nvars[$loga:ssrv_extra_args]+=" -rate-limit-config=rate-limit.cfg"
-	nvars[$loga:ssrv_extra_args]+=" -allow-test-domain=true"
+	nvars[$loga:ssrv_extra_args]="--secondary-url=http://${nvars[$logb:int_url]}"
+	nvars[$loga:ssrv_extra_args]+=" --secondary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
+	nvars[$loga:ssrv_extra_args]+=" --rate-limit-config=rate-limit.cfg"
+	nvars[$loga:ssrv_extra_args]+=" --allow-test-domain=true"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$loga:ssrv_extra_args]+=" -ephemeral-test-backend"
+		nvars[$loga:ssrv_extra_args]+=" --ephemeral-test-backend"
 	fi
 	node_start $loga
 
 	# Secondary
-	nvars[$logb:ssrv_extra_args]="-primary-url=http://${nvars[$loga:int_url]}"
+	nvars[$logb:ssrv_extra_args]="--primary-url=http://${nvars[$loga:int_url]}"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$logb:ssrv_extra_args]+=" -ephemeral-test-backend"
+		nvars[$logb:ssrv_extra_args]+=" --ephemeral-test-backend"
 	fi
 	node_start $logb
 
@@ -74,11 +74,11 @@ function main() {
 		node_setup $logc
 
 		node_promote $logb $loga
-		nvars[$logb:ssrv_extra_args]="-secondary-url=http://${nvars[$logc:int_url]}"
-		nvars[$logb:ssrv_extra_args]+=" -secondary-pubkey=${nvars[$logc:log_dir]}/ssrv.key.pub"
+		nvars[$logb:ssrv_extra_args]="--secondary-url=http://${nvars[$logc:int_url]}"
+		nvars[$logb:ssrv_extra_args]+=" --secondary-pubkey=${nvars[$logc:log_dir]}/ssrv.key.pub"
 		node_start_fe $logb
 
-		nvars[$logc:ssrv_extra_args]="-primary-url=http://${nvars[$logb:int_url]}"
+		nvars[$logc:ssrv_extra_args]="--primary-url=http://${nvars[$logb:int_url]}"
 		nodes+=" logc"
 		node_start $logc
 
@@ -168,7 +168,7 @@ function node_promote() {
 	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "creating sth startup=local-tree"
-	./bin/sigsum-mktree -mode=local-tree -sth-path=${nvars[$new_primary:log_dir]}/sth-store
+	./bin/sigsum-mktree --mode=local-tree --sth-path=${nvars[$new_primary:log_dir]}/sth-store
 }
 
 function trillian_setup() {
@@ -264,7 +264,7 @@ function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
 			info "creating sth startup=empty"
-			./bin/sigsum-mktree -sth-path=${nvars[$i:log_dir]}/sth-store
+			./bin/sigsum-mktree --sth-path=${nvars[$i:log_dir]}/sth-store
 		fi
 	done
 }
@@ -276,39 +276,39 @@ function sigsum_start() {
 		local extra_args="${nvars[$i:ssrv_extra_args]}"
 
 		if [[ $role = primary ]]; then
-			extra_args+=" -witnesses=${nvars[$i:ssrv_witnesses]}"
-			extra_args+=" -sth-path=${nvars[$i:log_dir]}/sth-store"
+			extra_args+=" --witnesses=${nvars[$i:ssrv_witnesses]}"
+			extra_args+=" --sth-path=${nvars[$i:log_dir]}/sth-store"
 		else
 			binary=sigsum-log-secondary
 		fi
 		if [[ "$testflavor" = ephemeral ]] ; then
-			extra_args+=" -ephemeral-test-backend"
+			extra_args+=" --ephemeral-test-backend"
 		else
-			extra_args+=" -trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
-			extra_args+=" -tree-id=${nvars[$i:ssrv_tree_id]}"
+			extra_args+=" --trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
+			extra_args+=" --tree-id=${nvars[$i:ssrv_tree_id]}"
 		fi
 
 		info "starting Sigsum log $role node ($i)"
 
 		args="$extra_args \
-		      -url-prefix=${nvars[$i:ssrv_prefix]} \
-		      -interval=${nvars[$i:ssrv_interval]}s \
-		      -external-endpoint=${nvars[$i:ssrv_endpoint]} \
-		      -internal-endpoint=${nvars[$i:ssrv_internal]} \
-		      -log-level=debug \
-		      -log-file=${nvars[$i:log_dir]}/sigsum-log.log"
+		      --url-prefix=${nvars[$i:ssrv_prefix]} \
+		      --interval=${nvars[$i:ssrv_interval]}s \
+		      --external-endpoint=${nvars[$i:ssrv_endpoint]} \
+		      --internal-endpoint=${nvars[$i:ssrv_internal]} \
+		      --log-level=debug \
+		      --log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
 			info "enabling ssh-agent for $role node ($i)"
 			read nvars[$i:ssrv_pid] < <(
 				ssh-agent sh <<EOF
 			ssh-add ${nvars[$i:log_dir]}/ssrv.key
 			echo \$\$
-			exec ./bin/$binary $args -key=${nvars[$i:log_dir]}/ssrv.key.pub \
+			exec ./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key.pub \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
 EOF
 )
 		else
-			./bin/$binary $args -key=${nvars[$i:log_dir]}/ssrv.key \
+			./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 			nvars[$i:ssrv_pid]=$!
 		fi

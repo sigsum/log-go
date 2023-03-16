@@ -1,12 +1,12 @@
 package config
 
 import (
-	"flag"
 	"io"
 	"os"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	getopt "github.com/pborman/getopt/v2"
 )
 
 // Primary Config
@@ -96,17 +96,17 @@ func OpenConfigFile() (io.Reader, error) {
 	}
 }
 
-func ServerFlags(c *Config) {
-	flag.StringVar(&c.ExternalEndpoint, "external-endpoint", c.ExternalEndpoint, "host:port specification of where sigsum-log-primary serves clients")
-	flag.StringVar(&c.InternalEndpoint, "internal-endpoint", c.InternalEndpoint, "host:port specification of where sigsum-log-primary serves other log nodes")
-	flag.StringVar(&c.RpcBackend, "trillian-rpc-server", c.RpcBackend, "host:port specification of where Trillian serves clients")
-	flag.BoolVar(&c.EphemeralBackend, "ephemeral-test-backend", c.EphemeralBackend, "if set, enables in-memory backend, with NO persistent storage")
-	flag.StringVar(&c.Prefix, "url-prefix", c.Prefix, "a prefix that precedes /<endpoint>")
-	flag.Int64Var(&c.TreeID, "tree-id", c.TreeID, "tree identifier in the Trillian database")
-	flag.DurationVar(&c.Timeout, "timeout", c.Timeout, "timeout for backend requests")
-	flag.StringVar(&c.Key, "key", c.Key, "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
-	flag.DurationVar(&c.Interval, "interval", c.Interval, "interval used to rotate the log's cosigned STH")
-	flag.StringVar(&c.LogFile, "log-file", c.LogFile, "file to write logs to (Default: stderr)")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "log level (Available options: debug, info, warning, error. Default: info)")
-	flag.IntVar(&c.MaxRange, "max-range", c.MaxRange, "maximum number of entries that can be retrived in a single request")
+func (c *Config) ServerFlags(set *getopt.Set) {
+	set.FlagLong(&c.ExternalEndpoint, "external-endpoint", 0, "host:port specification of where sigsum-log-primary serves clients")
+	set.FlagLong(&c.InternalEndpoint, "internal-endpoint", 0, "host:port specification of where sigsum-log-primary serves other log nodes")
+	set.FlagLong(&c.RpcBackend, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
+	set.FlagLong(&c.EphemeralBackend, "ephemeral-test-backend", 0, "if set, enables in-memory backend, with NO persistent storage")
+	set.FlagLong(&c.Prefix, "url-prefix", 0, "a prefix that precedes /<endpoint>")
+	set.FlagLong(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database")
+	set.FlagLong(&c.Timeout, "timeout", 0, "timeout for backend requests")
+	set.FlagLong(&c.Key, "key", 0, "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
+	set.FlagLong(&c.Interval, "interval", 0, "interval used to rotate the log's cosigned STH")
+	set.FlagLong(&c.LogFile, "log-file", 0, "file to write logs to (Default: stderr)")
+	set.FlagLong(&c.LogLevel, "log-level", 0, "log level (Available options: debug, info, warning, error. Default: info)")
+	set.FlagLong(&c.MaxRange, "max-range", 0, "maximum number of entries that can be retrived in a single request")
 }
