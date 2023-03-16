@@ -15,9 +15,16 @@ import (
 
 func ParseFlags(c *config.Config) state.StartupMode {
 	mode := "empty"
+	help := false
+	getopt.SetParameters("")
 	getopt.FlagLong(&c.Primary.SthStorePath, "sth-path", 0, "path to file where latest published STH is being stored")
 	getopt.FlagLong(&mode, "mode", 0, "Mode of operation, 'empty' (default), 'local-tree', or 'saved' (no change, only check that a saved file exists)")
+	getopt.FlagLong(&help, "help", '?', "display help")
 	getopt.Parse()
+	if help {
+		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
 
 	switch mode {
 	case "empty":
