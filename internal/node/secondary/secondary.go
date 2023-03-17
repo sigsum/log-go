@@ -64,11 +64,13 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 			EndIndex:   curTH.Size + leavesBatchSize,
 		}
 		leaves, err := s.Primary.GetLeaves(ctx, req)
-		// TODO: Recognize HTTP status 404 as meaning that
-		// we're at the end of the tree, and hence the normal
-		// way to exit this loop.
 		if err != nil {
-			log.Warning("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
+			if err == client.HttpNotFound {
+				// Normal way to exit, so don't log at warning level.
+				log.Debug("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
+			} else {
+				log.Warning("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
+			}
 			return
 		}
 		log.Debug("got %d leaves from primary when asking for [%d:%d]", len(leaves), req.StartIndex, req.EndIndex)
