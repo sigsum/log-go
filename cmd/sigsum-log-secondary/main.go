@@ -148,7 +148,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	if conf.EphemeralBackend {
 		s.DbClient = db.NewMemoryDb()
 	} else {
-		trillianClient, err := db.DialTrillian(conf.RpcBackend, s.Config.Timeout, db.SecondaryTree, conf.TreeID)
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TreeID)
 		if err != nil {
 			return nil, err
 		}

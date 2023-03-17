@@ -25,37 +25,37 @@ type Secondary struct {
 }
 
 type Config struct {
-	Prefix           string        `toml:"url-prefix"`
-	MaxRange         int           `toml:"max-range"`
-	Timeout          time.Duration `toml:"timeout"`
-	Interval         time.Duration `toml:"interval"`
-	LogFile          string        `toml:"log-file"`
-	LogLevel         string        `toml:"log-level"`
-	ExternalEndpoint string        `toml:"external-endpoint"`
-	InternalEndpoint string        `toml:"internal-endpoint"`
-	RpcBackend       string        `toml:"rpc-backend"`
-	EphemeralBackend bool          `toml:"ephemeral-backend"`
-	TreeID           int64         `toml:"tree-id"`
-	Key              string        `toml:"key"`
-	Primary          `toml:"primary"`
-	Secondary        `toml:"secondary"`
+	Prefix            string        `toml:"url-prefix"`
+	MaxRange          int           `toml:"max-range"`
+	Timeout           time.Duration `toml:"timeout"`
+	Interval          time.Duration `toml:"interval"`
+	LogFile           string        `toml:"log-file"`
+	LogLevel          string        `toml:"log-level"`
+	ExternalEndpoint  string        `toml:"external-endpoint"`
+	InternalEndpoint  string        `toml:"internal-endpoint"`
+	TrillianRpcServer string        `toml:"trillian-rpc-server"`
+	EphemeralBackend  bool          `toml:"ephemeral-backend"`
+	TreeID            int64         `toml:"tree-id"`
+	Key               string        `toml:"key"`
+	Primary           `toml:"primary"`
+	Secondary         `toml:"secondary"`
 }
 
 func NewConfig() *Config {
 	// Initialize default configuration
 	return &Config{
-		ExternalEndpoint: "localhost:6965",
-		InternalEndpoint: "localhost:6967",
-		RpcBackend:       "localhost:6962",
-		EphemeralBackend: false,
-		Prefix:           "",
-		TreeID:           0,
-		Timeout:          time.Second * 10,
-		Key:              "",
-		Interval:         time.Second * 30,
-		LogFile:          "",
-		LogLevel:         "info",
-		MaxRange:         10,
+		ExternalEndpoint:  "localhost:6965",
+		InternalEndpoint:  "localhost:6967",
+		TrillianRpcServer: "localhost:6962",
+		EphemeralBackend:  false,
+		Prefix:            "",
+		TreeID:            0,
+		Timeout:           time.Second * 10,
+		Key:               "",
+		Interval:          time.Second * 30,
+		LogFile:           "",
+		LogLevel:          "info",
+		MaxRange:          10,
 		Primary: Primary{
 			Witnesses:       "",
 			RateLimitConfig: "",
@@ -99,7 +99,7 @@ func OpenConfigFile() (io.Reader, error) {
 func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.ExternalEndpoint, "external-endpoint", 0, "host:port specification of where sigsum-log-primary serves clients")
 	set.FlagLong(&c.InternalEndpoint, "internal-endpoint", 0, "host:port specification of where sigsum-log-primary serves other log nodes")
-	set.FlagLong(&c.RpcBackend, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
+	set.FlagLong(&c.TrillianRpcServer, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
 	set.FlagLong(&c.EphemeralBackend, "ephemeral-test-backend", 0, "if set, enables in-memory backend, with NO persistent storage")
 	set.FlagLong(&c.Prefix, "url-prefix", 0, "a prefix that precedes /<endpoint>")
 	set.FlagLong(&c.TreeID, "tree-id", 0, "tree identifier in the Trillian database")
