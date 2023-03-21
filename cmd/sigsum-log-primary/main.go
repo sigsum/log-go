@@ -162,7 +162,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	case "ephemeral":
 		p.DbClient = db.NewMemoryDb()
 	case "trillian":
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TrillianIDFile)
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
 			return nil, err
 		}

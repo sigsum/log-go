@@ -285,7 +285,7 @@ function sigsum_start() {
 			extra_args+=" --backend ephemeral"
 		else
 			extra_args+=" --trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
-			extra_args+=" --trillian-id-file=${nvars[$i:log_dir]}/tree-id"
+			extra_args+=" --trillian-tree-id-file=${nvars[$i:log_dir]}/tree-id"
 		fi
 
 		info "starting Sigsum log $role node ($i)"

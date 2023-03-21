@@ -26,35 +26,35 @@ type Secondary struct {
 }
 
 type Config struct {
-	Prefix            string        `toml:"url-prefix"`
-	Timeout           time.Duration `toml:"timeout"`
-	Interval          time.Duration `toml:"interval"`
-	LogFile           string        `toml:"log-file"`
-	LogLevel          string        `toml:"log-level"`
-	ExternalEndpoint  string        `toml:"external-endpoint"`
-	InternalEndpoint  string        `toml:"internal-endpoint"`
-	TrillianRpcServer string        `toml:"trillian-rpc-server"`
-	Backend           string        `toml:"backend"`
-	TrillianIDFile    string        `toml:"trillian-id-file"`
-	KeyFile           string        `toml:"key-file"`
-	Primary           `toml:"primary"`
-	Secondary         `toml:"secondary"`
+	Prefix             string        `toml:"url-prefix"`
+	Timeout            time.Duration `toml:"timeout"`
+	Interval           time.Duration `toml:"interval"`
+	LogFile            string        `toml:"log-file"`
+	LogLevel           string        `toml:"log-level"`
+	ExternalEndpoint   string        `toml:"external-endpoint"`
+	InternalEndpoint   string        `toml:"internal-endpoint"`
+	TrillianRpcServer  string        `toml:"trillian-rpc-server"`
+	Backend            string        `toml:"backend"`
+	TrillianTreeIDFile string        `toml:"trillian-tree-id-file"`
+	KeyFile            string        `toml:"key-file"`
+	Primary            `toml:"primary"`
+	Secondary          `toml:"secondary"`
 }
 
 func NewConfig() *Config {
 	// Initialize default configuration
 	return &Config{
-		ExternalEndpoint:  "localhost:6965",
-		InternalEndpoint:  "localhost:6967",
-		TrillianRpcServer: "localhost:6962",
-		Backend:           "trillian",
-		Prefix:            "",
-		TrillianIDFile:    "/var/lib/sigsum-log/tree-id",
-		Timeout:           time.Second * 10,
-		KeyFile:           "",
-		Interval:          time.Second * 30,
-		LogFile:           "",
-		LogLevel:          "info",
+		ExternalEndpoint:   "localhost:6965",
+		InternalEndpoint:   "localhost:6967",
+		TrillianRpcServer:  "localhost:6962",
+		Backend:            "trillian",
+		Prefix:             "",
+		TrillianTreeIDFile: "/var/lib/sigsum-log/tree-id",
+		Timeout:            time.Second * 10,
+		KeyFile:            "",
+		Interval:           time.Second * 30,
+		LogFile:            "",
+		LogLevel:           "info",
 		Primary: Primary{
 			RateLimitFile:       "",
 			AllowTestDomain:     false,
@@ -106,7 +106,7 @@ func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.TrillianRpcServer, "trillian-rpc-server", 0, "host:port specification of where Trillian serves clients")
 	set.FlagLong(&c.Backend, "backend", 0, "if set to \"ephemeral\", enables in-memory backend, with NO persistent storage")
 	set.FlagLong(&c.Prefix, "url-prefix", 0, "a prefix that precedes /<endpoint>")
-	set.FlagLong(&c.TrillianIDFile, "trillian-id-file", 0, "tree identifier in the Trillian database")
+	set.FlagLong(&c.TrillianTreeIDFile, "trillian-tree-id-file", 0, "tree identifier in the Trillian database")
 	set.FlagLong(&c.Timeout, "timeout", 0, "timeout for backend requests")
 	set.FlagLong(&c.KeyFile, "key-file", 0, "key file (openssh format), either unencrypted private key, or a public key (accessed via ssh-agent)")
 	set.FlagLong(&c.Interval, "interval", 0, "interval used to rotate the log's cosigned STH")

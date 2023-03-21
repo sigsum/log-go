@@ -151,7 +151,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	case "ephemeral":
 		s.DbClient = db.NewMemoryDb()
 	case "trillian":
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TrillianIDFile)
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
 			return nil, err
 		}
