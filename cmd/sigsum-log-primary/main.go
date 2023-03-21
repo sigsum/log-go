@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -36,7 +35,6 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Primary.Witnesses, "witnesses", 0, "comma-separated list of trusted witness public key files")
 	getopt.FlagLong(&c.Primary.RateLimitConfig, "rate-limit-config", 0, "enable rate limiting, based on given config file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "allow submit tokens from test.sigsum.org")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "secondary node endpoint for fetching latest replicated tree head")
@@ -157,10 +155,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	p.Config.LogID = hex.EncodeToString(publicKey[:])
 	p.Config.Timeout = conf.Timeout
 	p.MaxRange = conf.MaxRange
-	witnessMap, err := newWitnessMap(conf.Primary.Witnesses)
-	if err != nil {
-		return nil, fmt.Errorf("newWitnessMap: %v", err)
-	}
 
 	if conf.EphemeralBackend {
 		p.DbClient = db.NewMemoryDb()
@@ -185,7 +179,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
-		secondary, &secondaryPub, conf.Primary.SthStorePath, witnessMap)
+		secondary, &secondaryPub, conf.Primary.SthStorePath)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
@@ -205,23 +199,6 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	return &p, nil
-}
-
-// newWitnessMap creates a new map of trusted witnesses
-func newWitnessMap(witnesses string) (map[crypto.Hash]crypto.PublicKey, error) {
-	w := make(map[crypto.Hash]crypto.PublicKey)
-	if len(witnesses) > 0 {
-		for _, witness := range strings.Split(witnesses, ",") {
-			vk, err := key.ReadPublicKeyFile(witness)
-			if err != nil {
-				return nil, fmt.Errorf("failed reading witness key file %q: %v",
-					witness, err)
-			}
-
-			w[crypto.HashBytes(vk[:])] = vk
-		}
-	}
-	return w, nil
 }
 
 // await waits for a shutdown signal and then runs a clean-up function

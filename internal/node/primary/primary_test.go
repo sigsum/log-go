@@ -28,8 +28,6 @@ func TestPublicHandlers(t *testing.T) {
 	mux := node.PublicHTTPMux("")
 	for _, endpoint := range []types.Endpoint{
 		types.EndpointAddLeaf,
-		types.EndpointAddCosignature,
-		types.EndpointGetNextTreeHead,
 		types.EndpointGetTreeHead,
 		types.EndpointGetConsistencyProof,
 		types.EndpointGetInclusionProof,

@@ -276,7 +276,6 @@ function sigsum_start() {
 		local extra_args="${nvars[$i:ssrv_extra_args]}"
 
 		if [[ $role = primary ]]; then
-			extra_args+=" --witnesses=${nvars[$i:ssrv_witnesses]}"
 			extra_args+=" --sth-path=${nvars[$i:log_dir]}/sth-store"
 		else
 			binary=sigsum-log-secondary
@@ -430,18 +429,14 @@ function run_tests() {
 	test_add_leaves $pri $cli $(( $start_leaf + 1 )) $num_leaf
 	num_leaf=$(( $num_leaf + $start_leaf ))
 
+	info "waiting for new signed tree head to be available..."
+	sleep ${nvars[$pri:ssrv_interval]}
+
 	test_signed_tree_head $pri $num_leaf
 	for i in $(seq $(( $start_leaf + 1 )) $(( $num_leaf - 1 ))); do
 		test_consistency_proof $pri $i $num_leaf
 	done
 
-	test_cosignature $pri ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:log_dir]}/wit1.key
-	test_cosignature $pri ${nvars[$pri:wit2_key_hash]} ${nvars[$pri:log_dir]}/wit2.key
-
-	info "waiting for cosignature(s) to be available..."
-	sleep ${nvars[$pri:ssrv_interval]}
-
-	test_cosigned_tree_head $pri $num_leaf
 	for i in $(seq  $(( $start_leaf + 1 )) $num_leaf); do
 		test_inclusion_proof $pri $cli $num_leaf $i $(( $i - 1 ))
 	done
@@ -474,9 +469,9 @@ function test_signed_tree_head() {
 	local pri=$1; shift
 	local size=$1; shift
 	local log_dir=${nvars[$pri:log_dir]}
-	local desc="GET get-next-tree-head (size $size)"
+	local desc="GET get-tree-head (size $size)"
 
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-next-tree-head \
+	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head \
 	     >$log_dir/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
@@ -517,64 +512,6 @@ function test_tree_heads_equal() {
 		return
 	fi
 
-	pass $desc
-}
-
-function test_cosigned_tree_head() {
-	local pri=$1; shift
-	local size=$1; shift
-	local log_dir=${nvars[$pri:log_dir]}
-	local desc="GET get-tree-head (all witnesses), size $size"
-
-	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-tree-head \
-	     >$log_dir/rsp
-
-	if [[ $(status_code $pri) != 200 ]]; then
-		fail "$desc: http status code $(status_code $pri)"
-		return
-	fi
-
-	if ! keys $pri "size" "root_hash" "signature" "cosignature"; then
-		fail "$desc: ascii keys in response $(debug_response $pri)"
-		return
-	fi
-
-	now=$(date +%s)
-
-	if [[ $(value_of $pri "size") != $size ]]; then
-		fail "$desc: size $(value_of $pri "size")"
-		return
-	fi
-
-	while read cs ; do
-		# Check key hash
-		found=""
-		got=$(echo $cs | cut -d' ' -f1)
-		for want in ${nvars[$pri:wit1_key_hash]} ${nvars[$pri:wit2_key_hash]}; do
-			if [[ $got == $want ]]; then
-				found=true
-			fi
-		done
-
-		if [[ -z $found ]]; then
-			fail "$desc: missing witness $got"
-			return
-		fi
-
-		# Check timestamp
-		ts=$(echo $cs | cut -d' ' -f2)
-		if [[ $ts -gt $now ]]; then
-			fail "$desc: timestamp $(value_of $pri "timestamp") is too large"
-			return
-		fi
-		if [[ $ts -lt $(( $now - ${nvars[$pri:ssrv_interval]} * 2 )) ]]; then
-			fail "$desc: timestamp $(value_of $pri "timestamp") is too small"
-			return
-		fi
-	done < <(value_of $pri cosignature)
-
-	# TODO: verify tree head signature
-	# TODO: verify tree head cosignatures
 	pass $desc
 }
 
@@ -732,33 +669,6 @@ function add_leaf() {
 		     >$log_dir/rsp
 
 	echo $(status_code $s)
-}
-
-function test_cosignature() {
-	local pri=$1; shift
-	local kh=$1; shift
-	local key_file=$1; shift
-	local log_dir=${nvars[$pri:log_dir]}
-	local desc="POST add-cosignature (witness ${kh})"
-	local now=$(date +%s)
-
-	echo "cosignature=${kh} $now $(curl -s ${nvars[$pri:log_url]}/get-next-tree-head |
-		./bin/sigsum-debug head sign -k ${key_file} -t $now -h ${nvars[$pri:ssrv_key_hash]})" > $log_dir/req
-	cat $log_dir/req |
-		curl -s -w "%{http_code}" --data-binary @- ${nvars[$pri:log_url]}/add-cosignature \
-		     >$log_dir/rsp
-
-	if [[ $(status_code $pri) != 200 ]]; then
-		fail "$desc: http status code $(status_code $pri)"
-		return
-	fi
-
-	if ! keys $pri; then
-		fail "$desc: ascii keys in response $(debug_response $pri)"
-		return
-	fi
-
-	pass $desc
 }
 
 function debug_response() {
