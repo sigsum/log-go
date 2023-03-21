@@ -35,11 +35,11 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Primary.RateLimitConfig, "rate-limit-config", 0, "enable rate limiting, based on given config file")
+	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "enable rate limiting, based on given config file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "allow submit tokens from test.sigsum.org")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "secondary node endpoint for fetching latest replicated tree head")
-	getopt.FlagLong(&c.Primary.SecondaryPubkey, "secondary-pubkey", 0, "public key file for secondary node")
-	getopt.FlagLong(&c.Primary.SthStorePath, "sth-path", 0, "path to file where latest published STH is being stored")
+	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "public key file for secondary node")
+	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "file where latest published STH is being stored")
 	getopt.FlagLong(&help, "help", '?', "display help")
 	getopt.Parse()
 	if help {
@@ -144,7 +144,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
-	signer, err := key.ReadPrivateKeyFile(conf.Key)
+	signer, err := key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -156,10 +156,13 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	p.Config.Timeout = conf.Timeout
 	p.MaxRange = conf.MaxRange
 
-	if conf.EphemeralBackend {
+	switch conf.Backend {
+	default:
+		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+	case "ephemeral":
 		p.DbClient = db.NewMemoryDb()
-	} else {
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TreeID)
+	case "trillian":
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
 			return nil, err
 		}
@@ -168,9 +171,9 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	// Setup secondary node configuration.
 	var secondary client.Client
 	var secondaryPub crypto.PublicKey
-	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkey != "" {
+	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkeyFile != "" {
 		var err error
-		secondaryPub, err = key.ReadPublicKeyFile(conf.Primary.SecondaryPubkey)
+		secondaryPub, err = key.ReadPublicKeyFile(conf.Primary.SecondaryPubkeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
@@ -179,14 +182,14 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
-		secondary, &secondaryPub, conf.Primary.SthStorePath)
+		secondary, &secondaryPub, conf.Primary.SthFile)
 	if err != nil {
 		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
 	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
-	if len(conf.Primary.RateLimitConfig) > 0 {
-		f, err := os.Open(conf.Primary.RateLimitConfig)
+	if len(conf.Primary.RateLimitFile) > 0 {
+		f, err := os.Open(conf.Primary.RateLimitFile)
 		if err != nil {
 			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}

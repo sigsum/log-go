@@ -135,7 +135,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	var err error
 
 	// Setup logging configuration.
-	s.Signer, err = key.ReadPrivateKeyFile(conf.Key)
+	s.Signer, err = key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -145,10 +145,13 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 	s.Config.Timeout = conf.Timeout
 	s.Interval = conf.Interval
 
-	if conf.EphemeralBackend {
+	switch conf.Backend {
+	default:
+		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+	case "ephemeral":
 		s.DbClient = db.NewMemoryDb()
-	} else {
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TreeID)
+	case "trillian":
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
 			return nil, err
 		}

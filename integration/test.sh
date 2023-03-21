@@ -41,18 +41,18 @@ function main() {
 
 	# Primary
 	nvars[$loga:ssrv_extra_args]="--secondary-url=http://${nvars[$logb:int_url]}"
-	nvars[$loga:ssrv_extra_args]+=" --secondary-pubkey=${nvars[$logb:log_dir]}/ssrv.key.pub"
-	nvars[$loga:ssrv_extra_args]+=" --rate-limit-config=rate-limit.cfg"
+	nvars[$loga:ssrv_extra_args]+=" --secondary-pubkey-file=${nvars[$logb:log_dir]}/ssrv.key.pub"
+	nvars[$loga:ssrv_extra_args]+=" --rate-limit-file=rate-limit.cfg"
 	nvars[$loga:ssrv_extra_args]+=" --allow-test-domain=true"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$loga:ssrv_extra_args]+=" --ephemeral-test-backend"
+		nvars[$loga:ssrv_extra_args]+=" --backend ephemeral"
 	fi
 	node_start $loga
 
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="--primary-url=http://${nvars[$loga:int_url]}"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$logb:ssrv_extra_args]+=" --ephemeral-test-backend"
+		nvars[$logb:ssrv_extra_args]+=" --backend ephemeral"
 	fi
 	node_start $logb
 
@@ -75,7 +75,7 @@ function main() {
 
 		node_promote $logb $loga
 		nvars[$logb:ssrv_extra_args]="--secondary-url=http://${nvars[$logc:int_url]}"
-		nvars[$logb:ssrv_extra_args]+=" --secondary-pubkey=${nvars[$logc:log_dir]}/ssrv.key.pub"
+		nvars[$logb:ssrv_extra_args]+=" --secondary-pubkey-file=${nvars[$logc:log_dir]}/ssrv.key.pub"
 		node_start_fe $logb
 
 		nvars[$logc:ssrv_extra_args]="--primary-url=http://${nvars[$logb:int_url]}"
@@ -145,7 +145,7 @@ function node_promote() {
 
 	info "promoting secondary node to primary ($new_primary)"
 	local srv=${nvars[$new_primary:tsrv_rpc]}
-	local tree_id=${nvars[$new_primary:ssrv_tree_id]}
+	local tree_id=$(cut -d= -f2 ${nvars[$new_primary:log_dir]}/tree-id)
 
 	# NOTE: updatetree doesn't seem to exit with !=0 when failing
 	# TODO: try combining the first two invocations into one
@@ -168,7 +168,7 @@ function node_promote() {
 	nvars[$new_primary:ssrv_agent]=${nvars[$prev_primary:ssrv_agent]}
 
 	info "creating sth startup=local-tree"
-	./bin/sigsum-mktree --mode=local-tree --sth-path=${nvars[$new_primary:log_dir]}/sth-store
+	./bin/sigsum-mktree --mode=local-tree --sth-file=${nvars[$new_primary:log_dir]}/sth-store
 }
 
 function trillian_setup() {
@@ -224,10 +224,11 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		nvars[$i:ssrv_tree_id]=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
+		local tree_id=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
-		info "provisioned Merkle tree with id ${nvars[$i:ssrv_tree_id]}"
+		info "provisioned Merkle tree with id ${tree_id}"
+		echo "tree-id=${tree_id}" > ${nvars[$i:log_dir]}/tree-id
 	done
 }
 
@@ -264,7 +265,7 @@ function sigsum_create_tree() {
 	for i in $@; do
 		if [[ ${nvars[$i:ssrv_role]} = primary ]] ; then
 			info "creating sth startup=empty"
-			./bin/sigsum-mktree --sth-path=${nvars[$i:log_dir]}/sth-store
+			./bin/sigsum-mktree --sth-file=${nvars[$i:log_dir]}/sth-store
 		fi
 	done
 }
@@ -276,15 +277,15 @@ function sigsum_start() {
 		local extra_args="${nvars[$i:ssrv_extra_args]}"
 
 		if [[ $role = primary ]]; then
-			extra_args+=" --sth-path=${nvars[$i:log_dir]}/sth-store"
+			extra_args+=" --sth-file=${nvars[$i:log_dir]}/sth-store"
 		else
 			binary=sigsum-log-secondary
 		fi
 		if [[ "$testflavor" = ephemeral ]] ; then
-			extra_args+=" --ephemeral-test-backend"
+			extra_args+=" --backend ephemeral"
 		else
 			extra_args+=" --trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
-			extra_args+=" --tree-id=${nvars[$i:ssrv_tree_id]}"
+			extra_args+=" --trillian-tree-id-file=${nvars[$i:log_dir]}/tree-id"
 		fi
 
 		info "starting Sigsum log $role node ($i)"
@@ -302,12 +303,12 @@ function sigsum_start() {
 				ssh-agent sh <<EOF
 			ssh-add ${nvars[$i:log_dir]}/ssrv.key
 			echo \$\$
-			exec ./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key.pub \
+			exec ./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key.pub \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
 EOF
 )
 		else
-			./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key \
+			./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 			nvars[$i:ssrv_pid]=$!
 		fi
@@ -325,10 +326,11 @@ function node_stop() {
 function node_destroy() {
 	if [[ "$testflavor" != ephemeral ]] ; then
 		for i in $@; do
-			if ! ./bin/deletetree -admin_server=$tsrv_rpc -log_id=${nvars[$i:ssrv_tree_id]} -logtostderr 2>/dev/null; then
-				warn "failed deleting provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
+			local tree_id=$(cut -d= -f2 ${nvars[$i:log_dir]}/tree-id)
+			if ! ./bin/deletetree -admin_server=$tsrv_rpc -log_id=${tree_id} -logtostderr 2>/dev/null; then
+				warn "failed deleting provisioned Merkle tree ${tree_id}"
 			else
-				info "deleted provisioned Merkle tree ${nvars[$i:ssrv_tree_id]}"
+				info "deleted provisioned Merkle tree ${tree_id}"
 			fi
 		done
 	fi
