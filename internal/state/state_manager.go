@@ -10,8 +10,8 @@ import (
 
 // StateManager coordinates access to a nodes tree heads and (co)signatures.
 type StateManager interface {
-	// SignedTreeHead returns the node's sign tree head
-	SignedTreeHead() types.SignedTreeHead
+	// SignedTreeHead returns the node's (co)signed tree head
+	SignedTreeHead() types.CosignedTreeHead
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
 	Run(context.Context, []witness.Config, time.Duration)

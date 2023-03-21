@@ -85,7 +85,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	witnessConfigs, err := newWitnessConfigs(conf.Primary.Witnesses, witnessUrls)
+	// TODO: Use policy.
+	witnessConfigs, err := newWitnessConfigs("", "")
 	if err != nil {
 		log.Fatal("newWitnessConfigs: %v", err)
 	}
@@ -216,21 +217,21 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 func newWitnessConfigs(witnesses, urls string) ([]witness.Config, error) {
 	w := []witness.Config{}
 	// TODO: Use policy file
-//	if len(witnesses) > 0 {
-//		witnesses := strings.Split(witnesses, ",")
-//		urls := strings.Split(urls, ",")
-//		if len(witnesses) != len(urls) {
-//			return nil, fmt.Errorf("witness pubkeys and urls don't match")
-//		}
-//		for i := 0; i < len(witnesses); i++ {
-//			vk, err := key.ReadPublicKeyFile(witnesses[i])
-//			if err != nil {
-//				return nil, fmt.Errorf("failed reading witness key file %q: %v",
-//					witnesses[i], err)
-//			}
-//			w = append(w, witness.Config{Url: urls[i], PubKey: vk})
-//		}
-//	}
+	//	if len(witnesses) > 0 {
+	//		witnesses := strings.Split(witnesses, ",")
+	//		urls := strings.Split(urls, ",")
+	//		if len(witnesses) != len(urls) {
+	//			return nil, fmt.Errorf("witness pubkeys and urls don't match")
+	//		}
+	//		for i := 0; i < len(witnesses); i++ {
+	//			vk, err := key.ReadPublicKeyFile(witnesses[i])
+	//			if err != nil {
+	//				return nil, fmt.Errorf("failed reading witness key file %q: %v",
+	//					witnesses[i], err)
+	//			}
+	//			w = append(w, witness.Config{Url: urls[i], PubKey: vk})
+	//		}
+	//	}
 	return w, nil
 }
 

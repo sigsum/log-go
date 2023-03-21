@@ -83,13 +83,13 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 	}, nil
 }
 
-func (sm *StateManagerSingle) SignedTreeHead() types.SignedTreeHead {
+func (sm *StateManagerSingle) SignedTreeHead() types.CosignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
-	return sm.signedTreeHead
+	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.WitnessConfig, interval time.Duration) {
+func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Config, interval time.Duration) {
 	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
 		sm.replicationState.primary.GetConsistencyProof)
 
@@ -110,10 +110,10 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Witne
 
 func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.CosignatureCollector) error {
 	nextTH, err := sm.replicationState.ReplicatedTreeHead(
-		ctx, sm.signedTreeHead.Size)
+		ctx, sm.cosignedTreeHead.Size)
 	if err != nil {
 		log.Error("no new replicated tree head: %v", err)
-		nextTH = sm.signedTreeHead.TreeHead
+		nextTH = sm.cosignedTreeHead.TreeHead
 	}
 	nextSTH, err := nextTH.Sign(sm.signer)
 	if err != nil {
@@ -124,8 +124,6 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.Cos
 		return err
 	}
 
-	sm.setSignedTreeHead(&nextSTH)
-
 	// Blocks, potentially until context times out.
 	cosignatures := collector.GetCosignatures(ctx, &nextSTH)
 
@@ -133,12 +131,15 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.Cos
 	defer sm.Unlock()
 
 	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.Size, sm.treeStatusString())
-	sm.signedTreeHead = nextSTH
+	sm.cosignedTreeHead = types.CosignedTreeHead{
+		SignedTreeHead: nextSTH,
+		Cosignatures:   cosignatures,
+	}
 	log.Debug("tree heads rotated: %s", sm.treeStatusString())
 	return nil
 }
 
 // Must be called with write lock held.
 func (sm *StateManagerSingle) treeStatusString() string {
-	return fmt.Sprintf("signed at %d", sm.signedTreeHead.Size)
+	return fmt.Sprintf("signed at %d", sm.cosignedTreeHead.Size)
 }
