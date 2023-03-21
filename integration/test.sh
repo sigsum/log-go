@@ -42,17 +42,17 @@ function main() {
 	# Primary
 	nvars[$loga:ssrv_extra_args]="--secondary-url=http://${nvars[$logb:int_url]}"
 	nvars[$loga:ssrv_extra_args]+=" --secondary-pubkey-file=${nvars[$logb:log_dir]}/ssrv.key.pub"
-	nvars[$loga:ssrv_extra_args]+=" --rate-limit-config-file=rate-limit.cfg"
+	nvars[$loga:ssrv_extra_args]+=" --rate-limit-file=rate-limit.cfg"
 	nvars[$loga:ssrv_extra_args]+=" --allow-test-domain=true"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$loga:ssrv_extra_args]+=" --ephemeral-test-backend"
+		nvars[$loga:ssrv_extra_args]+=" --backend ephemeral"
 	fi
 	node_start $loga
 
 	# Secondary
 	nvars[$logb:ssrv_extra_args]="--primary-url=http://${nvars[$loga:int_url]}"
 	if [[ "$testflavor" = ephemeral ]] ; then
-		nvars[$logb:ssrv_extra_args]+=" --ephemeral-test-backend"
+		nvars[$logb:ssrv_extra_args]+=" --backend ephemeral"
 	fi
 	node_start $logb
 
@@ -282,10 +282,10 @@ function sigsum_start() {
 			binary=sigsum-log-secondary
 		fi
 		if [[ "$testflavor" = ephemeral ]] ; then
-			extra_args+=" --ephemeral-test-backend"
+			extra_args+=" --backend ephemeral"
 		else
 			extra_args+=" --trillian-rpc-server=${nvars[$i:tsrv_rpc]}"
-			extra_args+=" --tree-id-file=${nvars[$i:log_dir]}/tree-id"
+			extra_args+=" --trillian-id-file=${nvars[$i:log_dir]}/tree-id"
 		fi
 
 		info "starting Sigsum log $role node ($i)"
@@ -303,12 +303,12 @@ function sigsum_start() {
 				ssh-agent sh <<EOF
 			ssh-add ${nvars[$i:log_dir]}/ssrv.key
 			echo \$\$
-			exec ./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key.pub \
+			exec ./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key.pub \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
 EOF
 )
 		else
-			./bin/$binary $args --key=${nvars[$i:log_dir]}/ssrv.key \
+			./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
 			nvars[$i:ssrv_pid]=$!
 		fi

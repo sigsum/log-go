@@ -35,7 +35,7 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Primary.RateLimitConfigFile, "rate-limit-config-file", 0, "enable rate limiting, based on given config file")
+	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "enable rate limiting, based on given config file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "allow submit tokens from test.sigsum.org")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "secondary node endpoint for fetching latest replicated tree head")
 	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "public key file for secondary node")
@@ -144,7 +144,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
-	signer, err := key.ReadPrivateKeyFile(conf.Key)
+	signer, err := key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
@@ -156,10 +156,13 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	p.Config.Timeout = conf.Timeout
 	p.MaxRange = conf.MaxRange
 
-	if conf.EphemeralBackend {
+	switch conf.Backend {
+	default:
+		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+	case "ephemeral":
 		p.DbClient = db.NewMemoryDb()
-	} else {
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TreeIDFile)
+	case "trillian":
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TrillianIDFile)
 		if err != nil {
 			return nil, err
 		}
@@ -185,8 +188,8 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
-	if len(conf.Primary.RateLimitConfigFile) > 0 {
-		f, err := os.Open(conf.Primary.RateLimitConfigFile)
+	if len(conf.Primary.RateLimitFile) > 0 {
+		f, err := os.Open(conf.Primary.RateLimitFile)
 		if err != nil {
 			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}
