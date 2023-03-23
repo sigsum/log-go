@@ -25,6 +25,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/policy"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
@@ -37,6 +38,7 @@ var witnessUrls string
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
+	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, it defines the witnesses to query.")
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "Allow submit tokens from test.sigsum.org.")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "Secondary node endpoint for fetching latest replicated tree head.", "url")
@@ -85,10 +87,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// TODO: Use policy.
-	witnessConfigs, err := newWitnessConfigs("", "")
+	witnesses, err := configuredWitnesses(conf.PolicyFile)
 	if err != nil {
-		log.Fatal("newWitnessConfigs: %v", err)
+		log.Fatal("Failed witness configuration: %v", err)
 	}
 
 	log.Debug("configuring log-go-primary")
@@ -101,7 +102,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx, witnessConfigs, conf.Interval)
+		node.Stateman.Run(ctx, witnesses, conf.Interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -214,25 +215,15 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	return &p, nil
 }
 
-func newWitnessConfigs(witnesses, urls string) ([]witness.Config, error) {
-	w := []witness.Config{}
-	// TODO: Use policy file
-	//	if len(witnesses) > 0 {
-	//		witnesses := strings.Split(witnesses, ",")
-	//		urls := strings.Split(urls, ",")
-	//		if len(witnesses) != len(urls) {
-	//			return nil, fmt.Errorf("witness pubkeys and urls don't match")
-	//		}
-	//		for i := 0; i < len(witnesses); i++ {
-	//			vk, err := key.ReadPublicKeyFile(witnesses[i])
-	//			if err != nil {
-	//				return nil, fmt.Errorf("failed reading witness key file %q: %v",
-	//					witnesses[i], err)
-	//			}
-	//			w = append(w, witness.Config{Url: urls[i], PubKey: vk})
-	//		}
-	//	}
-	return w, nil
+func configuredWitnesses(file string) ([]policy.Entity, error) {
+	if len(file) == 0 {
+		return nil, nil
+	}
+	policy, err := policy.ReadPolicyFile(file)
+	if err != nil {
+		return nil, err
+	}
+	return policy.GetWitnessesWithUrl(), nil
 }
 
 // await waits for a shutdown signal and then runs a clean-up function

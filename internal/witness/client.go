@@ -10,6 +10,7 @@ import (
 
 	"sigsum.org/sigsum-go/pkg/ascii"
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -23,10 +24,7 @@ var (
 	errBadOldsize       = errors.New("bad old size")
 )
 
-type Config struct {
-	Url    string // Base url
-	PubKey crypto.PublicKey
-}
+type Config = policy.Entity
 
 type Client struct {
 	cli            *http.Client

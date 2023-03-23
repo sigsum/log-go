@@ -56,10 +56,10 @@ type CosignatureCollector struct {
 	witnesses []*witness
 }
 
-func NewCosignatureCollector(logKeyHash *crypto.Hash, witnessConfigs []Config,
+func NewCosignatureCollector(logKeyHash *crypto.Hash, witnesses []Config,
 	getConsistencyProof GetConsistencyProofFunc) *CosignatureCollector {
 	collector := CosignatureCollector{}
-	for _, w := range witnessConfigs {
+	for _, w := range witnesses {
 		collector.witnesses = append(collector.witnesses,
 			newWitness(&w, logKeyHash, getConsistencyProof))
 	}
