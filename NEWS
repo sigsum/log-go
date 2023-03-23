@@ -1,0 +1,13 @@
+NEWS for log-go v0.9.0
+
+	First advertised release, implementing v0 sigsum protocols.
+	Recent user-visible changes:
+
+	* The initial sigsum cosignature mechanism (with witnesses
+	  polling the log) is deleted. New mechanism, based on the log
+	  querying witnesses, to be added in a later release.
+
+	* Command line options now follow GNU style, with double dash
+	  for long options. Naming of command line flags and
+	  corresponding config file options has been overhauled. E.g,
+	  --key-file to specify the signing key to use.
