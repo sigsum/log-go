@@ -31,7 +31,8 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Secondary.PrimaryURL, "primary-url", 0, "primary node endpoint for fetching leaves")
+	getopt.FlagLong(&c.Secondary.PrimaryURL, "primary-url", 0, "Primary node endpoint for fetching leaves.", "url")
+	getopt.FlagLong(&help, "help", '?', "Display help.")
 	getopt.Parse()
 	if help {
 		getopt.PrintUsage(os.Stdout)
