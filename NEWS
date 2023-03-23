@@ -1,0 +1,19 @@
+NEWS for log-go v0.9.0
+
+	First advertised release, implementing the v0 sigsum protocol.
+	Recent user-visible changes:
+
+	* Support for the initial sigsum cosignature mechanism, with witnesses
+	  polling the log, has been removed. A new mechanism, based on the log
+	  querying witnesses, will be added in a later release.
+
+	* The Trillian tree id to use is now read from a file, with
+	  contents of the form "tree-id=...". The name of the file is
+	  specified using the configuration option
+	  trillian-tree-id-file. The old option tree-id, for setting
+	  the numerical id directly, is deleted.
+
+	* Command line options now follow GNU style, with double dash
+	  for long options, and naming of command line flags and
+	  corresponding configuration file options have been
+	  overhauled.
