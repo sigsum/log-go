@@ -81,7 +81,7 @@ retrieved from DNS. (In particular, the submitter's IP address and any
 associated PTR records are not consulted).
 
 Note that all subdomains of the configured domain are allowed, i.e.,
-the line applies to all requests with a verified submit-token
+the line applies to all requests with a verified submit token
 specifying the given domain or a subdomain thereof. All requests from
 those domains are counted together towards the given limit.
 

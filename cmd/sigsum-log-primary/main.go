@@ -38,7 +38,7 @@ func ParseFlags(c *config.Config) {
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "Allow submit tokens from test.sigsum.org.")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "Secondary node endpoint for fetching latest replicated tree head.", "url")
-	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key file for secondary node.", "file")
+	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key for secondary node.", "file")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
 	getopt.Parse()
