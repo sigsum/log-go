@@ -20,7 +20,7 @@ type StateManagerSingle struct {
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
-	// Lock-protected access to tree heads. All endpoints are readers.
+	// Lock-protected access to tree head. All endpoints are readers.
 	sync.RWMutex
 	cosignedTreeHead types.CosignedTreeHead
 }
@@ -130,16 +130,10 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.Cos
 	sm.Lock()
 	defer sm.Unlock()
 
-	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.Size, sm.treeStatusString())
+	log.Debug("rotating tree heads: previous size %d, new size %d", sm.cosignedTreeHead.Size, nextSTH.Size)
 	sm.cosignedTreeHead = types.CosignedTreeHead{
 		SignedTreeHead: nextSTH,
 		Cosignatures:   cosignatures,
 	}
-	log.Debug("tree heads rotated: %s", sm.treeStatusString())
 	return nil
-}
-
-// Must be called with write lock held.
-func (sm *StateManagerSingle) treeStatusString() string {
-	return fmt.Sprintf("signed at %d", sm.cosignedTreeHead.Size)
 }
