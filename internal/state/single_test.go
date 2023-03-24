@@ -2,6 +2,8 @@ package state
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -96,73 +98,103 @@ func TestSignedTreeHead(t *testing.T) {
 	}
 }
 
-// func TestAddRotate(t *testing.T) {
-// 	// Log and witness keys.
-// 	lPub, lSigner := mustKeyPair(t)
-//
-// 	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
-//
-// 	for _, table := range []struct {
-// 		desc       string
-// 		signErr    bool
-// 		signedSize uint64
-// 		nextSize   uint64
-// 	}{
-// 		{
-// 			desc:     "empty",
-// 			nextSize: 1,
-// 		},
-// 		{
-// 			desc:       "1->2",
-// 			signedSize: 1,
-// 			nextSize:   2,
-// 		},
-// 		{
-// 			desc:       "sign failure",
-// 			signErr:    true,
-// 			signedSize: 1,
-// 			nextSize:   2,
-// 		},
-// 	} {
-// 		var signer crypto.Signer
-// 		if table.signErr {
-// 			signer = &signerErr
-// 		} else {
-// 			signer = lSigner
-// 		}
-// 		sth := mustSignTreehead(t, lSigner, table.signedSize)
-// 		nth := types.TreeHead{Size: table.nextSize}
-// 		var storedSth types.SignedTreeHead
-// 		sm := StateManagerSingle{
-// 			signer:         signer,
-// 			cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
-// 			storeSth: func(sth *types.SignedTreeHead) error {
-// 				storedSth = *sth
-// 				return nil
-// 			},
-// 		}
-// 		err := sm.rotate(context.Background(), &witness.CosignatureCollector{})
-// 		// Expect error only for signature failures
-// 		if table.signErr {
-// 			if err == nil {
-// 				t.Errorf("%s: rotate succeeded, despite failing signer", table.desc)
-// 			}
-// 		} else if err != nil {
-// 			t.Errorf("%s: rotate failed: %v", table.desc, err)
-// 		} else {
-// 			newSth := sm.SignedTreeHead()
-// 			if !newSth.Verify(&lPub) {
-// 				t.Errorf("%s: sth signature not valid", table.desc)
-// 			}
-// 			if newSth.TreeHead != nth {
-// 				t.Errorf("%s: unexpected signed tree head after rotation, got size %d, expected %d", table.desc, newSth.Size, table.nextSize)
-// 			}
-// 			if storedSth != newSth.SignedTreeHead {
-// 				t.Errorf("%s: unexpected stored tree head after rotation, got size %d, expected %d", table.desc, storedSth.Size, table.nextSize)
-// 			}
-// 		}
-// 	}
-// }
+func TestRotate(t *testing.T) {
+	// Log and witness keys.
+	lPub, lSigner := mustKeyPair(t)
+	wPub, wSigner := mustKeyPair(t)
+
+	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
+
+	kh := crypto.HashBytes(lPub[:])
+
+	for _, table := range []struct {
+		desc            string
+		signErr         bool
+		signedSize      uint64
+		nextSize        uint64
+		withCosignature bool
+	}{
+		{
+			desc:     "empty",
+			nextSize: 1,
+		},
+		{
+			desc:       "1->2",
+			signedSize: 1,
+			nextSize:   2,
+		},
+		{
+			desc:            "cosignatures",
+			signedSize:      2,
+			nextSize:        4,
+			withCosignature: true,
+		},
+		{
+			desc:       "sign failure",
+			signErr:    true,
+			signedSize: 1,
+			nextSize:   2,
+		},
+	} {
+		var signer crypto.Signer
+		if table.signErr {
+			signer = &signerErr
+		} else {
+			signer = lSigner
+		}
+		sth := mustSignTreehead(t, lSigner, table.signedSize)
+		nth := types.TreeHead{Size: table.nextSize}
+		var storedSth types.SignedTreeHead
+		sm := StateManagerSingle{
+			signer:           signer,
+			cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
+			storeSth: func(sth *types.SignedTreeHead) error {
+				storedSth = *sth
+				return nil
+			},
+		}
+		err := sm.rotate(context.Background(), &nth, func(_ context.Context, sth *types.SignedTreeHead) []types.Cosignature {
+			if !table.withCosignature {
+				return nil
+			}
+			return []types.Cosignature{mustCosign(t, wSigner, &sth.TreeHead, &kh)}
+		})
+		// Expect error only for signature failures
+		if table.signErr {
+			if err == nil {
+				t.Errorf("%s: rotate succeeded, despite failing signer", table.desc)
+			}
+		} else if err != nil {
+			t.Errorf("%s: rotate failed: %v", table.desc, err)
+		} else {
+			newCth := sm.SignedTreeHead()
+			if !newCth.Verify(&lPub) {
+				t.Errorf("%s: sth signature not valid", table.desc)
+			}
+			if newCth.TreeHead != nth {
+				t.Errorf("%s: unexpected signed tree head after rotation, got size %d, expected %d", table.desc, newCth.Size, table.nextSize)
+			}
+			if storedSth != newCth.SignedTreeHead {
+				t.Errorf("%s: unexpected stored tree head after rotation, got size %d, expected %d", table.desc, storedSth.Size, table.nextSize)
+			}
+			if table.withCosignature {
+				if len(newCth.Cosignatures) != 1 {
+					t.Fatalf("%s: unexpected cth cosignature count, got %d, expected 1", table.desc, len(newCth.Cosignatures))
+				}
+				if !newCth.Cosignatures[0].Verify(&wPub, &kh, &newCth.TreeHead) {
+					t.Errorf("%s: cth cosignature not valid", table.desc)
+				}
+				if newCth.Cosignatures[0].Timestamp != testWitnessTimestamp {
+					t.Errorf("%s: cth cosignature timestamp not as expected, got %d", table.desc, newCth.Cosignatures[0].Timestamp)
+				}
+			} else {
+				if len(newCth.Cosignatures) > 0 {
+					t.Fatalf("%s: non-empty cth cosignature list, got size %d", table.desc, len(newCth.Cosignatures))
+				}
+			}
+		}
+	}
+}
 
 func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 	t.Helper()
@@ -171,6 +203,15 @@ func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 		t.Fatal(err)
 	}
 	return pub, signer
+}
+
+func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) types.Cosignature {
+	t.Helper()
+	signature, err := th.Cosign(s, kh, testWitnessTimestamp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signature
 }
 
 func mustSignTreehead(t *testing.T,

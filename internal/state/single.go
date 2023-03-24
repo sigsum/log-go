@@ -95,7 +95,16 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Confi
 
 	for {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)
-		if err := sm.rotate(rotateCtx, collector); err != nil {
+
+		currentTH := sm.SignedTreeHead().TreeHead
+		nextTH, err := sm.replicationState.ReplicatedTreeHead(
+			ctx, currentTH.Size)
+		if err != nil {
+			log.Error("no new replicated tree head: %v", err)
+			nextTH = currentTH
+		}
+
+		if err := sm.rotate(rotateCtx, &nextTH, collector.GetCosignatures); err != nil {
 			log.Warning("failed rotating tree head: %v", err)
 		}
 		// Waits until end of interval
@@ -108,13 +117,8 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Confi
 	}
 }
 
-func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.CosignatureCollector) error {
-	nextTH, err := sm.replicationState.ReplicatedTreeHead(
-		ctx, sm.cosignedTreeHead.Size)
-	if err != nil {
-		log.Error("no new replicated tree head: %v", err)
-		nextTH = sm.cosignedTreeHead.TreeHead
-	}
+func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead,
+	getCosignatures func(context.Context, *types.SignedTreeHead) []types.Cosignature) error {
 	nextSTH, err := nextTH.Sign(sm.signer)
 	if err != nil {
 		return fmt.Errorf("sign tree head: %v", err)
@@ -125,7 +129,7 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, collector *witness.Cos
 	}
 
 	// Blocks, potentially until context times out.
-	cosignatures := collector.GetCosignatures(ctx, &nextSTH)
+	cosignatures := getCosignatures(ctx, &nextSTH)
 
 	sm.Lock()
 	defer sm.Unlock()
