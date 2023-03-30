@@ -28,7 +28,7 @@ func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
 	return crypto.Signature{}, ts.Error
 }
 
-func TestGetTreeHeadToCosign(t *testing.T) {
+func TestGetSecondaryTreeHead(t *testing.T) {
 	for _, tbl := range []struct {
 		desc          string
 		trillianTHErr error
@@ -64,7 +64,7 @@ func TestGetTreeHeadToCosign(t *testing.T) {
 			}
 
 			// Create HTTP request
-			url := types.EndpointGetNextTreeHead.Path("http://example.com")
+			url := types.EndpointGetSecondaryTreeHead.Path("http://example.com")
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)

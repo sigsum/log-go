@@ -169,7 +169,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 		p.DbClient = trillianClient
 	}
 	// Setup secondary node configuration.
-	var secondary client.Client
+	var secondary client.Secondary
 	var secondaryPub crypto.PublicKey
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkeyFile != "" {
 		var err error

@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksClient "sigsum.org/log-go/internal/mocks/client"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/mocks"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -28,7 +28,7 @@ func TestIntHandlers(t *testing.T) {
 	}
 	mux := node.InternalHTTPMux("")
 	for _, endpoint := range []types.Endpoint{
-		types.EndpointGetNextTreeHead,
+		types.EndpointGetSecondaryTreeHead,
 	} {
 		req, err := http.NewRequest(http.MethodGet, endpoint.Path(""), nil)
 		if err != nil {
@@ -84,7 +84,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			defer ctrl.Finish()
 
 			fmt.Printf("desc: %s\n", tbl.desc)
-			primaryClient := mocksClient.NewMockClient(ctrl)
+			primaryClient := mocks.NewMockLogClient(ctrl)
 
 			trillianClient := mocksDB.NewMockClient(ctrl)
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)

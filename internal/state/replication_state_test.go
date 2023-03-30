@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"sigsum.org/log-go/internal/mocks/client"
 	"sigsum.org/log-go/internal/mocks/db"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/merkle"
+	"sigsum.org/sigsum-go/pkg/mocks"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -59,8 +59,8 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secondary := client.NewMockClient(ctrl)
-	secondary.EXPECT().GetNextTreeHead(gomock.Any()).MinTimes(1).Return(sth, nil)
+	secondary := mocks.NewMockSecondaryClient(ctrl)
+	secondary.EXPECT().GetSecondaryTreeHead(gomock.Any()).MinTimes(1).Return(sth, nil)
 
 	state := ReplicationState{secondary: secondary, secondaryPub: pub}
 	ctx := context.Background()

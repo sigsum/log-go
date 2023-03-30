@@ -48,7 +48,7 @@ func TestValidMethod(t *testing.T) {
 			Method:   http.MethodPost,
 		},
 		{
-			Endpoint: types.EndpointGetNextTreeHead,
+			Endpoint: types.EndpointGetTreeHead,
 			Method:   http.MethodGet,
 		},
 	} {
