@@ -18,14 +18,12 @@ type PrimaryTree interface {
 	GetConsistencyProof(context.Context, *requests.ConsistencyProof) (types.ConsistencyProof, error)
 }
 
-type SecondaryTree = client.Secondary
-
 type ReplicationState struct {
 	// Timeout for interaction with primary and secondary.
 	timeout      time.Duration
 	primary      PrimaryTree
 	secondaryPub crypto.PublicKey
-	secondary    SecondaryTree
+	secondary    client.Secondary
 }
 
 // Return the latest primary tree head with size at least minSize.
