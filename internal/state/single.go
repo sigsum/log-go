@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/log-go/internal/witness"
+	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
