@@ -24,7 +24,7 @@ type Secondary struct {
 	Interval time.Duration // Signing frequency
 	DbClient db.Client     // provides access to the backend, usually Trillian
 	Signer   crypto.Signer // provides access to Ed25519 private key
-	Primary  client.Client
+	Primary  client.Log
 }
 
 func (s Secondary) Run(ctx context.Context) {
@@ -45,7 +45,7 @@ func (s Secondary) Run(ctx context.Context) {
 
 func (s Secondary) InternalHTTPMux(prefix string) *http.ServeMux {
 	mux := http.NewServeMux()
-	handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetNextTreeHead, http.MethodGet}.Register(mux, prefix)
+	handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetSecondaryTreeHead, http.MethodGet}.Register(mux, prefix)
 	return mux
 }
 
