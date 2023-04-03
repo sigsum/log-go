@@ -16,17 +16,22 @@ import (
 
 func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	log.Debug("handling add-leaf request")
-	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
+	req, err := requests.LeafRequestFromHTTP(ctx, r)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
+	if len(req.Domain) > 0 {
+		if err := p.TokenVerifier.Verify(ctx, req.Domain, &req.Token); err != nil {
+			return http.StatusForbidden, err
+		}
+	}
 	keyHash := crypto.HashBytes(req.PublicKey[:])
-	relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
+	relax := p.RateLimiter.AccessAllowed(req.Domain, &keyHash)
 	if relax == nil {
-		if domain == nil {
+		if len(req.Domain) == 0 {
 			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
 		}
-		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", req.Domain)
 	}
 	leaf, err := req.Verify()
 	if err != nil {

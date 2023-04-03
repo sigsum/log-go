@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksToken "sigsum.org/log-go/internal/mocks/submit-token"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -38,39 +37,35 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		return bytes.NewBufferString(str)
 	}
 
-	type token struct {
-		domain    string
-		signature string
-	}
 	for _, table := range []struct {
 		desc       string
 		params     io.Reader
-		token      *token
-		tokenErr   error
 		wantRsp    *sigsumreq.Leaf
 		wantDomain bool
 	}{
-		{"invalid: parse ascii", bytes.NewBufferString("a=b"), nil, nil, nil, false},
-		{"invalid: mocked token error", input(msg), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
-		{"valid", input(msg), nil, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, false},
-		{"valid with domain", input(msg), &token{"foo.example.com", "aaaa"}, nil, &sigsumreq.Leaf{msg, sign(msg), pub}, true},
-		{"valid leaf, invalid domain", input(msg), &token{"foo.example.com", "aaaa"}, fmt.Errorf("mocked token error"), nil, false},
+		{"invalid: parse ascii", bytes.NewBufferString("a=b"), nil, false},
+		{"valid", input(msg),
+			&sigsumreq.Leaf{Message: msg, Signature: sign(msg), PublicKey: pub}, false},
+		{"valid with domain", input(msg),
+			&sigsumreq.Leaf{Message: msg,
+				Signature: sign(msg),
+				PublicKey: pub,
+				Domain: "foo.example.com",
+			}, true},
 	} {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			vf := mocksToken.NewMockVerifier(ctrl)
 			url := types.EndpointAddLeaf.Path("http://example.org/sigsum")
 			req, err := http.NewRequest(http.MethodPost, url, table.params)
 			if err != nil {
 				t.Fatalf("must create http request: %v", err)
 			}
-			if table.token != nil {
-				vf.EXPECT().Verify(gomock.Any(), table.token.domain, table.token.signature).Return(table.tokenErr)
-				req.Header.Add("sigsum-token", table.token.domain+" "+table.token.signature)
+			if table.wantRsp != nil && len(table.wantRsp.Domain) > 0 {
+				req.Header.Add("sigsum-token", fmt.Sprintf("%s %x", table.wantRsp.Domain, table.wantRsp.Token))
 			}
 
-			parsedReq, domain, err := LeafRequestFromHTTP(context.Background(), req, vf)
+			parsedReq, err := LeafRequestFromHTTP(context.Background(), req)
 			if got, want := err != nil, table.wantRsp == nil; got != want {
 				t.Errorf("%s: got error %v but wanted %v: %v", table.desc, got, want, err)
 			}
@@ -80,11 +75,11 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 			if got, want := parsedReq, table.wantRsp; !reflect.DeepEqual(got, want) {
 				t.Errorf("%s: got request %v but wanted %v", table.desc, got, want)
 			}
-			if got, want := domain != nil, table.wantDomain; got != want {
-				t.Errorf("%s: got domain %v but wanted %v: %v", table.desc, got, want, domain)
+			if got, want := len(parsedReq.Domain) > 0, table.wantDomain; got != want {
+				t.Errorf("%s: got domain %v but wanted %v: %v", table.desc, got, want, parsedReq.Domain)
 			}
-			if table.wantDomain && *domain != table.token.domain {
-				t.Errorf("%s: got domain %v but wanted %v", table.desc, table.token.domain, table.wantDomain)
+			if got, want := parsedReq.Domain, table.wantRsp.Domain; got != want {
+				t.Errorf("%s: got domain %v but wanted %v", table.desc, got, want)
 			}
 
 		}()

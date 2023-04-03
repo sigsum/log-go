@@ -23,12 +23,12 @@ type Limiter interface {
 	// Checks if access count is < limit. If so increment count
 	// and returns a function that can be called to undo the increment, in case no
 	// resources were consumed. Otherwise, returns nil.
-	AccessAllowed(domain *string, keyHash *crypto.Hash) func()
+	AccessAllowed(domain string, keyHash *crypto.Hash) func()
 }
 
 type NoLimit struct{}
 
-func (l NoLimit) AccessAllowed(_ *string, _ *crypto.Hash) func() {
+func (l NoLimit) AccessAllowed(_ string, _ *crypto.Hash) func() {
 	return func() {}
 }
 
@@ -89,7 +89,7 @@ func (l *limiter) domainAllowed(domain string) (func(), bool) {
 	}
 }
 
-func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func() {
+func (l *limiter) AccessAllowed(submitDomain string, keyHash *crypto.Hash) func() {
 	if l.resetSchedule.IsTime() {
 		l.keyCounts.Reset()
 		l.domainCounts.Reset()
@@ -101,11 +101,11 @@ func (l *limiter) AccessAllowed(submitDomain *string, keyHash *crypto.Hash) func
 	if limit, ok := l.allowedKeys[keyHashString]; ok {
 		return l.keyCounts.AccessAllowed(keyHashString, limit)
 	}
-	if submitDomain == nil {
+	if len(submitDomain) == 0 {
 		// Skip all domain-based checks.
 		return nil
 	}
-	domain, err := token.NormalizeDomainName(*submitDomain)
+	domain, err := token.NormalizeDomainName(submitDomain)
 	if err != nil {
 		return nil
 	}

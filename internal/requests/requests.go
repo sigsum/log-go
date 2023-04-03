@@ -4,32 +4,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 // The string return value, if non-nil, is the verified submitter domain.
-func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier) (*sigsumreq.Leaf, *string, error) {
+func LeafRequestFromHTTP(ctx context.Context, r *http.Request) (*sigsumreq.Leaf, error) {
 	var req sigsumreq.Leaf
 	if err := req.FromASCII(r.Body); err != nil {
-		return nil, nil, fmt.Errorf("parse ascii: %w", err)
+		return nil, fmt.Errorf("parse ascii: %w", err)
 	}
 
-	var domain *string
-	if headerValue := r.Header.Get("Sigsum-Token"); len(headerValue) > 0 {
-		parts := strings.Split(headerValue, " ")
-		if len(parts) != 2 {
-			return nil, nil, fmt.Errorf("invalid Sigsum-Token value: %q\n", headerValue)
+	if headerValue := r.Header.Get(token.HeaderName); len(headerValue) > 0 {
+		if err := req.FromTokenHeader(headerValue); err != nil {
+			return nil, fmt.Errorf("invalid Sigsum-Token value %q: %v\n", headerValue, err)
 		}
-		if err := vf.Verify(ctx, parts[0], parts[1]); err != nil {
-			return nil, nil, err
-		}
-		s := string(parts[0])
-		domain = &s
 	}
-	return &req, domain, nil
+	return &req, nil
 }
 
 func ConsistencyProofRequestFromHTTP(r *http.Request) (*sigsumreq.ConsistencyProof, error) {

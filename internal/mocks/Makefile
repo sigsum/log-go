@@ -9,8 +9,4 @@ db/db.go: ../db/client.go
 state/state.go: ../state/state_manager.go
 	mockgen --destination $@ --package state sigsum.org/log-go/internal/state StateManager
 
-# Cross-repo dependency not declared.
-submit-token/verifier.go:
-	mockgen --destination $@ --package token sigsum.org/sigsum-go/pkg/submit-token Verifier
-
 .PHONY: submit-token/verifier.go client/client.go
