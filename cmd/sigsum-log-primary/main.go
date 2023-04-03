@@ -20,7 +20,6 @@ import (
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
-	"sigsum.org/log-go/internal/utils"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -67,8 +66,10 @@ func main() {
 	conf.ServerFlags(getopt.CommandLine)
 	ParseFlags(conf)
 
-	if err := utils.LogToFile(conf.LogFile); err != nil {
-		log.Fatal("open log file failed: %v", err)
+	if len(conf.LogFile) > 0 {
+		if err := log.SetLogFile(conf.LogFile); err != nil {
+			log.Fatal("open log file failed: %v", err)
+		}
 	}
 	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
