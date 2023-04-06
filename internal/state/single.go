@@ -10,6 +10,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -89,7 +90,7 @@ func (sm *StateManagerSingle) SignedTreeHead() types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []witness.Config, interval time.Duration) {
+func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration) {
 	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
 		sm.replicationState.primary.GetConsistencyProof)
 

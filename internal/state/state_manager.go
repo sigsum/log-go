@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"sigsum.org/log-go/internal/witness"
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -14,5 +14,5 @@ type StateManager interface {
 	SignedTreeHead() types.CosignedTreeHead
 
 	// Run peridically rotates the node's to-cosign and cosigned tree heads
-	Run(context.Context, []witness.Config, time.Duration)
+	Run(context.Context, []policy.Entity, time.Duration)
 }

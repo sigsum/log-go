@@ -10,7 +10,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	witness "sigsum.org/log-go/internal/witness"
+	policy "sigsum.org/sigsum-go/pkg/policy"
 	types "sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -38,7 +38,7 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 }
 
 // Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context, arg1 []witness.Config, arg2 time.Duration) {
+func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Run", arg0, arg1, arg2)
 }
