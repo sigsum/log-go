@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"reflect"
 	"testing"
@@ -167,7 +168,7 @@ func TestGetLeaves(t *testing.T) {
 			t.Fatalf("must create http request: %v", err)
 		}
 
-		parsedReq, err := LeavesRequestFromHTTP(req, ^uint64(0), maxRange, true)
+		parsedReq, err := LeavesRequestFromHTTP(req, math.MaxUint64, maxRange, true)
 		if got, want := err != nil, table.desc != "valid"; got != want {
 			t.Errorf("%s: got error %v but wanted %v: %v", table.desc, got, want, err)
 		}
