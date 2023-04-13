@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -91,7 +92,11 @@ func (s sthFile) Load(pub *crypto.PublicKey) (types.SignedTreeHead, error) {
 		return types.SignedTreeHead{}, err
 	}
 	if !sth.Verify(pub) {
-		return types.SignedTreeHead{}, fmt.Errorf("invalid signature in file %q", s.name)
+		// Accept version 0 signature, to support upgrades.
+		if !sth.VerifyVersion0(pub) {
+			return types.SignedTreeHead{}, fmt.Errorf("invalid signature in file %q", s.name)
+		}
+		log.Info("Loading sth file %q with version 0 tree head signature")
 	}
 	return sth, nil
 }
