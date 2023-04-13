@@ -26,8 +26,8 @@ type witness struct {
 
 func newWitness(w *policy.Entity, logKeyHash *crypto.Hash, getConsistencyProof GetConsistencyProofFunc) *witness {
 	return &witness{
-		client:              client.New(client.Config{LogURL: w.Url, UserAgent: "Sigsum log-go server"}),
-		pubKey:              w.PubKey,
+		client:              client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
+		pubKey:              w.PublicKey,
 		logKeyHash:          *logKeyHash,
 		prevSize:            0,
 		getConsistencyProof: getConsistencyProof,
