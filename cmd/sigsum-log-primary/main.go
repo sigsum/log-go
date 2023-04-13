@@ -178,7 +178,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
-		secondary = client.New(client.Config{LogURL: conf.Primary.SecondaryURL})
+		secondary = client.New(client.Config{URL: conf.Primary.SecondaryURL})
 	}
 
 	// Setup state manager.

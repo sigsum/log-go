@@ -160,7 +160,7 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 		s.DbClient = trillianClient
 	}
 	// Setup primary node configuration.
-	s.Primary = client.New(client.Config{LogURL: conf.Secondary.PrimaryURL})
+	s.Primary = client.New(client.Config{URL: conf.Secondary.PrimaryURL})
 
 	// Register HTTP endpoints.
 	return &s, nil
