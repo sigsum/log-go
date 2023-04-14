@@ -20,7 +20,6 @@ import (
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
-	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
