@@ -32,8 +32,6 @@ var (
 	gitCommit = "unknown"
 )
 
-var witnessUrls string
-
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
