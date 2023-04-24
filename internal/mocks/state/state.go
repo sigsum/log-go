@@ -37,6 +37,20 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 	return m.recorder
 }
 
+// CosignedTreeHead mocks base method.
+func (m *MockStateManager) CosignedTreeHead() types.CosignedTreeHead {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CosignedTreeHead")
+	ret0, _ := ret[0].(types.CosignedTreeHead)
+	return ret0
+}
+
+// CosignedTreeHead indicates an expected call of CosignedTreeHead.
+func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CosignedTreeHead", reflect.TypeOf((*MockStateManager)(nil).CosignedTreeHead))
+}
+
 // Run mocks base method.
 func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration) {
 	m.ctrl.T.Helper()
@@ -50,10 +64,10 @@ func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2 interface{}) *gomoc
 }
 
 // SignedTreeHead mocks base method.
-func (m *MockStateManager) SignedTreeHead() types.CosignedTreeHead {
+func (m *MockStateManager) SignedTreeHead() types.SignedTreeHead {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SignedTreeHead")
-	ret0, _ := ret[0].(types.CosignedTreeHead)
+	ret0, _ := ret[0].(types.SignedTreeHead)
 	return ret0
 }
 

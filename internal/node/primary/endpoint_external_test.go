@@ -65,7 +65,7 @@ func TestAddLeaf(t *testing.T) {
 			client.EXPECT().AddLeaf(gomock.Any(), gomock.Any(), gomock.Any()).Return(table.leafStatus, table.errTrillian).AnyTimes()
 
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().SignedTreeHead().Return(types.CosignedTreeHead{}).AnyTimes()
+			stateman.EXPECT().SignedTreeHead().Return(types.SignedTreeHead{}).AnyTimes()
 			node := Primary{
 				Config:      testConfig,
 				DbClient:    client,
@@ -106,7 +106,7 @@ func TestGetTreeHead(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().SignedTreeHead().Return(types.CosignedTreeHead{})
+			stateman.EXPECT().CosignedTreeHead().Return(types.CosignedTreeHead{})
 
 			node := Primary{
 				Config:   testConfig,
@@ -188,7 +188,7 @@ func TestGetConsistencyProof(t *testing.T) {
 				client.EXPECT().GetConsistencyProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().SignedTreeHead().Return(
+			stateman.EXPECT().CosignedTreeHead().Return(
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
@@ -275,7 +275,7 @@ func TestGetInclusionProof(t *testing.T) {
 				client.EXPECT().GetInclusionProof(gomock.Any(), gomock.Any()).Return(table.rsp, table.err)
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().SignedTreeHead().Return(
+			stateman.EXPECT().CosignedTreeHead().Return(
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
@@ -383,7 +383,7 @@ func TestGetLeaves(t *testing.T) {
 					})
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().SignedTreeHead().Return(
+			stateman.EXPECT().CosignedTreeHead().Return(
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}})
 
 			node := Primary{

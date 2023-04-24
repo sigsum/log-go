@@ -88,12 +88,21 @@ func TestNewStateManagerSingle(t *testing.T) {
 }
 
 func TestSignedTreeHead(t *testing.T) {
-	want := types.CosignedTreeHead{}
+	want := types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}
+	sm := StateManagerSingle{
+		signedTreeHead: want,
+	}
+	if got := sm.SignedTreeHead(); got != want {
+		t.Errorf("got signed tree head\n\t%v\nbut wanted\n\t%v", got, want)
+	}
+}
+
+func TestCosignedTreeHead(t *testing.T) {
+	want := types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}}
 	sm := StateManagerSingle{
 		cosignedTreeHead: want,
 	}
-	sth := sm.SignedTreeHead()
-	if got := sth; !reflect.DeepEqual(got, want) {
+	if got := sm.CosignedTreeHead(); !reflect.DeepEqual(got, want) {
 		t.Errorf("got signed tree head\n\t%v\nbut wanted\n\t%v", got, want)
 	}
 }
@@ -167,7 +176,7 @@ func TestRotate(t *testing.T) {
 		} else if err != nil {
 			t.Errorf("%s: rotate failed: %v", table.desc, err)
 		} else {
-			newCth := sm.SignedTreeHead()
+			newCth := sm.CosignedTreeHead()
 			if !newCth.Verify(&lPub) {
 				t.Errorf("%s: sth signature not valid", table.desc)
 			}

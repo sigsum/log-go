@@ -21,8 +21,9 @@ type StateManagerSingle struct {
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
-	// Lock-protected access to tree head. All endpoints are readers.
+	// Lock-protected access to tree heads. All endpoints are readers.
 	sync.RWMutex
+	signedTreeHead   types.SignedTreeHead
 	cosignedTreeHead types.CosignedTreeHead
 }
 
@@ -80,11 +81,18 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			timeout:      timeout,
 		},
 		// No cosignatures available at startup.
+		signedTreeHead:   sth,
 		cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
 	}, nil
 }
 
-func (sm *StateManagerSingle) SignedTreeHead() types.CosignedTreeHead {
+func (sm *StateManagerSingle) SignedTreeHead() types.SignedTreeHead {
+	sm.RLock()
+	defer sm.RUnlock()
+	return sm.signedTreeHead
+}
+
+func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	sm.RLock()
 	defer sm.RUnlock()
 	return sm.cosignedTreeHead
@@ -94,7 +102,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity
 	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
 		sm.replicationState.primary.GetConsistencyProof)
 
-	for {
+	for ctx.Err() == nil {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)
 
 		currentTH := sm.SignedTreeHead().TreeHead
@@ -109,36 +117,47 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity
 			log.Warning("failed rotating tree head: %v", err)
 		}
 		// Waits until end of interval
-		select {
-		case <-rotateCtx.Done():
-			continue
-		case <-ctx.Done():
-			return
-		}
+		<-rotateCtx.Done()
 	}
 }
 
 func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead,
 	getCosignatures func(context.Context, *types.SignedTreeHead) []types.Cosignature) error {
-	nextSTH, err := nextTH.Sign(sm.signer)
+	nextSTH, err := sm.signTreeHead(nextTH)
 	if err != nil {
-		return fmt.Errorf("sign tree head: %v", err)
-	}
-
-	if err := sm.storeSth(&nextSTH); err != nil {
 		return err
 	}
 
-	// Blocks, potentially until context times out.
+	// Blocks (with no locks held), potentially until context times out.
 	cosignatures := getCosignatures(ctx, &nextSTH)
 
 	sm.Lock()
 	defer sm.Unlock()
 
-	log.Debug("rotating tree heads: previous size %d, new size %d", sm.cosignedTreeHead.Size, nextSTH.Size)
+	log.Debug("rotating cosigned tree head: previous size %d, new size %d", sm.cosignedTreeHead.Size, nextSTH.Size)
 	sm.cosignedTreeHead = types.CosignedTreeHead{
 		SignedTreeHead: nextSTH,
 		Cosignatures:   cosignatures,
 	}
 	return nil
+}
+
+func (sm *StateManagerSingle) signTreeHead(nextTH *types.TreeHead) (types.SignedTreeHead, error) {
+	nextSTH, err := nextTH.Sign(sm.signer)
+	if err != nil {
+		return types.SignedTreeHead{}, fmt.Errorf("sign tree head: %v", err)
+	}
+
+	if err := sm.storeSth(&nextSTH); err != nil {
+		return types.SignedTreeHead{}, err
+	}
+
+	sm.Lock()
+	defer sm.Unlock()
+	log.Debug("rotating signed tree head: previous size %d, new size %d", sm.signedTreeHead.Size, nextSTH.Size)
+	if nextSTH.Size < sm.signedTreeHead.Size {
+		return types.SignedTreeHead{}, fmt.Errorf("internal error, attempting to truncate signed tree head")
+	}
+	sm.signedTreeHead = nextSTH
+	return nextSTH, nil
 }
