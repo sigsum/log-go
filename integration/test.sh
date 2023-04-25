@@ -35,6 +35,11 @@ function main() {
 		esac
 		shift
 	done
+	# Change directory to where script is located.
+	cd $(dirname $0)
+	# Delete any state left from previous run.
+	rm -rf ./tmp
+
 	install_go_deps
 
 	node_setup $loga $logb
@@ -95,12 +100,16 @@ function install_go_deps() {
 	fi
 }
 
+function logdir_setup() {
+		local dir=./tmp/$(basename "$1" .config)
+		info "$1: logging to $dir"
+		mkdir -p $dir
+		nvars[$1:log_dir]=$dir
+}
 function client_setup() {
 	for i in $@; do
 		info "setting up client ($i)"
-		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
-		info "$i: logging to $dir"
-		nvars[$i:log_dir]=$dir
+		logdir_setup $i
 		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/cli.key
 		nvars[$i:cli_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/cli.key.pub)
 	done
@@ -108,9 +117,7 @@ function client_setup() {
 
 function node_setup() {
 	for i in $@; do
-		local dir=$(mktemp -d /tmp/sigsum-log-test.XXXXXXXXXX)
-		info "$i: logging to $dir"
-		nvars[$i:log_dir]=$dir
+		logdir_setup $i
 		if [[ "$testflavor" != ephemeral ]] ; then
 			trillian_setup $i
 		fi
@@ -391,14 +398,6 @@ function cleanup() {
 	for var in $nodes; do
 		declare -n cleanup_i=$var # Using unique iterator name, bc leaking
 		node_stop_be $cleanup_i
-	done
-
-	for var in $nodes client; do
-		declare -n cleanup_i=$var # Using unique iterator name, bc leaking
-		printf "\n  Press enter to delete logs in ${nvars[$cleanup_i:log_dir]}"
-		read dummy
-
-		rm -rf ${nvars[$cleanup_i:log_dir]}
 	done
 }
 
