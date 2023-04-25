@@ -27,9 +27,10 @@ go-test:
 integration-ephemeral:
   stage: integration
   needs: ["go-test"]
-  script:
-  - cd integration
-  - bash ./test.sh --ephemeral
+  script: ./integration/test.sh --ephemeral
+  artifacts:
+    paths: 
+    - ./integration/tmp/
 
 integration-default:
   stage: integration
@@ -39,9 +40,10 @@ integration-default:
     name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
-  script:
-  - cd integration
-  - bash ./test.sh
+  script: ./integration/test.sh
+  artifacts:
+    paths: 
+    - ./integration/tmp/
 
 integration-extended:
   stage: integration
@@ -51,6 +53,7 @@ integration-extended:
     name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
-  script:
-  - cd integration
-  - bash ./test.sh --extended
+  script: ./integration/test.sh --extended
+  artifacts:
+    paths: 
+    - ./integration/tmp/
