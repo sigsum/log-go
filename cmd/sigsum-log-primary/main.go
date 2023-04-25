@@ -35,7 +35,7 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
-	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, it defines the witnesses to query.")
+	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, defines the witnesses to query.")
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "Allow submit tokens from test.sigsum.org.")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "Secondary node endpoint for fetching latest replicated tree head.", "url")
