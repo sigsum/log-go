@@ -176,15 +176,20 @@ func TestRotate(t *testing.T) {
 		} else if err != nil {
 			t.Errorf("%s: rotate failed: %v", table.desc, err)
 		} else {
-			newCth := sm.CosignedTreeHead()
-			if !newCth.Verify(&lPub) {
+			newSth := sm.SignedTreeHead()
+			if !newSth.Verify(&lPub) {
 				t.Errorf("%s: sth signature not valid", table.desc)
 			}
-			if newCth.TreeHead != nth {
-				t.Errorf("%s: unexpected signed tree head after rotation, got size %d, expected %d", table.desc, newCth.Size, table.nextSize)
+			if newSth.TreeHead != nth {
+				t.Errorf("%s: unexpected signed tree head after rotation, got size %d, expected %d", table.desc, newSth.Size, table.nextSize)
 			}
-			if storedSth != newCth.SignedTreeHead {
+			if storedSth != newSth {
 				t.Errorf("%s: unexpected stored tree head after rotation, got size %d, expected %d", table.desc, storedSth.Size, table.nextSize)
+			}
+			newCth := sm.CosignedTreeHead()
+			if newCth.SignedTreeHead != newSth {
+				t.Errorf("%s: unexpected cosigned tree head after rotation, got size %d, expected %d", table.desc, newCth.Size, table.nextSize)
+
 			}
 			if table.withCosignature {
 				if len(newCth.Cosignatures) != 1 {
