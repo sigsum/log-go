@@ -17,10 +17,15 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func testWitness(ctrl *gomock.Controller, f GetConsistencyProofFunc) (*mocks.MockWitnessClient, *witness) {
+func testWitness(t *testing.T, ctrl *gomock.Controller,
+	logKeyHash *crypto.Hash,
+	f GetConsistencyProofFunc) (crypto.Signer, *mocks.MockWitnessClient, *witness) {
+	pub, signer := mustKeyPair(t)
 	client := mocks.NewMockWitnessClient(ctrl)
-	return client, &witness{
+	return signer, client, &witness{
 		client:              client,
+		pubKey:              pub,
+		logKeyHash:          *logKeyHash,
 		getConsistencyProof: f,
 	}
 }
@@ -40,11 +45,14 @@ func Ptr(m gomock.Matcher) gomock.Matcher {
 }
 func TestWitnessEmpty(t *testing.T) {
 	testTimestamp := uint64(101010)
+	logPub, logSigner := mustKeyPair(t)
+	logKeyHash := crypto.HashBytes(logPub[:])
+
 	ctrl := gomock.NewController(t)
 	log := db.NewMockClient(ctrl)
-	cli, w := testWitness(ctrl, log.GetConsistencyProof)
+	witnessSigner, cli, w := testWitness(t, ctrl, &logKeyHash, log.GetConsistencyProof)
 
-	sth := types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}
+	sth := mustSignTreehead(t, logSigner, 5)
 
 	log.EXPECT().GetConsistencyProof(gomock.Any(), Ptr(gomock.Eq(requests.ConsistencyProof{OldSize: 0, NewSize: 5}))).Return(types.ConsistencyProof{}, nil)
 	cli.EXPECT().AddTreeHead(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -52,7 +60,7 @@ func TestWitnessEmpty(t *testing.T) {
 			if req.OldSize != 0 || req.TreeHead != sth {
 				t.Fatalf("unexpected add tree head req, got: %v", req)
 			}
-			return types.Cosignature{Timestamp: testTimestamp}, nil
+			return mustCosign(t, witnessSigner, &req.TreeHead.TreeHead, &logKeyHash, testTimestamp), nil
 		})
 
 	cs, err := w.getCosignature(context.Background(), &sth)
@@ -66,11 +74,14 @@ func TestWitnessEmpty(t *testing.T) {
 
 func TestWitnessBadSize(t *testing.T) {
 	testTimestamp := uint64(101010)
+	logPub, logSigner := mustKeyPair(t)
+	logKeyHash := crypto.HashBytes(logPub[:])
+
 	ctrl := gomock.NewController(t)
 	log := db.NewMockClient(ctrl)
-	cli, w := testWitness(ctrl, log.GetConsistencyProof)
+	witnessSigner, cli, w := testWitness(t, ctrl, &logKeyHash, log.GetConsistencyProof)
 
-	sth := types.SignedTreeHead{TreeHead: types.TreeHead{Size: 5}}
+	sth := mustSignTreehead(t, logSigner, 5)
 
 	log.EXPECT().GetConsistencyProof(gomock.Any(), Ptr(gomock.Eq(requests.ConsistencyProof{OldSize: 0, NewSize: 5}))).Return(types.ConsistencyProof{}, nil)
 	log.EXPECT().GetConsistencyProof(gomock.Any(), Ptr(gomock.Eq(requests.ConsistencyProof{OldSize: 2, NewSize: 5}))).Return(
@@ -89,7 +100,7 @@ func TestWitnessBadSize(t *testing.T) {
 			if req.OldSize != 2 || req.TreeHead != sth || len(req.Proof.Path) != 1 {
 				t.Fatalf("unexpected add tree head req, got: %v", req)
 			}
-			return types.Cosignature{Timestamp: testTimestamp}, nil
+			return mustCosign(t, witnessSigner, &req.TreeHead.TreeHead, &logKeyHash, testTimestamp), nil
 		})
 
 	cs, err := w.getCosignature(context.Background(), &sth)
@@ -99,4 +110,33 @@ func TestWitnessBadSize(t *testing.T) {
 	if cs.Timestamp != testTimestamp {
 		t.Errorf("unexpected timestamp, got %d, want: %d", cs.Timestamp, testTimestamp)
 	}
+}
+
+func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
+	t.Helper()
+	pub, signer, err := crypto.NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pub, signer
+}
+
+func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash, timestamp uint64) types.Cosignature {
+	t.Helper()
+	signature, err := th.Cosign(s, kh, timestamp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signature
+}
+
+func mustSignTreehead(t *testing.T,
+	signer crypto.Signer, size uint64) types.SignedTreeHead {
+	t.Helper()
+	th := types.TreeHead{Size: size}
+	sth, err := th.Sign(signer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sth
 }
