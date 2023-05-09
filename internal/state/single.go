@@ -107,7 +107,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity
 
 		currentTH := sm.SignedTreeHead().TreeHead
 		nextTH, err := sm.replicationState.ReplicatedTreeHead(
-			ctx, currentTH.Size)
+			rotateCtx, currentTH.Size)
 		if err != nil {
 			log.Error("no new replicated tree head: %v", err)
 			nextTH = currentTH
