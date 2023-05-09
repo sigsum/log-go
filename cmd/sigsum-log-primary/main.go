@@ -24,6 +24,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/policy"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
@@ -34,6 +35,7 @@ var (
 func ParseFlags(c *config.Config) {
 	help := false
 	getopt.SetParameters("")
+	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, defines the witnesses to query.")
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
 	getopt.FlagLong(&c.Primary.AllowTestDomain, "allow-test-domain", 0, "Allow submit tokens from test.sigsum.org.")
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "Secondary node endpoint for fetching latest replicated tree head.", "url")
@@ -82,6 +84,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	witnesses, err := configuredWitnesses(conf.PolicyFile)
+	if err != nil {
+		log.Fatal("Failed witness configuration: %v", err)
+	}
+
 	log.Debug("configuring log-go-primary")
 	node, err := setupPrimaryFromFlags(conf)
 	if err != nil {
@@ -92,7 +99,7 @@ func main() {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		node.Stateman.Run(ctx, conf.Interval)
+		node.Stateman.Run(ctx, witnesses, conf.Interval)
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -203,6 +210,17 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 	}
 
 	return &p, nil
+}
+
+func configuredWitnesses(file string) ([]policy.Entity, error) {
+	if len(file) == 0 {
+		return nil, nil
+	}
+	policy, err := policy.ReadPolicyFile(file)
+	if err != nil {
+		return nil, err
+	}
+	return policy.GetWitnessesWithUrl(), nil
 }
 
 // await waits for a shutdown signal and then runs a clean-up function

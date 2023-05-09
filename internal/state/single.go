@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -19,9 +21,10 @@ type StateManagerSingle struct {
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
-	// Lock-protected access to tree head. All endpoints are readers.
+	// Lock-protected access to tree heads. All endpoints are readers.
 	sync.RWMutex
-	signedTreeHead types.SignedTreeHead
+	signedTreeHead   types.SignedTreeHead
+	cosignedTreeHead types.CosignedTreeHead
 }
 
 // NewStateManagerSingle() sets up a new state manager, in particular its
@@ -77,7 +80,9 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 			secondaryPub: *secondaryPub,
 			timeout:      timeout,
 		},
-		signedTreeHead: sth,
+		// No cosignatures available at startup.
+		signedTreeHead:   sth,
+		cosignedTreeHead: types.CosignedTreeHead{SignedTreeHead: sth},
 	}, nil
 }
 
@@ -87,51 +92,72 @@ func (sm *StateManagerSingle) SignedTreeHead() types.SignedTreeHead {
 	return sm.signedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
+	sm.RLock()
+	defer sm.RUnlock()
+	return sm.cosignedTreeHead
+}
 
-	for {
-		select {
-		case <-ticker.C:
-			if err := sm.tryRotate(ctx); err != nil {
-				log.Warning("failed rotating tree heads: %v", err)
-			}
-		case <-ctx.Done():
-			return
+func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration) {
+	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
+		sm.replicationState.primary.GetConsistencyProof)
+
+	for ctx.Err() == nil {
+		rotateCtx, _ := context.WithTimeout(ctx, interval)
+
+		currentTH := sm.SignedTreeHead().TreeHead
+		nextTH, err := sm.replicationState.ReplicatedTreeHead(
+			rotateCtx, currentTH.Size)
+		if err != nil {
+			log.Error("no new replicated tree head: %v", err)
+			nextTH = currentTH
 		}
+
+		if err := sm.rotate(rotateCtx, &nextTH, collector.GetCosignatures); err != nil {
+			log.Warning("failed rotating tree head: %v", err)
+		}
+		// Waits until end of interval
+		<-rotateCtx.Done()
 	}
 }
 
-func (sm *StateManagerSingle) tryRotate(ctx context.Context) error {
-	nextTH, err := sm.replicationState.ReplicatedTreeHead(
-		ctx, sm.signedTreeHead.Size)
+func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead,
+	getCosignatures func(context.Context, *types.SignedTreeHead) []types.Cosignature) error {
+	nextSTH, err := sm.signTreeHead(nextTH)
 	if err != nil {
-		log.Error("no new replicated tree head: %v", err)
-		nextTH = sm.signedTreeHead.TreeHead
-	}
-	return sm.rotate(&nextTH)
-}
-
-func (sm *StateManagerSingle) rotate(nextTH *types.TreeHead) error {
-	nextSTH, err := nextTH.Sign(sm.signer)
-	if err != nil {
-		return fmt.Errorf("sign tree head: %v", err)
-	}
-
-	if err := sm.storeSth(&nextSTH); err != nil {
 		return err
 	}
+
+	// Blocks (with no locks held), potentially until context times out.
+	cosignatures := getCosignatures(ctx, &nextSTH)
 
 	sm.Lock()
 	defer sm.Unlock()
 
-	log.Debug("about to rotate tree heads, next at %d: %s", nextSTH.Size, sm.treeStatusString())
-	sm.signedTreeHead = nextSTH
-	log.Debug("tree heads rotated: %s", sm.treeStatusString())
+	log.Debug("rotating cosigned tree head: previous size %d, new size %d", sm.cosignedTreeHead.Size, nextSTH.Size)
+	sm.cosignedTreeHead = types.CosignedTreeHead{
+		SignedTreeHead: nextSTH,
+		Cosignatures:   cosignatures,
+	}
 	return nil
 }
 
-func (sm *StateManagerSingle) treeStatusString() string {
-	return fmt.Sprintf("signed at %d", sm.signedTreeHead.Size)
+func (sm *StateManagerSingle) signTreeHead(nextTH *types.TreeHead) (types.SignedTreeHead, error) {
+	nextSTH, err := nextTH.Sign(sm.signer)
+	if err != nil {
+		return types.SignedTreeHead{}, fmt.Errorf("sign tree head: %v", err)
+	}
+
+	if err := sm.storeSth(&nextSTH); err != nil {
+		return types.SignedTreeHead{}, err
+	}
+
+	sm.Lock()
+	defer sm.Unlock()
+	log.Debug("rotating signed tree head: previous size %d, new size %d", sm.signedTreeHead.Size, nextSTH.Size)
+	if nextSTH.Size < sm.signedTreeHead.Size {
+		return types.SignedTreeHead{}, fmt.Errorf("internal error, attempting to truncate signed tree head")
+	}
+	sm.signedTreeHead = nextSTH
+	return nextSTH, nil
 }

@@ -4,14 +4,18 @@ import (
 	"context"
 	"time"
 
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // StateManager coordinates access to a nodes tree heads and (co)signatures.
 type StateManager interface {
-	// SignedTreeHead returns the node's sign tree head
+	// Treehead that we have committed to publishing, i.e.,
+	// properly replicated, and distributed to witnesses.
 	SignedTreeHead() types.SignedTreeHead
+	// Currently published tree.
+	CosignedTreeHead() types.CosignedTreeHead
 
-	// Run peridically rotates the node's to-cosign and cosigned tree heads
-	Run(context.Context, time.Duration)
+	// Run periodically rotates the node's tree heads and queries witnesses.
+	Run(context.Context, []policy.Entity, time.Duration)
 }
