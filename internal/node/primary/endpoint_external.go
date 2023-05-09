@@ -51,7 +51,7 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 func (p Primary) getTreeHead(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
 	log.Debug("handling get-tree-head-cosigned request")
-	cth := p.Stateman.SignedTreeHead()
+	cth := p.Stateman.CosignedTreeHead()
 	if err := cth.ToASCII(w); err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -65,7 +65,7 @@ func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter,
 		return http.StatusBadRequest, err
 	}
 
-	curTree := p.Stateman.SignedTreeHead()
+	curTree := p.Stateman.CosignedTreeHead()
 	if req.NewSize > curTree.TreeHead.Size {
 		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
 			req.NewSize, curTree.TreeHead.Size)
@@ -88,7 +88,7 @@ func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r
 		return http.StatusBadRequest, err
 	}
 
-	curTree := p.Stateman.SignedTreeHead()
+	curTree := p.Stateman.CosignedTreeHead()
 	if req.Size > curTree.TreeHead.Size {
 		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
 	}
@@ -136,5 +136,5 @@ func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *
 }
 
 func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, p, w, r, p.Stateman.SignedTreeHead().Size, true)
+	return getLeavesGeneral(ctx, p, w, r, p.Stateman.CosignedTreeHead().Size, true)
 }

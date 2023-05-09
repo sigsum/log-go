@@ -12,6 +12,7 @@ import (
 
 // Primary Config
 type Primary struct {
+	PolicyFile          string `toml:"policy-file"`
 	RateLimitFile       string `toml:"rate-limit-file"`
 	AllowTestDomain     bool   `toml:"allow-test-domain"`
 	SecondaryURL        string `toml:"secondary-url"`
@@ -56,6 +57,7 @@ func NewConfig() *Config {
 		LogFile:            "",
 		LogLevel:           "info",
 		Primary: Primary{
+			PolicyFile:          "",
 			RateLimitFile:       "",
 			AllowTestDomain:     false,
 			SecondaryURL:        "",

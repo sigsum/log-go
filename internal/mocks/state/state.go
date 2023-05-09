@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	policy "sigsum.org/sigsum-go/pkg/policy"
 	types "sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -36,16 +37,30 @@ func (m *MockStateManager) EXPECT() *MockStateManagerMockRecorder {
 	return m.recorder
 }
 
-// Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context, arg1 time.Duration) {
+// CosignedTreeHead mocks base method.
+func (m *MockStateManager) CosignedTreeHead() types.CosignedTreeHead {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Run", arg0, arg1)
+	ret := m.ctrl.Call(m, "CosignedTreeHead")
+	ret0, _ := ret[0].(types.CosignedTreeHead)
+	return ret0
+}
+
+// CosignedTreeHead indicates an expected call of CosignedTreeHead.
+func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CosignedTreeHead", reflect.TypeOf((*MockStateManager)(nil).CosignedTreeHead))
+}
+
+// Run mocks base method.
+func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Run", arg0, arg1, arg2)
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockStateManagerMockRecorder) Run(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1, arg2)
 }
 
 // SignedTreeHead mocks base method.
