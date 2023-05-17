@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 // MockVerifier is a mock of Verifier interface.
@@ -35,15 +36,15 @@ func (m *MockVerifier) EXPECT() *MockVerifierMockRecorder {
 }
 
 // Verify mocks base method.
-func (m *MockVerifier) Verify(arg0 context.Context, arg1, arg2 string) error {
+func (m *MockVerifier) Verify(arg0 context.Context, arg1 *token.SubmitHeader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Verify", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Verify indicates an expected call of Verify.
-func (mr *MockVerifierMockRecorder) Verify(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockVerifierMockRecorder) Verify(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockVerifier)(nil).Verify), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockVerifier)(nil).Verify), arg0, arg1)
 }
