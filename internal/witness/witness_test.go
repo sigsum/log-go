@@ -93,7 +93,7 @@ func TestWitnessBadSize(t *testing.T) {
 			if req.OldSize != 0 || req.TreeHead != sth || len(req.Proof.Path) != 0 {
 				t.Fatalf("unexpected add tree head req, got: %v", req)
 			}
-			return types.Cosignature{}, api.ErrUnprocessableEntity
+			return types.Cosignature{}, api.ErrConflict
 		})
 	cli.EXPECT().GetTreeSize(gomock.Any(), gomock.Any()).Return(uint64(2), nil)
 	cli.EXPECT().AddTreeHead(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -138,7 +138,7 @@ func TestGetCosignatures(t *testing.T) {
 			if req.OldSize != 0 || req.TreeHead != sth || len(req.Proof.Path) != 0 {
 				t.Fatalf("unexpected add tree head req, got: %v", req)
 			}
-			return types.Cosignature{}, api.ErrUnprocessableEntity
+			return types.Cosignature{}, api.ErrConflict
 		})
 	cli1.EXPECT().GetTreeSize(gomock.Any(), gomock.Any()).Return(uint64(2), nil)
 	cli1.EXPECT().AddTreeHead(gomock.Any(), gomock.Any()).DoAndReturn(

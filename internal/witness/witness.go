@@ -58,7 +58,7 @@ func (w *witness) getCosignature(ctx context.Context, sth *types.SignedTreeHead)
 			w.prevSize = sth.Size
 			return cs, nil
 		}
-		if !errors.Is(api.ErrUnprocessableEntity, err) {
+		if !errors.Is(api.ErrConflict, err) {
 			return types.Cosignature{}, err
 		}
 		size, err := w.client.GetTreeSize(ctx, requests.GetTreeSize{KeyHash: w.logKeyHash})
