@@ -194,6 +194,10 @@ func (c *TrillianClient) GetTreeHead(ctx context.Context) (types.TreeHead, error
 }
 
 func (c *TrillianClient) GetConsistencyProof(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error) {
+	// Trivial cases with empty proof.
+	if req.OldSize == 0 || req.OldSize == req.NewSize {
+		return types.ConsistencyProof{}, nil
+	}
 	rsp, err := c.logClient.GetConsistencyProof(ctx, &trillian.GetConsistencyProofRequest{
 		LogId:          c.treeID,
 		FirstTreeSize:  int64(req.OldSize),
