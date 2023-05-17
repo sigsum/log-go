@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/submit-token"
@@ -19,15 +18,14 @@ func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier
 
 	var domain *string
 	if headerValue := r.Header.Get("Sigsum-Token"); len(headerValue) > 0 {
-		parts := strings.Split(headerValue, " ")
-		if len(parts) != 2 {
-			return nil, nil, fmt.Errorf("invalid Sigsum-Token value: %q\n", headerValue)
-		}
-		if err := vf.Verify(ctx, parts[0], parts[1]); err != nil {
+		var submitHeader token.SubmitHeader
+		if err := submitHeader.FromHeader(headerValue); err != nil {
 			return nil, nil, err
 		}
-		s := string(parts[0])
-		domain = &s
+		if err := vf.Verify(ctx, &submitHeader); err != nil {
+			return nil, nil, err
+		}
+		domain = &submitHeader.Domain
 	}
 	return &req, domain, nil
 }
