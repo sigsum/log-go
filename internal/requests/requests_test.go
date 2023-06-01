@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksToken "sigsum.org/log-go/internal/mocks/submit-token"
+	mockRequests "sigsum.org/log-go/internal/mocks/requests"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sigsumreq "sigsum.org/sigsum-go/pkg/requests"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
@@ -57,7 +57,7 @@ func TestLeafRequestFromHTTP(t *testing.T) {
 		func() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			vf := mocksToken.NewMockVerifier(ctrl)
+			vf := mockRequests.NewMockTokenVerifier(ctrl)
 			url := types.EndpointAddLeaf.Path("http://example.org/sigsum")
 			req, err := http.NewRequest(http.MethodPost, url, table.params)
 			if err != nil {

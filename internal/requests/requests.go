@@ -9,8 +9,14 @@ import (
 	"sigsum.org/sigsum-go/pkg/submit-token"
 )
 
+// Implemented by token.DnsVerifier; interface only to enable mocking
+// in unit tests.
+type TokenVerifier interface {
+	Verify(ctx context.Context, submitToken *token.SubmitHeader) error
+}
+
 // The string return value, if non-nil, is the verified submitter domain.
-func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier) (*sigsumreq.Leaf, *string, error) {
+func LeafRequestFromHTTP(ctx context.Context, r *http.Request, v TokenVerifier) (*sigsumreq.Leaf, *string, error) {
 	var req sigsumreq.Leaf
 	if err := req.FromASCII(r.Body); err != nil {
 		return nil, nil, fmt.Errorf("parse ascii: %w", err)
@@ -22,7 +28,7 @@ func LeafRequestFromHTTP(ctx context.Context, r *http.Request, vf token.Verifier
 		if err := submitHeader.FromHeader(headerValue); err != nil {
 			return nil, nil, err
 		}
-		if err := vf.Verify(ctx, &submitHeader); err != nil {
+		if err := v.Verify(ctx, &submitHeader); err != nil {
 			return nil, nil, err
 		}
 		domain = &submitHeader.Domain
