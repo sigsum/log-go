@@ -50,7 +50,7 @@ func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Req
 }
 
 func (p Primary) getTreeHead(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
-	log.Debug("handling get-tree-head-cosigned request")
+	log.Debug("handling get-tree-head request")
 	cth := p.Stateman.CosignedTreeHead()
 	if err := cth.ToASCII(w); err != nil {
 		return http.StatusInternalServerError, err
