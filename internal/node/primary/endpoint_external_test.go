@@ -410,7 +410,7 @@ func TestGetLeaves(t *testing.T) {
 				return
 			}
 
-			list, err := types.LeavesFromASCII(w.Body)
+			list, err := types.LeavesFromASCII(w.Body, uint64(testMaxRange))
 			if err != nil {
 				t.Fatalf("must unmarshal leaf list: %v", err)
 			}
