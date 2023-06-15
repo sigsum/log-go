@@ -2,11 +2,13 @@ package secondary
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
@@ -65,7 +67,7 @@ func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
 		}
 		leaves, err := s.Primary.GetLeaves(ctx, req)
 		if err != nil {
-			if err == client.HttpNotFound {
+			if errors.Is(api.ErrNotFound, err) {
 				// Normal way to exit, so don't log at warning level.
 				log.Debug("error fetching leaves [%d:%d] from primary: %v", req.StartIndex, req.EndIndex, err)
 			} else {
