@@ -68,21 +68,22 @@ func main() {
 	}
 	log.Info("log-go git-commit %s", gitCommit)
 
-	// wait for clean-up before exit
-	var wg sync.WaitGroup
-	defer wg.Wait()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	log.Debug("configuring log-go-secondary")
 	node, err := setupSecondaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup secondary: %v", err)
 	}
 
+	// wait for clean-up before exit
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	log.Debug("starting periodic routine")
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		node.Run(ctx)
 		log.Debug("periodic routine shutdown")
@@ -97,24 +98,8 @@ func main() {
 	internalMux.Handle("/metrics", promhttp.Handler())
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
 
-	log.Debug("starting await routine")
-	go await(ctx, func() {
-		wg.Add(1)
-		defer wg.Done()
-		ctxInner, _ := context.WithTimeout(ctx, time.Second*60)
-		log.Info("stopping http server, please wait...")
-		server.Shutdown(ctxInner)
-		log.Info("... done")
-		log.Info("stopping internal api server, please wait...")
-		intserver.Shutdown(ctxInner)
-		log.Info("... done")
-		log.Info("stopping go routines, please wait...")
-		cancel()
-		log.Info("... done")
-	})
-
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		log.Info("serving log nodes on %v/%v", conf.InternalEndpoint, conf.Prefix)
 		if err = intserver.ListenAndServe(); err != http.ErrServerClosed {
@@ -124,11 +109,28 @@ func main() {
 		cancel()
 	}()
 
-	log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
-	if err = server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Error("serve(server): %v", err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
+		if err = server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Error("serve(server): %v", err)
+		}
+		log.Debug("public endpoints server shut down")
+		cancel()
+	}()
 
+	<-ctx.Done()
+
+	log.Debug("received shutdown signal")
+	shutdownCtx, _ := context.WithTimeout(context.Background(), time.Second*60)
+
+	log.Info("stopping http server, please wait...")
+	server.Shutdown(shutdownCtx)
+	log.Info("... done")
+	log.Info("stopping internal api server, please wait...")
+	intserver.Shutdown(shutdownCtx)
+	log.Info("... done")
 }
 
 // setupSecondaryFromFlags() sets up a new sigsum secondary node from flags.
@@ -164,16 +166,4 @@ func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) 
 
 	// Register HTTP endpoints.
 	return &s, nil
-}
-
-// await waits for a shutdown signal and then runs a clean-up function
-func await(ctx context.Context, done func()) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-sigs:
-	case <-ctx.Done():
-	}
-	log.Debug("received shutdown signal")
-	done()
 }
