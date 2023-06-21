@@ -1,3 +1,35 @@
+NEWS for log-go v0.13.0:
+
+	New features:
+
+	* Implemented new witness protocol, where the log queries
+	  witnesses for cosignatures. Witnesses to use are configured
+	  using a sigsum policy file.
+
+	Incompatible changes:
+
+	* Tree head serialization used for signatures and cosignatures
+	  changed to use a a checkpoint-compatible text serialization.
+
+	* Leaf signatures as well as submit token signatures changed
+	  to no longer use SSH signature format.
+
+	* A cosignature version is added to cosignature lines in the
+	  response to get-tree-head.
+
+	Upgrading:
+
+	Existing logs can be upgraded; for the transition, the old way
+	of signing tree heads is recognized when loading the log
+	server's signed-tree-head file. Downgrading is not supported.
+	An upgraded log will publish tree heads signed accordning to
+	the v1 protocol.
+
+	Old leaves submitted according to the v0 protocol obviously
+	stay in the tree, but they will appear invalid to anyone who
+	has the submitter's public key and attempts to verify the leaf
+	signature according to the v1 specification.
+
 NEWS for log-go v0.9.0
 
 	First advertised release, implementing the v0 sigsum protocol.
