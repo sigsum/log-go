@@ -956,5 +956,5 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
-sigsum.org/sigsum-go v0.3.5 h1:8V+6CgSc53m1kek9bxGUWfWC5YSMwOLDyAw5XeimJ7k=
-sigsum.org/sigsum-go v0.3.5/go.mod h1:JW6JRbPUEfgevok5k7QygwFhlDuRh158riECrOtWEJ8=
+sigsum.org/sigsum-go v0.4.0 h1:W6pQS7CicBWO0G33yHOrsVgQD22N7kiHK7cBbwey0ac=
+sigsum.org/sigsum-go v0.4.0/go.mod h1:JW6JRbPUEfgevok5k7QygwFhlDuRh158riECrOtWEJ8=
