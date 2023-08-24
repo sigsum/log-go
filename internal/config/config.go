@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	getopt "github.com/pborman/getopt/v2"
+	"github.com/pborman/getopt/v2"
 )
 
 // Primary Config

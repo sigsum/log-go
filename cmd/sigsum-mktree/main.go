@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	getopt "github.com/pborman/getopt/v2"
+	"github.com/pborman/getopt/v2"
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/state"

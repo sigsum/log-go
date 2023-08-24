@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	getopt "github.com/pborman/getopt/v2"
+	"github.com/pborman/getopt/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/config"
