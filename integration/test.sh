@@ -659,12 +659,8 @@ function add_leaf() {
 	local data="$1"; shift
 	local log_dir=${nvars[$s:log_dir]}
 
-	echo "message=$(openssl dgst -binary <(echo $data) | b16encode)" > $log_dir/req
-	echo "signature=$(echo $data |
-		./bin/sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)" >> $log_dir/req
-	echo "public_key=$(./bin/sigsum-key hex -k ${nvars[$cli:log_dir]}/cli.key.pub)" >> $log_dir/req
-
-	cat $log_dir/req |
+	echo $data | ./bin/sigsum-submit -k ${nvars[$cli:log_dir]}/cli.key |
+		tee $log_dir/req |
 		curl -s -w "%{http_code}" -H "sigsum-token: test.sigsum.org ${nvars[$s:token]}" \
 		     --data-binary @- ${nvars[$s:log_url]}/add-leaf \
 		     >$log_dir/rsp
