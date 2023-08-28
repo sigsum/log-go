@@ -525,8 +525,7 @@ function test_inclusion_proof() {
 	local log_dir=${nvars[$pri:log_dir]}
 	local desc="GET get-inclusion-proof (size $size, data \"$data\", index $index)"
 
-	local signature=$(echo ${data} | ./bin/sigsum-debug leaf sign -k ${nvars[$cli:log_dir]}/cli.key)
-	local leaf_hash=$(echo ${data} | ./bin/sigsum-debug leaf hash -k ${nvars[$cli:cli_key_hash]} -s $signature)
+	local leaf_hash=$(echo ${data} | ./bin/sigsum-submit --leaf-hash -k ${nvars[$cli:log_dir]}/cli.key)
 	curl -s -w "%{http_code}" ${nvars[$pri:log_url]}/get-inclusion-proof/${size}/${leaf_hash} >${log_dir}/rsp
 
 	if [[ $(status_code $pri) != 200 ]]; then
