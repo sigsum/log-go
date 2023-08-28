@@ -9,5 +9,4 @@ import (
 	_ "github.com/google/trillian/cmd/trillian_log_server"
 	_ "github.com/google/trillian/cmd/trillian_log_signer"
 	_ "github.com/google/trillian/cmd/updatetree"
-	_ "sigsum.org/sigsum-go/cmd/sigsum-debug"
 )
