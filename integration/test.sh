@@ -69,6 +69,8 @@ function main() {
 	run_tests $loga $logb $client 0 5
 	run_tests $loga $logb $client 5 1
 
+	get_metrics $loga
+	get_metrics $logb
 	if [[ $testflavor == extended ]]; then
 		# for tree equality tests later on; FIXME: remove
 		test_signed_tree_head $loga 6
@@ -253,6 +255,7 @@ function sigsum_setup() {
 
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
+		nvars[$i:metrics_url]=${nvars[$i:ssrv_internal]}/metrics
 
 		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/wit1.key
 		nvars[$i:wit1_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/wit1.key.pub)
@@ -665,6 +668,21 @@ function add_leaf() {
 		     >$log_dir/rsp
 
 	echo $(status_code $s)
+}
+
+function get_metrics() {
+	local i=$1; shift
+	info "Querying metrics for $i"
+	curl -s ${nvars[$i:metrics_url]} > ${nvars[$i:log_dir]}/metrics
+	# Check that metrics include measurement of at least one
+	# get-*tree-head request, with latency up to 1s.
+	if grep '^http_latency_bucket{endpoint="get-[^"]*tree-head".*,status="0",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+		pass "got $i metrics"
+		return 0
+	else
+		fail "no $i metrics"
+		return 1
+	fi
 }
 
 function debug_response() {
