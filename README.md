@@ -2,15 +2,15 @@
 This repository provides a
 	[Trillian](https://transparency.dev/#trillian)
 	[personality](https://github.com/google/trillian/blob/master/docs/Personalities.md)
-implementing the sigsum/v0
-	[design](https://git.sigsum.org/sigsum/tree/doc/design.md)
+implementing the sigsum/v1
+	[design](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/design.md)
 and
-	[API](https://git.sigsum.org/sigsum/tree/doc/api.md).
+	[API](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md).
 
 ## Server docs
 
 See [docs](./doc/readme.md) for information on how to setup and
-configure an Sigsum log instance.
+configure a Sigsum log instance.
 
 ## Public prototype
 There is a public prototype running with zero promises of uptime,
