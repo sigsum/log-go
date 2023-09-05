@@ -47,7 +47,7 @@ NEWS for log-go v0.13.0:
 	* Old sigsum proofs can still be verified using old tools
 	  (since verification is purely offline, the log server is not
 	  involved at all). However, attempting to create a new proof
-	  for an old leaf is not possible.
+	  for an old leaf will fail.
 
 NEWS for log-go v0.9.0
 
