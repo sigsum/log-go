@@ -1,3 +1,54 @@
+NEWS for log-go v0.13.0:
+
+	This release updates the log server to implement the v1 sigsum
+	protocols, see
+	https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md.
+
+	Upgrading existing log services is automatic, see below for
+	the implications of upgrading. However, downgrading is *NOT*
+	tested or supported (downgrading would require replacing the
+	signed-tree-head file, from backup if possible, otherwise
+	creating a new one using sigsum-mktree).
+
+	New features:
+
+	* Implemented new witness protocol, where the log queries
+	  witnesses for cosignatures. See
+	  https://git.glasklar.is/sigsum/project/documentation/-/blob/main/witness.md.
+	  for the specification. Witnesses to use are configured using
+	  a sigsum policy file.
+
+	Incompatible changes:
+
+	* Tree head serialization used for signatures and cosignatures
+	  changed to use a a checkpoint-compatible text serialization.
+
+	* Leaf signatures as well as submit token signatures changed
+	  to no longer use SSH signature format.
+
+	* A cosignature version is added to cosignature lines in the
+	  response to get-tree-head.
+
+	Upgrading:
+
+	* Existing logs can be upgraded; for the transition, the old
+	  way of signing tree heads is recognized when loading the log
+	  server's signed-tree-head file.
+
+	* An upgraded log will publish tree heads signed accordning to
+	  the v1 protocol, and accept new leaves signed according to
+	  the v1 protocol.
+
+	* Old leaves submitted according to the v0 protocol obviously
+	  stay in the tree, but they will appear invalid to anyone who
+	  has the submitter's public key and attempts to verify the
+	  leaf signature according to the v1 specification.
+
+	* Old sigsum proofs can still be verified using old tools
+	  (since verification is purely offline, the log server is not
+	  involved at all). However, attempting to create a new proof
+	  for an old leaf will fail.
+
 NEWS for log-go v0.9.0
 
 	First advertised release, implementing the v0 sigsum protocol.
