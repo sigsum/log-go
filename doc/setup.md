@@ -86,10 +86,12 @@ trillian_log_signer \
 Primary and secondary nodes need different types of trees to be
 configured in the database. On the primary, create a tree using
 ```
-createtree -admin_server=localhost:6962
+createtree -admin_server=localhost:6962 | tee trillian-tree-id
 ```
-Record the numerical id of the new tree, which is written on standard
-output, it should go in a `tree-id=...` line in the config file.
+
+The numerical id of the new tree is written on standard output, and
+above it is recorded in a file, to be passed on a
+`trillian-tree-id-file=...` line in the config file.
 
 On the secondary node, instead run
 ```
@@ -104,7 +106,7 @@ the secondary node doesn't need a Trillian sequencer.
 ## Primary node
 
 The primary node need its own signing key pair. This can be an
-unencrypted privae key file, generated using `sigsum-key gen -o KEY`
+unencrypted private key file, generated using `sigsum-key gen -o KEY`
 (which generates a new keypair, stores the unencrypted private key in
 the file `KEY` and corresponding public key in `KEY.pub`). This uses
 openssh keyfile formats, and is equivalent to `ssh-keygen -q -N '' -t
@@ -124,30 +126,31 @@ are:
 2. `internal-endpoint`: ip-address:port for secondary node to connect
    to.
 
-3. `rpc-backend=localhost:6962`: ip-address:port where the Trillian
+3. `trillian-rpc-server=localhost:6962`: ip-address:port where the Trillian
    server responds to gRPC requests.
 
-4. `tree-id`: the number produced by `createtree`.
+4. `trillian-tree-id-file`: file recording the number produced by `createtree`.
 
-5. `key`: identifies the log's signing key. Either the name of the
+5. `key-file`: identifies the log's signing key. Either the name of the
    private key file, or the name of a public key file, in case
    the corresponding private key is accessible via ssh-agent.
 
 6. `secondary-url`: base url to the secondary node's internal
    endpoint.
 
-7. `secondary-key`: public key for verifying the secondary's
+7. `secondary-pubkey-file`: public key for verifying the secondary's
    signatures.
 
-8. `sth-path`: name of the file where the latest signed tree head is
+8. `sth-file`: name of the file where the latest signed tree head is
    stored, by default, `/var/lib/sigsum-log/sth`.
 
-Before starting the primary, create a special startup file next to the
-sth file, default `/var/lib/sigsum-log/sth.startup`, with the contents
-`startup=empty`. This tells the primary to initially create a signed
-tree head corresponding to the empty tree. The startup file is
-automatically deleted after use, and it is an error if both the `sth`
-and the `sth.startup` file exists.
+Before starting the primary, we need to tell it to start out by
+signing and publishing a tree head corresponding to the empty tree. To
+do this, run the command `sigsum-mktree`; this reads the `sth-file`
+entry in the config file and creates a special startup file next to the
+sth file, default `/var/lib/sigsum-log/sth.startup`. The startup file
+is automatically deleted after use, and it is an error if both the
+`sth` and the `sth.startup` files exist.
 
 The primary server executable is `sigsum-log-primary`.
 
@@ -159,9 +162,9 @@ can be rotated at will by reconfiguring and restarting the primary
 node with the secondary's new key.
 
 Configuration of `external-endpoint` (which returns HTTP 404 for
-everything), `internal-endpoint`, `rpc-backend`, `tree-id`, and `key`
-is analogous to the primary configuration. In addition, the secondary
-should be configured with:
+everything), `internal-endpoint`, `trillian-rpc-server`,
+`trillian-tree-id-file`, and `key-file` is analogous to the primary
+configuration. In addition, the secondary should be configured with:
 
 1. `primary-url`: base url for the primary node's internal endpoint.
 
