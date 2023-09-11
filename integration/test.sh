@@ -267,7 +267,7 @@ function sigsum_setup() {
 		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
 		nvars[$i:ssrv_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
 		# Use special test.sigsum.org test key to generate token.
-		nvars[$i:token]=$(./bin/sigsum-token create -k <(printf '%064x' 1) --log ${nvars[$i:log_dir]}/ssrv.key.pub)
+		nvars[$i:token]=$(./bin/sigsum-token create -k <(printf '%064x' 1) --log-key ${nvars[$i:log_dir]}/ssrv.key.pub)
 	done
 }
 
