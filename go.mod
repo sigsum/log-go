@@ -11,7 +11,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/prometheus/client_golang v1.14.0
 	google.golang.org/grpc v1.51.0
-	sigsum.org/sigsum-go v0.4.1
+	sigsum.org/sigsum-go v0.5.0
 )
 
 require (
@@ -32,6 +32,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.2.19 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/dchest/safefile v0.0.0-20151022103144-855e8d98f185 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
