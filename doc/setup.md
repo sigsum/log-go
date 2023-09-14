@@ -144,13 +144,14 @@ are:
 8. `sth-file`: name of the file where the latest signed tree head is
    stored, by default, `/var/lib/sigsum-log/sth`.
 
-Before starting the primary, we need to tell it to start out by
-signing and publishing a tree head corresponding to the empty tree. To
-do this, run the command `sigsum-mktree`; this reads the `sth-file`
-entry in the config file and creates a special startup file next to the
-sth file, default `/var/lib/sigsum-log/sth.startup`. The startup file
-is automatically deleted after use, and it is an error if both the
-`sth` and the `sth.startup` files exist.
+Before starting the primary the first time, we need to tell it to
+start out by signing and publishing a tree head corresponding to the
+empty tree. To do this, run the command `sigsum-mktree`; this reads
+the `sth-file=` entry in the config file and creates a special startup
+file next to that file. E.g., with the default location
+`/var/lib/sigsum-log/sth`, the startup file is
+`/var/lib/sigsum-log/sth.startup`. The startup file is automatically
+deleted after use, and it is an error if both files exist.
 
 The primary server executable is `sigsum-log-primary`.
 
