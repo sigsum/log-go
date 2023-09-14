@@ -84,28 +84,35 @@ trillian_log_signer \
 ## Creating the Trillian merkle trees
 
 Primary and secondary nodes need different types of trees to be
-configured in the database. On the primary, create a tree using
-```
-createtree -admin_server=localhost:6962 | tee trillian-tree-id
-```
+configured in the respective database, using Trillian's `createtree`
+command. On success, numerical id of the new tree is written on
+standard output. The log server needs that number stored in a file
+containing a line `tree_id=...`. That file should be passed on a
+`trillian-tree-id-file=...` line in the log's config file.
 
-The numerical id of the new tree is written on standard output, and
-above it is recorded in a file, to be passed on a
-`trillian-tree-id-file=...` line in the config file.
-
+On the primary node, with the above configuration, the tree and the tree-id
+file can be created using
+```
+(
+  id=$(createtree -admin_server=localhost:6962) && echo tree_id=${id}
+) | tee primary-tree-id
+```
 On the secondary node, instead run
 ```
-createtree -admin_server=localhost:6962 -tree_type PREORDERED_LOG
+(
+  id=$(createtree -admin_server=localhost:6962 -tree_type PREORDERED_LOG) &&
+  echo tree_id=${id}
+) | tee secondary-tree-id
 ```
 The `PREORDERED_LOG` type means that entries already have indices (and
 hence order) assigned when passed to Trillian, which is needed because
 the secondary node replicates the tree at the primary node, and it's
-the primary node that determine the order of entries. That is also why
+the primary node that determines the order of entries. That is also why
 the secondary node doesn't need a Trillian sequencer.
 
 ## Primary node
 
-The primary node need its own signing key pair. This can be an
+The primary node needs its own signing key pair. This can be an
 unencrypted private key file, generated using `sigsum-key gen -o KEY`
 (which generates a new keypair, stores the unencrypted private key in
 the file `KEY` and corresponding public key in `KEY.pub`). This uses
