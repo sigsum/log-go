@@ -5,13 +5,15 @@ package primary
 import (
 	"context"
 	"fmt"
-	"net/http"
+
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func (p Primary) getLeavesInternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+func (p Primary) getLeavesInternal(ctx context.Context, req requests.Leaves) ([]types.Leaf, error) {
 	th, err := p.DbClient.GetTreeHead(ctx)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("failed getting tree head: %v", err)
+		return nil, fmt.Errorf("failed getting tree head: %v", err)
 	}
-	return getLeavesGeneral(ctx, p, w, r, th.Size, false)
+	return getLeavesGeneral(ctx, p, req, th.Size, false)
 }

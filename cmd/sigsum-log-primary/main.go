@@ -109,9 +109,10 @@ func main() {
 
 	// Register HTTP endpoints.
 	log.Debug("adding external handler under prefix: %s", conf.Prefix)
-	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux(conf.Prefix)}
+	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPHandler(conf.Prefix)}
+	internalMux := http.NewServeMux()
 	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
-	internalMux := node.InternalHTTPMux(conf.Prefix)
+	internalMux.Handle("/" + conf.Prefix + "/", node.InternalHTTPHandler(conf.Prefix))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}

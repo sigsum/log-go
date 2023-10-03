@@ -7,8 +7,9 @@ import (
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
+	"sigsum.org/sigsum-go/pkg/server"
 	"sigsum.org/sigsum-go/pkg/submit-token"
-	"sigsum.org/sigsum-go/pkg/types"
+//	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // Primary is an instance of the log's primary node
@@ -22,19 +23,22 @@ type Primary struct {
 }
 
 // PublicHTTPHandler registers all external handlers
-func (p Primary) PublicHTTPMux(prefix string) *http.ServeMux {
-	mux := http.NewServeMux()
-	handler.Handler{p.Config, p.addLeaf, types.EndpointAddLeaf, http.MethodPost}.Register(mux, prefix)
-	handler.Handler{p.Config, p.getTreeHead, types.EndpointGetTreeHead, http.MethodGet}.Register(mux, prefix)
-	handler.Handler{p.Config, p.getConsistencyProof, types.EndpointGetConsistencyProof, http.MethodGet}.Register(mux, prefix)
-	handler.Handler{p.Config, p.getInclusionProof, types.EndpointGetInclusionProof, http.MethodGet}.Register(mux, prefix)
-	handler.Handler{p.Config, p.getLeavesExternal, types.EndpointGetLeaves, http.MethodGet}.Register(mux, prefix)
-	return mux
+func (p Primary) PublicHTTPHandler(prefix string) http.Handler {
+	return server.NewLog(&server.Config{
+		Prefix: prefix,
+		Timeout: p.Config.Timeout,
+		Metrics: handler.NewServerMetrics(p.Config.LogID),
+	}, p)
 }
 
-// InternalHTTPMux() regsiters all internal handlers
-func (p Primary) InternalHTTPMux(prefix string) *http.ServeMux {
-	mux := http.NewServeMux()
-	handler.Handler{p.Config, p.getLeavesInternal, types.EndpointGetLeaves, http.MethodGet}.Register(mux, prefix)
-	return mux
+// InternalHTTPMux() registers all internal handlers
+func (p Primary) InternalHTTPHandler(prefix string) http.Handler {
+	s := server.NewServer(&server.Config{
+		Prefix: prefix,
+		Timeout: p.Config.Timeout,
+		// Uses same log id, but different endpoints.
+		Metrics: handler.NewServerMetrics(p.Config.LogID),
+	})
+	server.RegisterGetLeavesHandler(s, p.getLeavesInternal)
+	return s
 }

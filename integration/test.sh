@@ -676,7 +676,7 @@ function get_metrics() {
 	curl -s ${nvars[$i:metrics_url]} > ${nvars[$i:log_dir]}/metrics
 	# Check that metrics include measurement of at least one
 	# get-*tree-head request, with latency up to 1s.
-	if grep '^http_latency_bucket{endpoint="get-[^"]*tree-head".*,status="0",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+	if grep '^http_latency_bucket{endpoint="get-[^"]*tree-head".*,status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 		pass "got $i metrics"
 		return 0
 	else

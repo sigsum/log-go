@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -36,10 +35,10 @@ func (h Handler) Register(mux *http.ServeMux, prefix string) {
 // ServeHTTP is part of the http.Handler interface
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	code := 0
 	defer func() {
 		end := time.Now().Sub(start).Seconds()
-		sc := fmt.Sprintf("%d", code)
+		// TODO: Reporting actual status code currently broken.
+		sc := "200"
 
 		rspcnt.Inc(h.LogID, string(h.Endpoint), sc)
 		latency.Observe(end, h.LogID, string(h.Endpoint), sc)

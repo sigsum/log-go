@@ -8,133 +8,116 @@ import (
 	"net/http"
 
 	"sigsum.org/log-go/internal/db"
-	"sigsum.org/log-go/internal/requests"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func (p Primary) addLeaf(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+func (p Primary) AddLeaf(ctx context.Context, req requests.Leaf, t *token.SubmitHeader) (bool, error) {
 	log.Debug("handling add-leaf request")
-	req, domain, err := requests.LeafRequestFromHTTP(ctx, r, p.TokenVerifier)
-	if err != nil {
-		return http.StatusBadRequest, err
+	var domain *string
+	if t != nil && p.TokenVerifier != nil {
+		// TODO: Return more appropriate errors from TokenVerifier?
+		if err := p.TokenVerifier.Verify(ctx, t); err != nil {
+			return false, api.NewError(http.StatusBadRequest, err)
+		}
+		domain = &t.Domain
 	}
 	keyHash := crypto.HashBytes(req.PublicKey[:])
 	relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
 	if relax == nil {
 		if domain == nil {
-			return http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded")
+			return false, api.NewError(http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded"))
 		}
-		return http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain)
+		return false, api.NewError(http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain))
 	}
 	leaf, err := req.Verify()
 	if err != nil {
-		return http.StatusForbidden, err
+		return false, api.NewError(http.StatusForbidden, err)
 	}
 
 	sth := p.Stateman.SignedTreeHead()
 	status, err := p.DbClient.AddLeaf(ctx,
 		&leaf, sth.Size)
+	log.Debug("status: %#v, err: %v", status, err);
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return false, err
 	}
 	if status.AlreadyExists {
 		relax()
 	}
-	if status.IsSequenced {
-		return http.StatusOK, nil
-	} else {
-		return http.StatusAccepted, nil
-	}
+	return status.IsSequenced, nil
 }
 
-func (p Primary) getTreeHead(_ context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
+func (p Primary) GetTreeHead(_ context.Context) (types.CosignedTreeHead, error) {
 	log.Debug("handling get-tree-head request")
-	cth := p.Stateman.CosignedTreeHead()
-	if err := cth.ToASCII(w); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
+	return p.Stateman.CosignedTreeHead(), nil
 }
 
-func (p Primary) getConsistencyProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+func (p Primary) GetConsistencyProof(ctx context.Context, req requests.ConsistencyProof) (types.ConsistencyProof, error) {
 	log.Debug("handling get-consistency-proof request")
-	req, err := requests.ConsistencyProofRequestFromHTTP(r)
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
 	curTree := p.Stateman.CosignedTreeHead()
 	if req.NewSize > curTree.TreeHead.Size {
-		return http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
-			req.NewSize, curTree.TreeHead.Size)
+		// TODO: Would be better with something like api.ErrBadRequest.WithMessage(...)
+		return types.ConsistencyProof{}, api.NewError(http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
+			req.NewSize, curTree.TreeHead.Size))
 	}
 
-	proof, err := p.DbClient.GetConsistencyProof(ctx, req)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	if err := proof.ToASCII(w); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
+	return p.DbClient.GetConsistencyProof(ctx, &req)
 }
 
-func (p Primary) getInclusionProof(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+func (p Primary) GetInclusionProof(ctx context.Context, req requests.InclusionProof) (types.InclusionProof, error) {
 	log.Debug("handling get-inclusion-proof request")
-	req, err := requests.InclusionProofRequestFromHTTP(r)
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
 	curTree := p.Stateman.CosignedTreeHead()
 	if req.Size > curTree.TreeHead.Size {
-		return http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree")
+		return types.InclusionProof{}, api.NewError(http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree"))
 	}
 
-	switch proof, err := p.DbClient.GetInclusionProof(ctx, req); err {
-	case db.ErrNotIncluded:
-		return http.StatusNotFound, err
-	case nil:
-		if err := proof.ToASCII(w); err != nil {
-			return http.StatusInternalServerError, err
-		}
-		return http.StatusOK, nil
-	default:
-		return http.StatusInternalServerError, err
+	proof, err := p.DbClient.GetInclusionProof(ctx, &req)
+	// TODO: Appropriate error from DbClient?
+	if err == db.ErrNotIncluded {
+		err = api.ErrNotFound
 	}
+	return proof, err
 }
 
-func getLeavesGeneral(ctx context.Context, p Primary, w http.ResponseWriter, r *http.Request,
-	maxIndex uint64, strictEnd bool) (int, error) {
+func getLeavesGeneral(ctx context.Context, p Primary, req requests.Leaves,
+	maxIndex uint64, strictEnd bool) ([]types.Leaf, error) {
 	log.Debug("handling get-leaves request")
 
-	req, err := requests.LeavesRequestFromHTTP(r, maxIndex, p.MaxRange, strictEnd)
-	if err != nil {
-		return http.StatusBadRequest, err
+	if req.StartIndex > maxIndex || (strictEnd && req.StartIndex >= maxIndex) {
+		return nil, api.NewError(http.StatusBadRequest,
+			fmt.Errorf("start_index(%d) outside of current tree", req.StartIndex))
+	}
+	if req.EndIndex > maxIndex {
+		if strictEnd {
+			return nil, api.NewError(http.StatusBadRequest,
+				fmt.Errorf("end_index(%d) outside of current tree", req.EndIndex))
+		}
+		req.EndIndex = maxIndex
+	}
+	if req.EndIndex-req.StartIndex > uint64(p.MaxRange) {
+		req.EndIndex = req.StartIndex + uint64(p.MaxRange)
 	}
 
 	// May happen only when strictEnd is false.
 	if req.StartIndex == req.EndIndex {
 		if strictEnd {
-			return http.StatusInternalServerError, fmt.Errorf("invalid range")
+			return nil, fmt.Errorf("internal error, empty range")
 		}
-		return http.StatusNotFound, fmt.Errorf("at end of tree")
+		// TODO: Would be better with api.ErrNotFound.WithMessage(...)
+		return nil, api.NewError(http.StatusNotFound, fmt.Errorf("at end of tree"))
 	}
 	leaves, err := p.DbClient.GetLeaves(ctx, &req)
-	if err != nil {
-		return http.StatusInternalServerError, err
+	if err == nil && len(leaves) == 0 {
+		err = fmt.Errorf("backend get leaves returned an empty list")
 	}
-	if len(leaves) == 0 {
-		return http.StatusInternalServerError, fmt.Errorf("backend get leaves returned an empty list")
-	}
-	if err = types.LeavesToASCII(w, leaves); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
+	return leaves, err
 }
 
-func (p Primary) getLeavesExternal(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	return getLeavesGeneral(ctx, p, w, r, p.Stateman.CosignedTreeHead().Size, true)
+func (p Primary) GetLeaves(ctx context.Context, req requests.Leaves) ([]types.Leaf, error) {
+	return getLeavesGeneral(ctx, p, req, p.Stateman.CosignedTreeHead().Size, true)
 }

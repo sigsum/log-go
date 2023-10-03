@@ -82,7 +82,7 @@ func TestAddLeaf(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
+			node.PublicHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -122,7 +122,7 @@ func TestGetTreeHead(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
+			node.PublicHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -206,7 +206,7 @@ func TestGetConsistencyProof(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
+			node.PublicHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -293,7 +293,7 @@ func TestGetInclusionProof(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
+			node.PublicHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
@@ -384,7 +384,7 @@ func TestGetLeaves(t *testing.T) {
 			}
 			stateman := mocksState.NewMockStateManager(ctrl)
 			stateman.EXPECT().CosignedTreeHead().Return(
-				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}})
+				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
 				Config:   testConfig,
@@ -402,7 +402,7 @@ func TestGetLeaves(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.PublicHTTPMux("").ServeHTTP(w, req)
+			node.PublicHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}

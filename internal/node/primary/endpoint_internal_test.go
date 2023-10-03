@@ -81,7 +81,7 @@ func TestInternalGetLeaves(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := db.NewMockClient(ctrl)
-			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil)
+			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil).AnyTimes()
 			if table.err != nil || table.leafCount > 0 {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
@@ -118,7 +118,7 @@ func TestInternalGetLeaves(t *testing.T) {
 
 			// Run HTTP request
 			w := httptest.NewRecorder()
-			node.InternalHTTPMux("").ServeHTTP(w, req)
+			node.InternalHTTPHandler("").ServeHTTP(w, req)
 			if got, want := w.Code, table.wantCode; got != want {
 				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
 			}
