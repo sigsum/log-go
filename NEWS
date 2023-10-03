@@ -18,11 +18,21 @@ NEWS for log-go v0.14.1:
 	file, from backup if possible, otherwise creating a new one
 	using sigsum-mktree).
 
+	This release has been tested to work together with:
+
+        * The sigsum.org/sigsum-go@v0.6.0 command line tools (most
+	  important being sigsum-submit and sigsum-verify)
+
+	* The prototype witness
+	  https://git.glasklar.is/sigsum/core/sigsum-py (TODO: tag),
+
+	* The litetlog witness (TODO: url + tag).
+
 	New features:
 
 	* Implemented a new interim witness protocol, where the log
 	  queries witnesses for cosignatures. See
-	  https://git.glasklar.is/sigsum/project/documentation/-/blob/main/witness.md
+	  https://git.glasklar.is/sigsum/project/documentation/-/blob/4ee138f1294f9c17d233f9d61f0fecd465a8d24b/witness.md
 	  for the specification. Witnesses to use are configured using
 	  a sigsum policy file.
 
@@ -31,7 +41,7 @@ NEWS for log-go v0.14.1:
 	Incompatible changes:
 
 	* Tree head serialization used for signatures and cosignatures
-	  changed to use a a checkpoint-compatible text serialization.
+	  changed to use a checkpoint-compatible text serialization.
 
 	* Leaf signatures as well as submit token signatures changed
 	  to no longer use SSH signature format.
