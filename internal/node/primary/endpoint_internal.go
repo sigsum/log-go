@@ -15,5 +15,5 @@ func (p Primary) getLeavesInternal(ctx context.Context, req requests.Leaves) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed getting tree head: %v", err)
 	}
-	return getLeavesGeneral(ctx, p, req, th.Size, false)
+	return p.getLeavesGeneral(ctx, req, th.Size, false)
 }

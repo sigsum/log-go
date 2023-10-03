@@ -12,7 +12,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/pkg/server"
 )
 
 const (
@@ -42,12 +42,12 @@ func (s Secondary) Run(ctx context.Context) {
 	}
 }
 
-// TODO: nit-pick: the internal endpoint is used by primaries to figure out how much can be signed; not cosigned - update name?
-
-func (s Secondary) InternalHTTPMux(prefix string) *http.ServeMux {
-	mux := http.NewServeMux()
-	handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetSecondaryTreeHead, http.MethodGet}.Register(mux, prefix)
-	return mux
+func (s Secondary) InternalHTTPMux(prefix string) http.Handler {
+	return server.NewSecondary(&server.Config{
+		Prefix:  prefix,
+		Timeout: s.Config.Timeout,
+		Metrics: handler.NewServerMetrics(s.Config.LogID),
+	}, s)
 }
 
 func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {

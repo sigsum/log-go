@@ -42,7 +42,7 @@ func (p Primary) AddLeaf(ctx context.Context, req requests.Leaf, t *token.Submit
 	sth := p.Stateman.SignedTreeHead()
 	status, err := p.DbClient.AddLeaf(ctx,
 		&leaf, sth.Size)
-	log.Debug("status: %#v, err: %v", status, err);
+	log.Debug("status: %#v, err: %v", status, err)
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +84,7 @@ func (p Primary) GetInclusionProof(ctx context.Context, req requests.InclusionPr
 	return proof, err
 }
 
-func getLeavesGeneral(ctx context.Context, p Primary, req requests.Leaves,
+func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 	maxIndex uint64, strictEnd bool) ([]types.Leaf, error) {
 	log.Debug("handling get-leaves request")
 
@@ -119,5 +119,5 @@ func getLeavesGeneral(ctx context.Context, p Primary, req requests.Leaves,
 }
 
 func (p Primary) GetLeaves(ctx context.Context, req requests.Leaves) ([]types.Leaf, error) {
-	return getLeavesGeneral(ctx, p, req, p.Stateman.CosignedTreeHead().Size, true)
+	return p.getLeavesGeneral(ctx, req, p.Stateman.CosignedTreeHead().Size, true)
 }

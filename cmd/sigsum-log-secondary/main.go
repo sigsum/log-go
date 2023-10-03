@@ -93,7 +93,8 @@ func main() {
 	// No external endpoints but we want to return 404.
 	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: http.NewServeMux()}
 	// Register HTTP endpoints.
-	internalMux := node.InternalHTTPMux(conf.Prefix)
+	internalMux := http.NewServeMux()
+	internalMux.Handle("/", node.InternalHTTPMux(conf.Prefix))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
