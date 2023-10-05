@@ -11,9 +11,9 @@ The following programs are released and supported:
   - `cmd/sigsum-mktree`
 
 Releases are announced on the [sigsum-general][] mailing list. The
-[NEWS file](./NEWS) documents, for each release, the user visible
+[NEWS file][] documents, for each release, the user visible
 changes, the recommended upgrade procedure, and other Sigsum
-components have been interop-tested with the log server release.
+components that have been interop-tested with the log server release.
 
 Note that a release is simply a git-tag specified on our mailing list.
 You are expected to build the released tools yourself, e.g., with `go
@@ -24,22 +24,24 @@ The log-go go packages are *not* considered released (as signalled by
 the v0 version tag), even though we release the above programs with
 the same tag. By the terms of the LICENSE file you are free to use
 this code "as is" in almost any way you like, but for now, we
-support their use *only* via the above programs, and we don't aim to
-provide any backwards compatibility at this level.
+support its use *only* via the above programs, and we don't aim to
+provide any backwards compatibility for internal interfaces.
 
 We encourage deployment of our released Sigsum log servers. For
 applications to be able to *depend* on Sigsum logging, they also need
 trusted log witnesses and log monitoring. Availability and quality of
-those components is out of scope for the log server release process.
+these components is out of scope for the log server release process.
 
-[sigsum-general]: https://lists.glasklarteknik.se/mailman3/postorius/lists/sigsum-general.lists.sigsum.org/
+[sigsum-general](https://lists.glasklarteknik.se/mailman3/postorius/lists/sigsum-general.lists.sigsum.org/)
+[NEWS file](./NEWS)
 
 ### Upgrading
 
 You are expected to upgrade linearly from one advertised release to
-the next advertised release, e.g., from v0.9.0 to v0.14.1, unless specified
-otherwise. Pay close attention to manual migration steps, if any, as
-documented in the [NEWS file][].
+the next advertised release, e.g., from v0.9.0 to v0.14.1, unless
+specified otherwise. We strive to make upgrading easy, with any
+complications, e.g., any manual steps required for migration of stored
+state or configuration, documented in the [NEWS file][].
 
 Downgrading is in general not supported. Upgrading several releases is
 generally *intended* to work, but not properly tested. We currently do
@@ -52,7 +54,7 @@ tandem: running nodes on different software releases is not tested.
 ### Expected changes in upcoming releases
 
   1. There are no planned changes to the wire protocol between log
-     clients and log servers. The log.md, v1, protocol is used. This
+     clients and log servers. The the [sigsum v1 protocol][] is used. This
      also fully specifies the cryptographic details, such as precisely
      which bytes are being signed, and intended meaning, for each type
      of signature. Any breaking changes would have to be considered
@@ -64,7 +66,10 @@ tandem: running nodes on different software releases is not tested.
   3. For the wire protocol between log servers and witnesses,
      substantial changes are planned that affect everything *except*
      the resulting cosignatures as they are are published to log
-     clients.
+     clients. Such changes will require logs and witnesses to
+     coordinate upgrades, while log clients are completely unaffected.
+
+[sigsum v1 protocol](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md)
 
 ## Log server release process
 
