@@ -1,41 +1,56 @@
-NEWS for log-go v0.13.0:
+NEWS for log-go v0.14.1
 
 	This release updates the log server to implement the v1 sigsum
-	protocols, see
-	https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md.
+	protocols [1].
 
-	Upgrading existing log services is automatic, see below for
-	the implications of upgrading. However, downgrading is *NOT*
-	tested or supported (downgrading would require replacing the
-	signed-tree-head file, from backup if possible, otherwise
-	creating a new one using sigsum-mktree).
+	The log protocol, i.e., the protocol for querying a log and
+	submitting new entries, is now considered stable: there are no
+	plans for incompatible changes, and future updates will
+	consider transitions carefully. However, the witness protocol,
+	used by logs to interact with witnesses, is under
+	development, and will likely be replaced in later versions.
+
+	Upgrading existing log services from the previous release,
+	v0.9.0, is automatic, see below for the implications of
+	upgrading. However, downgrading is *NOT* tested nor supported.
+	Downgrading would require manual replacement of the
+	signed-tree-head file by restoring it from a backup or
+	recreating it using sigsum-mktree.
+
+	This release has been tested to work together with:
+
+        * The sigsum-go@v0.6.0 command line tools (most
+	  importantly sigsum-submit and sigsum-verify)
+
+	* The prototype witness
+	  https://git.glasklar.is/sigsum/core/sigsum-py (TODO: tag),
+
+	* The litetlog witness (TODO: url + tag).
 
 	New features:
 
-	* Implemented new witness protocol, where the log queries
-	  witnesses for cosignatures. See
-	  https://git.glasklar.is/sigsum/project/documentation/-/blob/main/witness.md.
-	  for the specification. Witnesses to use are configured using
-	  a sigsum policy file.
+	* Implemented a new interim witness protocol [2], where a log
+	  queries witnesses for cosignatures. Witnesses to use are
+	  configured using a sigsum policy file.
+
+	  Further changes to the log <-> witness protocol are planned.
 
 	Incompatible changes:
 
 	* Tree head serialization used for signatures and cosignatures
-	  changed to use a a checkpoint-compatible text serialization.
+	  changed to use a checkpoint-compatible [3] text serialization.
 
 	* Leaf signatures as well as submit token signatures changed
 	  to no longer use SSH signature format.
 
-	* A cosignature version is added to cosignature lines in the
-	  response to get-tree-head.
+	Notes on upgrading:
 
-	Upgrading:
+	* Existing logs can be upgraded. When loading a log server's
+	  signed-tree-head file, the server accepts either a sigsum v0
+	  tree head signature, as created by log-go v0.9.0, or a v1
+	  signature, as created by the current version.
 
-	* Existing logs can be upgraded; for the transition, the old
-	  way of signing tree heads is recognized when loading the log
-	  server's signed-tree-head file.
-
-	* An upgraded log will publish tree heads signed accordning to
+	* An upgraded log will publish tree heads signed according to
 	  the v1 protocol, and accept new leaves signed according to
 	  the v1 protocol.
 
@@ -49,7 +64,23 @@ NEWS for log-go v0.13.0:
 	  involved at all). However, attempting to create a new proof
 	  for an old leaf will fail.
 
-NEWS for log-go v0.9.0
+	Miscellaneous:
+
+	* An intermediate version, tagged v0.13.0, included an
+	  explicit "v1" signature version on the cosignature lines.
+	  This protocol change was reverted for v0.14.x. Version
+	  v0.13.0 was never announced or properly released, but in
+	  case anyone is nevertheless running v0.13.0, upgrading to
+	  v0.14.1 is expected to work. The only user-visible change is
+	  the removal of cosignature version, which means that any
+	  client software and witnesses written to interop with log
+	  servers running v0.13.0 will need upgrading as well.
+
+[1] https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md
+[2] https://git.glasklar.is/sigsum/project/documentation/-/blob/4ee138f1294f9c17d233f9d61f0fecd465a8d24b/witness.md
+[3] https://github.com/transparency-dev/formats/blob/main/log/README.md#checkpoint-format
+
+NEWS for log-go v0.9.0:
 
 	First advertised release, implementing the v0 sigsum protocol.
 	Recent user-visible changes:
