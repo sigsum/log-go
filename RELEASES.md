@@ -37,9 +37,9 @@ these components is out of scope for the log server release process.
 
 You are expected to upgrade linearly from one advertised release to
 the next advertised release, e.g., from v0.9.0 to v0.14.1, unless
-specified otherwise. We strive to make upgrading easy, with any
+specified otherwise. We strive to make upgrading easy. Any
 complications, e.g., any manual steps required for migration of stored
-state or configuration, documented in the [NEWS file][].
+state or configuration, is documented in the [NEWS file][].
 
 Downgrading is in general not supported.
 
@@ -68,8 +68,8 @@ tandem: running nodes on different software releases is not tested.
 
 ## Release cycle
 
-We expect feature releases when something new is ready, and we expect
-one or several months between feature releases.
+We make feature releases when something new is ready. We expect one or
+several months between feature releases.
 
 In case critical bugs are discovered, we intend to provide bugfix-only
 updates for the latest release in a timely manner. Backporting
@@ -80,5 +80,7 @@ disruptive.
 
 ## Future improvements
 
+Some desired incremental improvements of the release processes:
+
   - Document and automate more of the release testing.
-  - Release signing.
+  - Define a process for signing releases, e.g., a signed git tag.
