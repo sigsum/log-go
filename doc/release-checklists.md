@@ -25,7 +25,7 @@ log-go software.
 
   - [ ] What in the repository is being released and supported.
   - [ ] Where are releases announced (sigsum-general mailing list).
-  - [ ] The overall release process (based on the above procedure).
+  - [ ] The overall release process is described.
   - [ ] The expectation we as maintainers have on users.
   - [ ] The expectations users can have on us as maintainers, e.g.,
       how we're testing a release and what we intend to (not) break in
