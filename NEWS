@@ -19,13 +19,15 @@ NEWS for log-go v0.14.1
 
 	This release has been tested to work together with:
 
-        * The sigsum-go@v0.6.0 command line tools (most
-	  importantly sigsum-submit and sigsum-verify)
+        * Command line tools (most importantly sigsum-submit and
+	  sigsum-verify)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tag v0.6.1.
 
-	* The prototype witness
-	  https://git.glasklar.is/sigsum/core/sigsum-py (TODO: tag),
+	* The prototype witness,
+	  https://git.glasklar.is/sigsum/core/sigsum-py, tag v0.1.1.
 
-	* The litetlog witness (TODO: url + tag).
+	* The litetlog witness,
+	  https://github.com/FiloSottile/litetlog, tag v0.1.1.
 
 	New features:
 
