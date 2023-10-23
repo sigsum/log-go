@@ -1,7 +1,7 @@
 # Sigsum log-go
 
-This repository provides an implementation of a Sigsum log server,
-based on the [sigsum
+This repository provides a Sigsum log server, implementing the the
+[sigsum
 protocols](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md).
 The log server provides replication between a primary and a secondary
 node, and it interacts with configured witnesses to collect
