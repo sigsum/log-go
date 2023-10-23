@@ -1,11 +1,13 @@
 # Sigsum log-go
-This repository provides a
-	[Trillian](https://transparency.dev/#trillian)
-	[personality](https://github.com/google/trillian/blob/master/docs/Personalities.md)
-implementing the sigsum/v1
-	[design](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/design.md)
-and
-	[API](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md).
+
+This repository provides an implementation of a Sigsum log server,
+based on the [sigsum
+protocols](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md).
+The log server provides replication between a primary and a secondary
+node, and it interacts with configured witnesses to collect
+cosignatures. [Trillian](https://transparency.dev/#trillian) and
+[MariaDB](https://mariadb.org/) are used for backing storage on each
+node.
 
 ## Server docs
 
