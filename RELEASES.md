@@ -8,7 +8,7 @@ The following programs are released and supported:
   - `cmd/sigsum-log-secondary`
   - `cmd/sigsum-mktree`
 
-Releases are announced on the [sigsum-general][] mailing list. The
+Releases are announced on the [sigsum-announce][] mailing list. The
 [NEWS file](./NEWS) documents, for each release, the user visible
 changes, the recommended upgrade procedure, and other Sigsum
 components that have been interop-tested with the log server release.
@@ -30,7 +30,7 @@ applications to be able to *depend* on Sigsum logging, they also need
 trusted log witnesses and log monitoring. Availability and quality of
 these components is out of scope for the log server release process.
 
-[sigsum-general]: https://lists.glasklarteknik.se/mailman3/postorius/lists/sigsum-general.lists.sigsum.org/
+[sigsum-announce]: https://lists.glasklarteknik.se/mailman3/postorius/lists/sigsum-announce.lists.sigsum.org/
 
 ## Upgrading
 
