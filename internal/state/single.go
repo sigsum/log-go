@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"sigsum.org/log-go/internal/witness"
-	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/policy"
@@ -31,7 +31,7 @@ type StateManagerSingle struct {
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
 func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
-	secondary client.Secondary, secondaryPub *crypto.PublicKey, sthFileName string) (*StateManagerSingle, error) {
+	secondary api.Secondary, secondaryPub *crypto.PublicKey, sthFileName string) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sthFile := sthFile{name: sthFileName}
 	startupMode, err := sthFile.Startup()

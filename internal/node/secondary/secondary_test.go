@@ -84,7 +84,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			defer ctrl.Finish()
 
 			fmt.Printf("desc: %s\n", tbl.desc)
-			primaryClient := mocks.NewMockLogClient(ctrl)
+			primaryClient := mocks.NewMockLog(ctrl)
 
 			trillianClient := mocksDB.NewMockClient(ctrl)
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)

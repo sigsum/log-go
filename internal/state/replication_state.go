@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/requests"
@@ -23,7 +23,7 @@ type ReplicationState struct {
 	timeout      time.Duration
 	primary      PrimaryTree
 	secondaryPub crypto.PublicKey
-	secondary    client.Secondary
+	secondary    api.Secondary
 }
 
 // Return the latest primary tree head with size at least minSize.

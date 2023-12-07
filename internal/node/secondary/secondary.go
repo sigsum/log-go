@@ -9,7 +9,6 @@ import (
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/api"
-	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/requests"
@@ -26,7 +25,7 @@ type Secondary struct {
 	Interval time.Duration // Signing frequency
 	DbClient db.Client     // provides access to the backend, usually Trillian
 	Signer   crypto.Signer // provides access to Ed25519 private key
-	Primary  client.Log
+	Primary  api.Log
 }
 
 func (s Secondary) Run(ctx context.Context) {
