@@ -14,6 +14,10 @@ require (
 	sigsum.org/sigsum-go v0.6.1
 )
 
+replace github.com/dchest/safefile => git.glasklar.is/sigsum/dependencies/safefile v1.0.0
+
+require github.com/dchest/safefile v0.0.0-20151022103144-855e8d98f185
+
 require (
 	bitbucket.org/creachadair/shell v0.0.7 // indirect
 	cloud.google.com/go v0.107.0 // indirect
@@ -32,7 +36,6 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.2.19 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
-	github.com/dchest/safefile v0.0.0-20151022103144-855e8d98f185 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
