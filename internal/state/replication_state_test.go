@@ -59,7 +59,7 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secondary := mocks.NewMockSecondaryClient(ctrl)
+	secondary := mocks.NewMockSecondary(ctrl)
 	secondary.EXPECT().GetSecondaryTreeHead(gomock.Any()).MinTimes(1).Return(sth, nil)
 
 	state := ReplicationState{secondary: secondary, secondaryPub: pub}

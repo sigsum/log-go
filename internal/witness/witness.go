@@ -19,7 +19,7 @@ type GetConsistencyProofFunc func(ctx context.Context, req *requests.Consistency
 
 // Not concurrency safe, due to updates of prevSize.
 type witness struct {
-	client              client.Witness
+	client              api.Witness
 	logKeyHash          crypto.Hash
 	pubKey              crypto.PublicKey
 	prevSize            uint64

@@ -20,9 +20,9 @@ import (
 
 func testWitness(t *testing.T, ctrl *gomock.Controller,
 	logKeyHash *crypto.Hash,
-	f GetConsistencyProofFunc) (crypto.Signer, *mocks.MockWitnessClient, *witness) {
+	f GetConsistencyProofFunc) (crypto.Signer, *mocks.MockWitness, *witness) {
 	pub, signer := mustKeyPair(t)
-	client := mocks.NewMockWitnessClient(ctrl)
+	client := mocks.NewMockWitness(ctrl)
 	return signer, client, &witness{
 		client:              client,
 		pubKey:              pub,

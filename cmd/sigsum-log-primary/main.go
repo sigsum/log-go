@@ -20,6 +20,7 @@ import (
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -179,7 +180,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 		p.DbClient = trillianClient
 	}
 	// Setup secondary node configuration.
-	var secondary client.Secondary
+	var secondary api.Secondary
 	var secondaryPub crypto.PublicKey
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkeyFile != "" {
 		var err error
