@@ -4,7 +4,7 @@ This repository provides a log server that implements the [sigsum protocols][].
 Database replication between a primary node and a secondary node is included.
 [Trillian][] and [MariaDB][] are used for backing the storage on each node.
 
-[sigsum protocols]: https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md
+[sigsum protocols]: https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
 [Trillian]: https://transparency.dev/#trillian
 [MariaDB]: https://mariadb.org/
 
@@ -27,9 +27,12 @@ website](https://www.sigsum.org/docs/).
 
 ### Contributing
 
-You are encouraged to file issues and open merge requests.  To contribute
-without a GitLab account, interact with us on the [sigsum-general][] list.  You
-can also file issues on our [issue tracker][] by sending an email to:
+You are encouraged to file issues and open merge requests.  Sign up on our
+GitLab instance or login using a supported identity provider like GitHub.
+
+Note that it is possible to contribute without using GitLab.  For example,
+submit patches and interact with us on the [sigsum-general][] list.  You can
+also file issues directly to our [issue tracker][] by sending an email to:
 
     gitlab+sigsum-core-log-go-issue@incoming.glasklar.is
 
@@ -42,13 +45,20 @@ Append your name to the list of authors at the bottom in a separate commit.
 
 ### Testing
 
-Our [CI configuration](./gitlab-ci.yml) builds the log-go software, runs all
-unit tests, and performs an integration test with two nodes on localhost.
+Check that the log-go software builds and all unit tests pass:
 
-Please make sure that all CI tests pass.
+    $ go build ./...
+    $ go test -v -race ./...
 
-If you would like to work on the integration tests themselves and/or run
-locally, see [README](./integration/README.md) in the integration directory.
+As a rule of thumb, new merge requests should be accompanied by unit tests.
+
+Check that the log-go integration tests pass, see [separate quick start
+instructions](./integration/README.md).  Use the `--ephemeral` option to run a
+single-node test.  Use the `--extended` option for a slower test that sets up a
+primary node and a secondary node on localhost with an automated failover.
+
+Note that unit tests as well as integration tests run automatically in our CI
+pipelines.  Please ensure that all pipelines pass before requesting review.
 
 ### Commit messages
 
@@ -95,3 +105,7 @@ leaf=1507de45cbe91d7192063c7c143b9d07aa52ac4a47c278d728dd9c9e86c834f3 315ee5e2eb
   - IRC room `#sigsum` @ OFTC.net
   - Matrix room `#sigsum` which is bridged with IRC
   - The [sigsum-general][] mailing list
+
+## License
+
+BSD 2-Clause License
