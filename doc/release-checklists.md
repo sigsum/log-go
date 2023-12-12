@@ -24,7 +24,7 @@ log-go software.
 ## RELEASES file checklist
 
   - [ ] What in the repository is being released and supported.
-  - [ ] Where are releases announced (sigsum-general mailing list).
+  - [ ] Where are releases announced (sigsum-announce mailing list).
   - [ ] The overall release process is described.
   - [ ] The expectation we as maintainers have on users.
   - [ ] The expectations users can have on us as maintainers, e.g.,
