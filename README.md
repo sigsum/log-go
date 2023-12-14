@@ -53,9 +53,8 @@ Check that the log-go software builds and all unit tests pass:
 As a rule of thumb, new merge requests should be accompanied by unit tests.
 
 Check that the log-go integration tests pass, see [separate quick start
-instructions](./integration/README.md).  Use the `--ephemeral` option to run a
-single-node test.  Use the `--extended` option for a slower test that sets up a
-primary node and a secondary node on localhost with an automated failover.
+instructions](./integration/README.md).  Use the `--extended` option for a
+slower test that includes an automated failover from a primary to a secondary.
 
 Note that unit tests as well as integration tests run automatically in our CI
 pipelines.  Please ensure that all pipelines pass before requesting review.
