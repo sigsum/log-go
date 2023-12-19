@@ -34,7 +34,7 @@ Note that it is possible to contribute without using GitLab.  For example,
 submit patches and interact with us on the [sigsum-general][] list.  You can
 also file issues directly to our [issue tracker][] by sending an email to:
 
-    XXX: Add correct URL here.
+    sigsum-core-log-go-issues@incoming.glasklar.is
 
 If you are a first-time contributor providing a merge request, please review the
 log-go [LICENSE](./LICENSE) and copyright in the [AUTHORS](./AUTHORS) file.
