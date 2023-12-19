@@ -104,7 +104,3 @@ leaf=1507de45cbe91d7192063c7c143b9d07aa52ac4a47c278d728dd9c9e86c834f3 315ee5e2eb
   - IRC room `#sigsum` @ OFTC.net
   - Matrix room `#sigsum` which is bridged with IRC
   - The [sigsum-general][] mailing list
-
-## License
-
-BSD 2-Clause License
