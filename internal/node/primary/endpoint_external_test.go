@@ -285,8 +285,8 @@ func TestGetLeaves(t *testing.T) {
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			req:         requests.Leaves{StartIndex: 0, EndIndex: testMaxRange + 1}, // query will be pruned
-			sthSize:     5,                                                          // > testMaxRange
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 4},
+			sthSize:     5,
 			leafCount:   testMaxRange,
 		},
 	} {

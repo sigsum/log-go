@@ -88,6 +88,14 @@ func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 	maxIndex uint64, strictEnd bool) ([]types.Leaf, error) {
 	log.Debug("handling get-leaves request")
 
+	// When invoked via sigsum-go/pkg/server, this error is
+	// already checked for earlier and will not happen here.
+	if req.StartIndex >= req.EndIndex {
+		return nil, api.NewError(http.StatusBadRequest,
+			fmt.Errorf("start_index(%d) must be less than end_index(%d)",
+				req.StartIndex, req.EndIndex))
+	}
+
 	if req.StartIndex > maxIndex || (strictEnd && req.StartIndex >= maxIndex) {
 		return nil, api.NewError(http.StatusBadRequest,
 			fmt.Errorf("start_index(%d) outside of current tree", req.StartIndex))
@@ -103,16 +111,10 @@ func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 		req.EndIndex = req.StartIndex + uint64(p.MaxRange)
 	}
 
-	// When strictEnd is false, the 404 "Not Found" error is the
-	// normal way to report the end of the log. When strictEnd is
-	// true, it's an invalid request, and if this method is
-	// invoked via sigsum-go/pkg/server, that is checked for
-	// earlier and should not happen here.
+	// May happen only when strictEnd is false.
 	if req.StartIndex == req.EndIndex {
 		if strictEnd {
-			return nil, api.NewError(http.StatusBadRequest,
-				fmt.Errorf("start_index(%d) must be less than end_index(%d)",
-					req.StartIndex, req.EndIndex))
+			return nil, fmt.Errorf("internal error, empty range")
 		}
 		// TODO: Would be better with api.ErrNotFound.WithMessage(...)
 		return nil, api.NewError(http.StatusNotFound, fmt.Errorf("at end of tree"))
