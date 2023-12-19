@@ -11,32 +11,6 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-// var (
-// 	testConfig = handler.Config{
-// 		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
-// 		Timeout: 10,
-// 	}
-// )
-
-// // TestHandlers checks that the expected internal handlers are configured
-// func TestIntHandlers(t *testing.T) {
-// 	node := Secondary{
-// 		Config: testConfig,
-// 	}
-// 	mux := node.InternalHTTPMux("")
-// 	for _, endpoint := range []types.Endpoint{
-// 		types.EndpointGetSecondaryTreeHead,
-// 	} {
-// 		req, err := http.NewRequest(http.MethodGet, endpoint.Path(""), nil)
-// 		if err != nil {
-// 			t.Fatalf("create http request failed: %v", err)
-// 		}
-// 		if _, pattern := mux.Handler(req); pattern == "" {
-// 			t.Errorf("endpoint %s not registered", endpoint)
-// 		}
-// 	}
-// }
-
 func TestFetchLeavesFromPrimary(t *testing.T) {
 	for _, tbl := range []struct {
 		desc string
