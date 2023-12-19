@@ -10,6 +10,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/server"
 )
 
+// TODO: Make these members of serverMetrics, rather than global variables.
 var (
 	reqcnt  monitoring.Counter   // number of incoming http requests
 	rspcnt  monitoring.Counter   // number of valid http responses

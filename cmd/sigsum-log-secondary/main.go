@@ -98,7 +98,7 @@ func main() {
 	// Register HTTP endpoints.
 	internalMux := http.NewServeMux()
 	internalMux.Handle("/", server.NewSecondary(&server.Config{
-		Prefix: conf.Prefix,
+		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
 		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
 	}, node))

@@ -103,10 +103,16 @@ func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 		req.EndIndex = req.StartIndex + uint64(p.MaxRange)
 	}
 
-	// May happen only when strictEnd is false.
+	// When strictEnd is false, the 404 "Not Found" error is the
+	// normal way to report the end of the log. When strictEnd is
+	// true, it's an invalid request, and if this method is
+	// invoked via sigsum-go/pkg/server, that is checked for
+	// earlier and should not happen here.
 	if req.StartIndex == req.EndIndex {
 		if strictEnd {
-			return nil, fmt.Errorf("internal error, empty range")
+			return nil, api.NewError(http.StatusBadRequest,
+				fmt.Errorf("start_index(%d) must be less than end_index(%d)",
+					req.StartIndex, req.EndIndex))
 		}
 		// TODO: Would be better with api.ErrNotFound.WithMessage(...)
 		return nil, api.NewError(http.StatusNotFound, fmt.Errorf("at end of tree"))

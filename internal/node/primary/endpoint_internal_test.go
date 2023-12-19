@@ -1,5 +1,7 @@
 //go:build ignore
+
 // Rework to not test http things.
+//
 package primary
 
 import (

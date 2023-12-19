@@ -42,11 +42,11 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 			trillianTHErr: fmt.Errorf("mocked error"),
 		},
 		{
-			desc:       "signer error",
-			signErr:    fmt.Errorf("mocked error"),
+			desc:    "signer error",
+			signErr: fmt.Errorf("mocked error"),
 		},
 		{
-			desc:       "success",
+			desc: "success",
 		},
 	} {
 		func() {

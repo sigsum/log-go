@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	testWitVK  = crypto.PublicKey{}
-	testMaxRange = 3
+	testWitVK = crypto.PublicKey{}
 )
 
 // TODO: Move tests to sigsum server pkg, log_test.go.

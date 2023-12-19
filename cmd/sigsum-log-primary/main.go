@@ -112,14 +112,14 @@ func main() {
 	// Register HTTP endpoints.
 	log.Debug("adding external handler under prefix: %s", conf.Prefix)
 	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: server.NewLog(&server.Config{
-		Prefix: conf.Prefix,
+		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
 		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
 	}, node)}
 	internalMux := http.NewServeMux()
 	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
 	internalMux.Handle("/", server.NewGetLeavesServer(&server.Config{
-		Prefix: conf.Prefix,
+		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
 		// No metrics. If we used the same logging id, we'd
 		// get a mix of get-leaves metrics for internal and

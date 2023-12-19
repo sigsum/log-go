@@ -1,13 +1,9 @@
-//go:build ignore
-// Rework to not test http things.
 package primary
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -15,48 +11,42 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/rate-limit"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-// TODO: remove tests that are now located in internal/requests instead
-
 func TestAddLeaf(t *testing.T) {
-	// TODO: Set up a mock rate limiter.
+	// TODO: Add tests for rate limiting.
 	for _, table := range []struct {
 		description string
-		ascii       string           // body of HTTP request
-		errTrillian error            // error from Trillian client
-		wantCode    int              // HTTP status ok
+		req         requests.Leaf
+		errTrillian error // error from Trillian client
+		wantCode    int   // HTTP status
+		committed   bool
 		leafStatus  db.AddLeafStatus // return value from db.AddLeaf()
 	}{
 		{
-			description: "invalid: bad request (parser error)",
-			ascii:       "key=value\n",
-			wantCode:    http.StatusBadRequest,
-		},
-		{
 			description: "invalid: bad request (signature error)",
-			ascii:       mustLeafAscii(t, crypto.Hash{}, false),
+			req:         mustLeaf(t, crypto.Hash{}, false),
 			wantCode:    http.StatusForbidden,
 		},
 		{
 			description: "invalid: backend failure",
-			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
+			req:         mustLeaf(t, crypto.Hash{}, true),
 			errTrillian: fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid: 202",
-			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
-			wantCode:    http.StatusAccepted,
+			req:         mustLeaf(t, crypto.Hash{}, true),
 		},
 		{
 			description: "valid: 200",
-			ascii:       mustLeafAscii(t, crypto.Hash{}, true),
+			req:         mustLeaf(t, crypto.Hash{}, true),
 			leafStatus:  db.AddLeafStatus{IsSequenced: true},
-			wantCode:    http.StatusOK,
+			committed:   true,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -74,110 +64,81 @@ func TestAddLeaf(t *testing.T) {
 				RateLimiter: rateLimit.NoLimit{},
 			}
 
-			// Create HTTP request
-			url := types.EndpointAddLeaf.Path("http://example.com")
-			req, err := http.NewRequest("POST", url, bytes.NewBufferString(table.ascii))
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPHandler("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
+			committed, err := node.AddLeaf(context.Background(), table.req, nil)
+			if err := checkError(err, table.wantCode); err != nil {
+				t.Errorf("in test %q: %v", table.description, err)
+			} else if got, want := committed, table.committed; got != want {
+				t.Errorf("unexpected commit status, got %v, wanted %v in test %q", got, want, table.description)
 			}
 		}()
 	}
 }
 
 func TestGetTreeHead(t *testing.T) {
-	for _, table := range []struct {
-		description string
-		err         error // error from Trillian client
-		wantCode    int   // HTTP status ok
-	}{
-		{
-			description: "valid",
-			wantCode:    http.StatusOK,
-		},
-	} {
-		// Run deferred functions at the end of each iteration
-		func() {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			stateman := mocksState.NewMockStateManager(ctrl)
-			stateman.EXPECT().CosignedTreeHead().Return(types.CosignedTreeHead{})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	stateman := mocksState.NewMockStateManager(ctrl)
 
-			node := Primary{
-				Config:   testConfig,
-				Stateman: stateman,
-			}
+	cth := types.CosignedTreeHead{}
+	cth.Size = 10
 
-			// Create HTTP request
-			url := types.EndpointGetTreeHead.Path("http://example.com")
-			req, err := http.NewRequest("GET", url, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
+	stateman.EXPECT().CosignedTreeHead().Return(cth)
 
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPHandler("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
-			}
-		}()
+	node := Primary{
+		Stateman: stateman,
+	}
+
+	got, err := node.GetTreeHead(context.Background())
+	if err != nil {
+		t.Fatalf("GetTreeHead failed: %v", err)
+	}
+	// For simplicity, doesn't compare the (nil) cosignature lists.
+	if got.SignedTreeHead != cth.SignedTreeHead {
+		t.Errorf("Bad result from GetTreeHead: got %v, expected %v", got, cth)
 	}
 }
 
 func TestGetConsistencyProof(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		params      string // params is the query's url params
+		req         requests.ConsistencyProof
 		sthSize     uint64
 		rsp         types.ConsistencyProof // consistency proof from Trillian client
 		err         error                  // error from Trillian client
 		wantCode    int                    // HTTP status ok
 	}{
 		{
-			description: "invalid: bad request (parser error)",
-			params:      "a/1",
-			wantCode:    http.StatusBadRequest,
-		},
-		{
 			description: "invalid: bad request (OldSize is zero)",
-			params:      "0/1",
+			req:         requests.ConsistencyProof{OldSize: 0, NewSize: 1},
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (OldSize > NewSize)",
-			params:      "2/1",
+			req:         requests.ConsistencyProof{OldSize: 2, NewSize: 1},
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (NewSize > tree size)",
-			params:      "1/2",
+			req:         requests.ConsistencyProof{OldSize: 1, NewSize: 2},
 			sthSize:     1,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			params:      "1/2",
+			req:         requests.ConsistencyProof{OldSize: 1, NewSize: 2},
 			sthSize:     2,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid",
-			params:      "1/2",
+			req:         requests.ConsistencyProof{OldSize: 1, NewSize: 2},
 			sthSize:     2,
 			rsp: types.ConsistencyProof{
 				Path: []crypto.Hash{
 					crypto.HashBytes([]byte{}),
 				},
 			},
-			wantCode: http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -193,23 +154,15 @@ func TestGetConsistencyProof(t *testing.T) {
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
-				Config:   testConfig,
 				DbClient: client,
 				Stateman: stateman,
 			}
 
-			// Create HTTP request
-			url := types.EndpointGetConsistencyProof.Path("http://example.com")
-			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPHandler("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
+			proof, err := node.GetConsistencyProof(context.Background(), table.req)
+			if err := checkError(err, table.wantCode); err != nil {
+				t.Errorf("in test %q: %v", table.description, err)
+			} else if !pathIsEqual(proof.Path, table.rsp.Path) {
+				t.Errorf("unexpected proof, got %x, wanted %x", proof, table.rsp)
 			}
 		}()
 	}
@@ -218,45 +171,40 @@ func TestGetConsistencyProof(t *testing.T) {
 func TestGetInclusionProof(t *testing.T) {
 	for _, table := range []struct {
 		description string
-		params      string // params is the query's url params
+		req         requests.InclusionProof
 		sthSize     uint64
 		rsp         types.InclusionProof // inclusion proof from Trillian client
 		err         error                // error from Trillian client
 		wantCode    int                  // HTTP status ok
 	}{
 		{
-			description: "invalid: bad request (parser error)",
-			params:      "a/0000000000000000000000000000000000000000000000000000000000000000",
-			wantCode:    http.StatusBadRequest,
-		},
-		{
 			description: "invalid: bad request (no proof available for tree size 1)",
-			params:      "1/0000000000000000000000000000000000000000000000000000000000000000",
+			req:         requests.InclusionProof{Size: 1},
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (request outside current tree size)",
-			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
+			req:         requests.InclusionProof{Size: 2},
 			sthSize:     1,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
+			req:         requests.InclusionProof{Size: 2},
 			sthSize:     2,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "invalid: not included",
-			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
+			req:         requests.InclusionProof{Size: 2},
 			sthSize:     2,
 			err:         db.ErrNotIncluded,
 			wantCode:    http.StatusNotFound,
 		},
 		{
 			description: "valid",
-			params:      "2/0000000000000000000000000000000000000000000000000000000000000000",
+			req:         requests.InclusionProof{Size: 2},
 			sthSize:     2,
 			rsp: types.InclusionProof{
 				LeafIndex: 0,
@@ -264,7 +212,6 @@ func TestGetInclusionProof(t *testing.T) {
 					crypto.HashBytes([]byte{}),
 				},
 			},
-			wantCode: http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -280,81 +227,67 @@ func TestGetInclusionProof(t *testing.T) {
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
-				Config:   testConfig,
 				DbClient: client,
 				Stateman: stateman,
 			}
 
-			// Create HTTP request
-			url := types.EndpointGetInclusionProof.Path("http://example.com")
-			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPHandler("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
+			proof, err := node.GetInclusionProof(context.Background(), table.req)
+			if err := checkError(err, table.wantCode); err != nil {
+				t.Errorf("in test %q: %v", table.description, err)
+			} else if proof.LeafIndex != table.rsp.LeafIndex || !pathIsEqual(proof.Path, table.rsp.Path) {
+				t.Errorf("unexpected proof, got %x, wanted %x", proof, table.rsp)
 			}
 		}()
 	}
 }
 
 func TestGetLeaves(t *testing.T) {
+	const testMaxRange = 3
+
 	for _, table := range []struct {
 		description string
-		params      string // params is the query's url params
+		req         requests.Leaves
 		sthSize     uint64
 		leafCount   int   // expected number of leaves
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
 	}{
 		{
-			description: "invalid: bad request (parser error)",
-			params:      "a/1",
-			sthSize:     2,
-			wantCode:    http.StatusBadRequest,
-		},
-		{
 			description: "invalid: bad request (StartIndex >= EndIndex)",
-			params:      "1/1",
+			req:         requests.Leaves{StartIndex: 1, EndIndex: 1},
 			sthSize:     2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: bad request (EndIndex > current tree size)",
-			params:      "0/3",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 3},
 			sthSize:     2,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "invalid: backend failure",
-			params:      "0/1",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 1},
 			sthSize:     2,
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "invalid: empty tree",
-			params:      "0/1",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 1},
 			sthSize:     0,
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid: three middle elements",
-			params:      "1/4",
+			req:         requests.Leaves{StartIndex: 1, EndIndex: 4},
 			sthSize:     5,
 			leafCount:   3,
-			wantCode:    http.StatusOK,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
-			sthSize:     5,                                       // >= testConfig.MaxRange+1
+			req:         requests.Leaves{StartIndex: 0, EndIndex: testMaxRange + 1}, // query will be pruned
+			sthSize:     5,                                                          // > testMaxRange
 			leafCount:   testMaxRange,
-			wantCode:    http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -388,58 +321,63 @@ func TestGetLeaves(t *testing.T) {
 				types.CosignedTreeHead{SignedTreeHead: types.SignedTreeHead{TreeHead: types.TreeHead{Size: table.sthSize}}}).AnyTimes()
 
 			node := Primary{
-				Config:   testConfig,
 				DbClient: client,
 				Stateman: stateman,
 				MaxRange: testMaxRange,
 			}
 
-			// Create HTTP request
-			url := types.EndpointGetLeaves.Path("http://example.com")
-			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.PublicHTTPHandler("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
-			}
-			if w.Code != http.StatusOK {
-				return
-			}
-
-			list, err := types.LeavesFromASCII(w.Body, uint64(testMaxRange))
-			if err != nil {
-				t.Fatalf("must unmarshal leaf list: %v", err)
-			}
-			if got, want := len(list), table.leafCount; got != want {
+			leaves, err := node.GetLeaves(context.Background(), table.req)
+			if err := checkError(err, table.wantCode); err != nil {
+				t.Errorf("in test %q: %v", table.description, err)
+			} else if got, want := len(leaves), table.leafCount; got != want {
 				t.Errorf("got %d leaves, but wanted %d in test %q", got, want, table.description)
 			}
 		}()
 	}
 }
 
-func mustLeafAscii(t *testing.T, message crypto.Hash, wantSig bool) string {
+func mustLeaf(t *testing.T, msg crypto.Hash, wantSig bool) requests.Leaf {
 	t.Helper()
 
 	vk, sk, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatalf("must generate ed25519 keys: %v", err)
 	}
-	sig, err := types.SignLeafMessage(sk, message[:])
+	sig, err := types.SignLeafMessage(sk, msg[:])
 	if err != nil {
 		t.Fatalf("must have an ed25519 signature: %v", err)
 	}
 	if !wantSig {
 		sig[0] += 1
 	}
-	return fmt.Sprintf(
-		"%s=%x\n"+"%s=%x\n"+"%s=%x\n",
-		"message", message[:],
-		"signature", sig,
-		"public_key", vk,
-	)
+	return requests.Leaf{
+		Message:   msg,
+		Signature: sig,
+		PublicKey: vk,
+	}
+}
+
+func pathIsEqual(a []crypto.Hash, b []crypto.Hash) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, h := range a {
+		if h != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func checkError(err error, code int) error {
+	if err != nil {
+		if got := api.ErrorStatusCode(err); got != code || code == 0 {
+			return fmt.Errorf("got HTTP status code %v but wanted %v: %v", got, code, err)
+		}
+		return nil
+	}
+	if code != 0 {
+		return fmt.Errorf("no error, expected error with status %d", code)
+	}
+	return nil
 }
