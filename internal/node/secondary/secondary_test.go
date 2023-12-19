@@ -7,18 +7,16 @@ import (
 
 	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/log-go/internal/node/handler"
-	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/mocks"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-var (
-	testConfig = handler.Config{
-		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
-		Timeout: 10,
-	}
-)
+// var (
+// 	testConfig = handler.Config{
+// 		LogID:   fmt.Sprintf("%x", crypto.HashBytes([]byte("logid"))),
+// 		Timeout: 10,
+// 	}
+// )
 
 // // TestHandlers checks that the expected internal handlers are configured
 // func TestIntHandlers(t *testing.T) {
@@ -106,7 +104,6 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			}
 
 			node := Secondary{
-				Config:   testConfig,
 				Primary:  primaryClient,
 				DbClient: trillianClient,
 			}

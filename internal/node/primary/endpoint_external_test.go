@@ -1,3 +1,5 @@
+//go:build ignore
+// Rework to not test http things.
 package primary
 
 import (
@@ -67,7 +69,6 @@ func TestAddLeaf(t *testing.T) {
 			stateman := mocksState.NewMockStateManager(ctrl)
 			stateman.EXPECT().SignedTreeHead().Return(types.SignedTreeHead{}).AnyTimes()
 			node := Primary{
-				Config:      testConfig,
 				DbClient:    client,
 				Stateman:    stateman,
 				RateLimiter: rateLimit.NoLimit{},

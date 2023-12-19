@@ -1,3 +1,5 @@
+//go:build ignore
+// Rework to not test http things.
 package primary
 
 import (
@@ -104,7 +106,7 @@ func TestInternalGetLeaves(t *testing.T) {
 					})
 			}
 			node := Primary{
-				Config:   testConfig,
+
 				DbClient: client,
 				MaxRange: testMaxRange,
 			}

@@ -10,7 +10,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func (p Primary) getLeavesInternal(ctx context.Context, req requests.Leaves) ([]types.Leaf, error) {
+func (p Primary) GetLeavesInternal(ctx context.Context, req requests.Leaves) ([]types.Leaf, error) {
 	th, err := p.DbClient.GetTreeHead(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting tree head: %v", err)
