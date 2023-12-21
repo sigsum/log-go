@@ -17,6 +17,7 @@ import (
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/db"
+	"sigsum.org/log-go/internal/metrics"
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
@@ -26,6 +27,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/policy"
+	"sigsum.org/sigsum-go/pkg/server"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
@@ -85,7 +87,7 @@ func main() {
 	}
 
 	log.Debug("configuring log-go-primary")
-	node, err := setupPrimaryFromFlags(conf)
+	node, publicKey, err := setupPrimaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup primary: %v", err)
 	}
@@ -109,9 +111,22 @@ func main() {
 
 	// Register HTTP endpoints.
 	log.Debug("adding external handler under prefix: %s", conf.Prefix)
-	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: node.PublicHTTPMux(conf.Prefix)}
+	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: server.NewLog(&server.Config{
+		Prefix:  conf.Prefix,
+		Timeout: conf.Timeout,
+		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
+	}, node)}
+	internalMux := http.NewServeMux()
 	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
-	internalMux := node.InternalHTTPMux(conf.Prefix)
+	internalMux.Handle("/", server.NewGetLeavesServer(&server.Config{
+		Prefix:  conf.Prefix,
+		Timeout: conf.Timeout,
+		// No metrics. If we used the same logging id, we'd
+		// get a mix of get-leaves metrics for internal and
+		// external endpoint.
+	},
+		node.GetLeavesInternal))
+
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
@@ -131,7 +146,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
-		if err = server.ListenAndServe(); err != http.ErrServerClosed {
+		if err = extserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error("serve(server): %v", err)
 		}
 		log.Debug("public endpoints server shut down")
@@ -143,7 +158,7 @@ func main() {
 
 	shutdownCtx, _ := context.WithTimeout(context.Background(), time.Second*60)
 	log.Info("stopping http server, please wait...")
-	server.Shutdown(shutdownCtx)
+	extserver.Shutdown(shutdownCtx)
 	log.Info("... done")
 	log.Info("stopping internal api server, please wait...")
 	intserver.Shutdown(shutdownCtx)
@@ -151,31 +166,26 @@ func main() {
 }
 
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
-func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
+func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.PublicKey, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
 	signer, err := key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("newLogIdentity: %v", err)
+		return nil, crypto.PublicKey{}, fmt.Errorf("failed reading private key: %v", err)
 	}
 	publicKey := signer.Public()
-
-	// Proxy over values from config.Config to the old Config struct
-	// TODO: Refactor this handling
-	p.Config.LogID = hex.EncodeToString(publicKey[:])
-	p.Config.Timeout = conf.Timeout
 	p.MaxRange = conf.MaxRange
 
 	switch conf.Backend {
 	default:
-		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+		return nil, crypto.PublicKey{}, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
 	case "ephemeral":
 		p.DbClient = db.NewMemoryDb()
 	case "trillian":
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, p.Config.Timeout, db.PrimaryTree, conf.TrillianTreeIDFile)
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, conf.Timeout, db.PrimaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
-			return nil, err
+			return nil, crypto.PublicKey{}, err
 		}
 		p.DbClient = trillianClient
 	}
@@ -186,33 +196,33 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, error) {
 		var err error
 		secondaryPub, err = key.ReadPublicKeyFile(conf.Primary.SecondaryPubkeyFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
+			return nil, crypto.PublicKey{}, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
 		secondary = client.New(client.Config{URL: conf.Primary.SecondaryURL})
 	}
 
 	// Setup state manager.
-	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, p.Config.Timeout,
+	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, conf.Timeout,
 		secondary, &secondaryPub, conf.Primary.SthFile)
 	if err != nil {
-		return nil, fmt.Errorf("NewStateManagerSingle: %v", err)
+		return nil, crypto.PublicKey{}, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
 	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
 	if len(conf.Primary.RateLimitFile) > 0 {
 		f, err := os.Open(conf.Primary.RateLimitFile)
 		if err != nil {
-			return nil, fmt.Errorf("opening rate limit config file failed: %v", err)
+			return nil, crypto.PublicKey{}, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}
 		p.RateLimiter, err = rateLimit.NewLimiter(f, conf.Primary.AllowTestDomain)
 		if err != nil {
-			return nil, fmt.Errorf("initializing rate limiter failed: %v", err)
+			return nil, crypto.PublicKey{}, fmt.Errorf("initializing rate limiter failed: %v", err)
 		}
 	} else {
 		p.RateLimiter = rateLimit.NoLimit{}
 	}
 
-	return &p, nil
+	return &p, publicKey, nil
 }
 
 func configuredWitnesses(file string) ([]policy.Entity, error) {

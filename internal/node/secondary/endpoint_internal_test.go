@@ -1,9 +1,8 @@
 package secondary
 
 import (
+	"context"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -29,25 +28,25 @@ func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
 }
 
 func TestGetSecondaryTreeHead(t *testing.T) {
+	publicKey, signer, err := crypto.NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tbl := range []struct {
 		desc          string
 		trillianTHErr error
 		signErr       error
-		httpStatus    int
 	}{
 		{
 			desc:          "trillian GetTreeHead error",
 			trillianTHErr: fmt.Errorf("mocked error"),
-			httpStatus:    http.StatusInternalServerError,
 		},
 		{
-			desc:       "signer error",
-			signErr:    fmt.Errorf("mocked error"),
-			httpStatus: http.StatusInternalServerError,
+			desc:    "signer error",
+			signErr: fmt.Errorf("mocked error"),
 		},
 		{
-			desc:       "success",
-			httpStatus: http.StatusOK,
+			desc: "success",
 		},
 	} {
 		func() {
@@ -57,24 +56,26 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 			trillianClient := db.NewMockClient(ctrl)
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(types.TreeHead{}, tbl.trillianTHErr)
 
+			signer := crypto.Signer(signer)
+			if tbl.signErr != nil {
+				signer = &TestSigner{Error: tbl.signErr}
+			}
 			node := Secondary{
-				Config:   testConfig,
 				DbClient: trillianClient,
-				Signer:   &TestSigner{Error: tbl.signErr},
+				Signer:   signer,
 			}
 
-			// Create HTTP request
-			url := types.EndpointGetSecondaryTreeHead.Path("http://example.com")
-			req, err := http.NewRequest("GET", url, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.InternalHTTPMux("").ServeHTTP(w, req)
-			if got, want := w.Code, tbl.httpStatus; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, tbl.desc)
+			sth, err := node.GetSecondaryTreeHead(context.Background())
+			if tbl.trillianTHErr != nil || tbl.signErr != nil {
+				if err == nil {
+					t.Errorf("%s: expected error, got none", tbl.desc)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("%s: GetSecondaryTreeHead failed: %v\n", tbl.desc, err)
+				} else if !sth.Verify(&publicKey) {
+					t.Errorf("%s: Invalid tree head signature", tbl.desc)
+				}
 			}
 		}()
 	}

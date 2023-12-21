@@ -3,16 +3,13 @@ package secondary
 import (
 	"context"
 	"errors"
-	"net/http"
 	"time"
 
 	"sigsum.org/log-go/internal/db"
-	"sigsum.org/log-go/internal/node/handler"
 	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
 )
 
 const (
@@ -21,7 +18,6 @@ const (
 
 // Secondary is an instance of a secondary node
 type Secondary struct {
-	Config   handler.Config
 	Interval time.Duration // Signing frequency
 	DbClient db.Client     // provides access to the backend, usually Trillian
 	Signer   crypto.Signer // provides access to Ed25519 private key
@@ -42,18 +38,7 @@ func (s Secondary) Run(ctx context.Context) {
 	}
 }
 
-// TODO: nit-pick: the internal endpoint is used by primaries to figure out how much can be signed; not cosigned - update name?
-
-func (s Secondary) InternalHTTPMux(prefix string) *http.ServeMux {
-	mux := http.NewServeMux()
-	handler.Handler{s.Config, s.getTreeHeadToCosign, types.EndpointGetSecondaryTreeHead, http.MethodGet}.Register(mux, prefix)
-	return mux
-}
-
 func (s Secondary) fetchLeavesFromPrimary(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, s.Config.Timeout)
-	defer cancel()
-
 	for {
 		curTH, err := s.DbClient.GetTreeHead(ctx)
 		if err != nil {

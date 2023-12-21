@@ -17,10 +17,13 @@ import (
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/db"
+	"sigsum.org/log-go/internal/metrics"
 	"sigsum.org/log-go/internal/node/secondary"
 	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/server"
 )
 
 var (
@@ -69,7 +72,7 @@ func main() {
 	log.Info("log-go git-commit %s", gitCommit)
 
 	log.Debug("configuring log-go-secondary")
-	node, err := setupSecondaryFromFlags(conf)
+	node, publicKey, err := setupSecondaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup secondary: %v", err)
 	}
@@ -91,9 +94,14 @@ func main() {
 	}()
 
 	// No external endpoints but we want to return 404.
-	server := &http.Server{Addr: conf.ExternalEndpoint, Handler: http.NewServeMux()}
+	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: http.NewServeMux()}
 	// Register HTTP endpoints.
-	internalMux := node.InternalHTTPMux(conf.Prefix)
+	internalMux := http.NewServeMux()
+	internalMux.Handle("/", server.NewSecondary(&server.Config{
+		Prefix:  conf.Prefix,
+		Timeout: conf.Timeout,
+		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
+	}, node))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
@@ -113,7 +121,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		log.Info("serving clients on %v/%v", conf.ExternalEndpoint, conf.Prefix)
-		if err = server.ListenAndServe(); err != http.ErrServerClosed {
+		if err = extserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error("serve(server): %v", err)
 		}
 		log.Debug("public endpoints server shut down")
@@ -126,7 +134,7 @@ func main() {
 	shutdownCtx, _ := context.WithTimeout(context.Background(), time.Second*60)
 
 	log.Info("stopping http server, please wait...")
-	server.Shutdown(shutdownCtx)
+	extserver.Shutdown(shutdownCtx)
 	log.Info("... done")
 	log.Info("stopping internal api server, please wait...")
 	intserver.Shutdown(shutdownCtx)
@@ -134,36 +142,32 @@ func main() {
 }
 
 // setupSecondaryFromFlags() sets up a new sigsum secondary node from flags.
-func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) {
+func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, crypto.PublicKey, error) {
 	var s secondary.Secondary
 	var err error
 
 	// Setup logging configuration.
 	s.Signer, err = key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("newLogIdentity: %v", err)
+		return nil, crypto.PublicKey{}, fmt.Errorf("newLogIdentity: %v", err)
 	}
-	publicKey := s.Signer.Public()
 
-	s.Config.LogID = hex.EncodeToString(publicKey[:])
-	s.Config.Timeout = conf.Timeout
 	s.Interval = conf.Interval
 
 	switch conf.Backend {
 	default:
-		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+		return nil, crypto.PublicKey{}, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
 	case "ephemeral":
 		s.DbClient = db.NewMemoryDb()
 	case "trillian":
-		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, s.Config.Timeout, db.SecondaryTree, conf.TrillianTreeIDFile)
+		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, conf.Timeout, db.SecondaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
-			return nil, err
+			return nil, crypto.PublicKey{}, err
 		}
 		s.DbClient = trillianClient
 	}
 	// Setup primary node configuration.
 	s.Primary = client.New(client.Config{URL: conf.Secondary.PrimaryURL})
 
-	// Register HTTP endpoints.
-	return &s, nil
+	return &s, s.Signer.Public(), nil
 }

@@ -5,33 +5,17 @@ package secondary
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func (s Secondary) getTreeHeadToCosign(ctx context.Context, w http.ResponseWriter, _ *http.Request) (int, error) {
-	log.Debug("handling get-tree-head-to-cosign request")
+func (s Secondary) GetSecondaryTreeHead(ctx context.Context) (types.SignedTreeHead, error) {
+	log.Debug("handling get-secondary-tree-head request")
 
-	signedTreeHead := func() (types.SignedTreeHead, error) {
-		th, err := s.DbClient.GetTreeHead(ctx)
-		if err != nil {
-			return types.SignedTreeHead{}, fmt.Errorf("getting tree head: %w", err)
-		}
-		sth, err := th.Sign(s.Signer)
-		if err != nil {
-			return types.SignedTreeHead{}, fmt.Errorf("signing tree head: %w", err)
-		}
-		return sth, nil
-	}
-
-	sth, err := signedTreeHead()
+	th, err := s.DbClient.GetTreeHead(ctx)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return types.SignedTreeHead{}, fmt.Errorf("getting tree head: %w", err)
 	}
-	if err := sth.ToASCII(w); err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
+	return th.Sign(s.Signer)
 }
