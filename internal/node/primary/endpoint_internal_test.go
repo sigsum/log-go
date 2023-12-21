@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -15,65 +14,58 @@ import (
 )
 
 func TestInternalGetLeaves(t *testing.T) {
+	const testMaxRange = 3
+
 	for _, table := range []struct {
 		description string
-		params      string // params is the query's url params
+		req         requests.Leaves
 		th          types.TreeHead
 		leafCount   int   // expected number of leaves
 		err         error // error from Trillian client
 		wantCode    int   // HTTP status ok
 	}{
 		{
-			description: "invalid: bad request (parser error)",
-			params:      "a/1",
-			th:          types.TreeHead{Size: 2},
-			wantCode:    http.StatusBadRequest,
-		},
-		{
 			description: "invalid: bad request (StartIndex >= EndIndex)",
-			params:      "1/1",
+			req:         requests.Leaves{StartIndex: 1, EndIndex: 1},
 			th:          types.TreeHead{Size: 2},
 			wantCode:    http.StatusBadRequest,
 		},
 		{
 			description: "valid: (EndIndex > current tree size)",
-			params:      "0/3",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 3},
 			th:          types.TreeHead{Size: 2},
 			leafCount:   2,
-			wantCode:    http.StatusOK,
 		},
 		{
 			description: "valid: StartIndex == current tree size",
-			params:      "2/3",
+			req:         requests.Leaves{StartIndex: 2, EndIndex: 3},
 			th:          types.TreeHead{Size: 2},
 			wantCode:    http.StatusNotFound,
 		},
 		{
 			description: "invalid: backend failure",
-			params:      "0/1",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 1},
 			th:          types.TreeHead{Size: 2},
 			err:         fmt.Errorf("something went wrong"),
 			wantCode:    http.StatusInternalServerError,
 		},
 		{
 			description: "valid: empty tree",
-			params:      "0/1",
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 1},
 			th:          types.TreeHead{Size: 0},
 			wantCode:    http.StatusNotFound,
 		},
 		{
 			description: "valid: three middle elements",
-			params:      "1/4",
+			req:         requests.Leaves{StartIndex: 1, EndIndex: 4},
 			th:          types.TreeHead{Size: 5},
 			leafCount:   3,
-			wantCode:    http.StatusOK,
 		},
 		{
 			description: "valid: one more entry than the configured MaxRange",
-			params:      fmt.Sprintf("%d/%d", 0, testMaxRange+1), // query will be pruned
+			req:         requests.Leaves{StartIndex: 0, EndIndex: 4},
 			th:          types.TreeHead{Size: 5},
 			leafCount:   testMaxRange,
-			wantCode:    http.StatusOK,
 		},
 	} {
 		// Run deferred functions at the end of each iteration
@@ -81,7 +73,7 @@ func TestInternalGetLeaves(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			client := db.NewMockClient(ctrl)
-			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil)
+			client.EXPECT().GetTreeHead(gomock.Any()).Return(table.th, nil).AnyTimes()
 			if table.err != nil || table.leafCount > 0 {
 				client.EXPECT().GetLeaves(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, req *requests.Leaves) ([]types.Leaf, error) {
@@ -104,33 +96,14 @@ func TestInternalGetLeaves(t *testing.T) {
 					})
 			}
 			node := Primary{
-				Config:   testConfig,
 				DbClient: client,
 				MaxRange: testMaxRange,
 			}
 
-			// Create HTTP request
-			url := types.EndpointGetLeaves.Path("http://example.com")
-			req, err := http.NewRequest(http.MethodGet, url+table.params, nil)
-			if err != nil {
-				t.Fatalf("must create http request: %v", err)
-			}
-
-			// Run HTTP request
-			w := httptest.NewRecorder()
-			node.InternalHTTPMux("").ServeHTTP(w, req)
-			if got, want := w.Code, table.wantCode; got != want {
-				t.Errorf("got HTTP status code %v but wanted %v in test %q", got, want, table.description)
-			}
-			if w.Code != http.StatusOK {
-				return
-			}
-
-			list, err := types.LeavesFromASCII(w.Body, uint64(testMaxRange))
-			if err != nil {
-				t.Fatalf("must unmarshal leaf list: %v", err)
-			}
-			if got, want := len(list), table.leafCount; got != want {
+			leaves, err := node.GetLeavesInternal(context.Background(), table.req)
+			if err := checkError(err, table.wantCode); err != nil {
+				t.Errorf("in test %q: %v", table.description, err)
+			} else if got, want := len(leaves), table.leafCount; got != want {
 				t.Errorf("got %d leaves, but wanted %d in test %q", got, want, table.description)
 			}
 		}()
