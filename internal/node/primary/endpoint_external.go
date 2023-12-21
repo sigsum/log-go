@@ -77,7 +77,7 @@ func (p Primary) GetInclusionProof(ctx context.Context, req requests.InclusionPr
 	}
 
 	proof, err := p.DbClient.GetInclusionProof(ctx, &req)
-	// TODO: Appropriate error from DbClient?
+	// TODO: Make DbClient return the appropriate api error?
 	if err == db.ErrNotIncluded {
 		err = api.ErrNotFound
 	}
