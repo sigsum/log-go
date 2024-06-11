@@ -97,6 +97,7 @@ function main() {
 function install_go_deps() {
 	GOBIN=$(pwd)/bin go install sigsum.org/sigsum-go/cmd/...
 	GOBIN=$(pwd)/bin go install ../cmd/...
+	GOBIN=$(pwd)/bin go install sigsum.org/key-mgmt/cmd/sigsum-agent@v0.2.1
 	if [[ "$testflavor" != ephemeral ]] ; then
 		GOBIN=$(pwd)/bin go install github.com/google/trillian/cmd/...
 	fi
@@ -309,14 +310,10 @@ function sigsum_start() {
 		      --log-file=${nvars[$i:log_dir]}/sigsum-log.log"
 		if [[ ${nvars[$i:ssrv_agent]} = yes ]] ; then
 			info "enabling ssh-agent for $role node ($i)"
-			read nvars[$i:ssrv_pid] < <(
-				ssh-agent sh <<EOF
-			ssh-add ${nvars[$i:log_dir]}/ssrv.key
-			echo \$\$
-			exec ./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key.pub \
-				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr
-EOF
-)
+			nvars[$i:ssrv_pid]=$(
+				./bin/sigsum-agent -k "${nvars[$i:log_dir]}/ssrv.key" --pid-file - \
+				    ./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key.pub \
+				    2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr & )
 		else
 			./bin/$binary $args --key-file=${nvars[$i:log_dir]}/ssrv.key \
 				  2>${nvars[$i:log_dir]}/sigsum-log.$(date +%s).stderr &
