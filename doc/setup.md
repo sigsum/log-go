@@ -112,18 +112,34 @@ the secondary node doesn't need a Trillian sequencer.
 
 ## Primary node
 
+### Key management
+
 The primary node needs its own signing key pair. This can be an
 unencrypted private key file, generated using `sigsum-key gen -o KEY`
 (which generates a new keypair, stores the unencrypted private key in
 the file `KEY` and corresponding public key in `KEY.pub`). This uses
 openssh keyfile formats, and is equivalent to `ssh-keygen -q -N '' -t
-ed25519 -f KEY`. Alternatively, the server can access the private key
-via the ssh-agent protocol, which is particularly useful for hardware
-keys.
+ed25519 -f KEY`.
+
+Alternatively, the server can access the private key via the ssh-agent
+protocol. Using an agent is particularly useful for hardware keys, but
+it can also help reducing the attack surface when using a key file on
+disk, e.g., to give the server uid access to a signing oracle, without
+giving it direct access to the private key file.
 
 To enable failover to a secondary node in case of catastrophic failure
 of the primary node, the private key must be securely backed up
 elsewhere.
+
+The [key-mgmt
+documentation](https://git.glasklar.is/sigsum/core/key-mgmt/-/blob/main/docs/key-management.md)
+describes one way to provision and back up private log keys using
+YubiHSM hardware. The [same
+repository](https://git.glasklar.is/sigsum/core/key-mgmt) also hosts
+`sigsum-agent`, a signing oracle that speaks the ssh-agent protocol,
+and which supports both YubiHSM keys and keys on disk.
+
+### Configuration
 
 The most important settings in the config file for the primary server
 are:
