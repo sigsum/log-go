@@ -114,8 +114,8 @@ func TestRotate(t *testing.T) {
 
 	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
 
-	lKeyHash := crypto.HashBytes(lPub[:])
 	wKeyHash := crypto.HashBytes(wPub[:])
+	origin := types.SigsumCheckpointOrigin(&lPub)
 
 	for _, table := range []struct {
 		desc            string
@@ -167,7 +167,7 @@ func TestRotate(t *testing.T) {
 			if !table.withCosignature {
 				return nil
 			}
-			return map[crypto.Hash]types.Cosignature{wKeyHash: mustCosign(t, wSigner, &sth.TreeHead, &lKeyHash)}
+			return map[crypto.Hash]types.Cosignature{wKeyHash: mustCosign(t, wSigner, &sth.TreeHead, origin)}
 		})
 		// Expect error only for signature failures
 		if table.signErr {
@@ -200,7 +200,7 @@ func TestRotate(t *testing.T) {
 				if !ok {
 					t.Fatalf("%s: cosignature missing", table.desc)
 				}
-				if !cs.Verify(&wPub, &lKeyHash, &newCth.TreeHead) {
+				if !cs.VerifyOrigin(&wPub, origin, &newCth.TreeHead) {
 					t.Errorf("%s: cth cosignature not valid", table.desc)
 				}
 				if cs.Timestamp != testWitnessTimestamp {
@@ -224,9 +224,9 @@ func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 	return pub, signer
 }
 
-func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, kh *crypto.Hash) types.Cosignature {
+func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, origin string) types.Cosignature {
 	t.Helper()
-	signature, err := th.Cosign(s, kh, testWitnessTimestamp)
+	signature, err := th.CosignOrigin(s, origin, testWitnessTimestamp)
 	if err != nil {
 		t.Fatal(err)
 	}

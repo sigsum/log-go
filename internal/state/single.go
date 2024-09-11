@@ -17,7 +17,6 @@ import (
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
 	signer           crypto.Signer
-	keyHash          crypto.Hash
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
@@ -72,7 +71,6 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 	}
 	return &StateManagerSingle{
 		signer:   signer,
-		keyHash:  crypto.HashBytes(pub[:]),
 		storeSth: sthFile.Store,
 		replicationState: ReplicationState{
 			primary:      primary,
@@ -99,7 +97,8 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 }
 
 func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration) {
-	collector := witness.NewCosignatureCollector(&sm.keyHash, witnesses,
+	pub := sm.signer.Public()
+	collector := witness.NewCosignatureCollector(&pub, witnesses,
 		sm.replicationState.primary.GetConsistencyProof)
 
 	for ctx.Err() == nil {
