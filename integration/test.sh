@@ -44,6 +44,12 @@ function main() {
 
 	node_setup $loga $logb
 
+	witness_start 7200 "${nvars[$loga:log_dir]}/ssrv.key.pub"
+	cat > ./tmp/log.policy <<EOF
+witness wit1 $(./bin/sigsum-key hex -k ./tmp/wit1.key.pub) http://localhost:7200
+quorum none
+EOF
+
 	# Primary
 	nvars[$loga:ssrv_extra_args]="--secondary-url=http://${nvars[$logb:int_url]}"
 	nvars[$loga:ssrv_extra_args]+=" --secondary-pubkey-file=${nvars[$logb:log_dir]}/ssrv.key.pub"
@@ -242,6 +248,21 @@ function trillian_createtree() {
 	done
 }
 
+function witness_start() {
+	local port=$1; shift
+	local log_key=$1; shift
+
+	./bin/sigsum-key gen -o ./tmp/wit1.key
+	wit1_key_hash=$(./bin/sigsum-key hash -k ./tmp/wit1.key.pub)
+	./bin/sigsum-witness -k ./tmp/wit1.key --log-key "${log_key}" --state-file ./tmp/wit1.state localhost:${port} 2>./tmp/wit1.log &
+	wit1_pid="$!"
+	info "started wit1 (pid ${wit1_pid})"
+}
+
+function witness_stop() {
+	[[ ${wit1_pid} ]] && kill ${wit1_pid}
+}
+
 function sigsum_setup() {
 	for i in $@; do
 		info "setting up Sigsum server ($i)"
@@ -257,13 +278,6 @@ function sigsum_setup() {
 		nvars[$i:log_url]=${nvars[$i:ssrv_endpoint]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:metrics_url]=${nvars[$i:ssrv_internal]}/metrics
-
-		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/wit1.key
-		nvars[$i:wit1_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/wit1.key.pub)
-		./bin/sigsum-key gen -o  ${nvars[$i:log_dir]}/wit2.key
-		nvars[$i:wit2_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/wit2.key.pub)
-
-		nvars[$i:ssrv_witnesses]=${nvars[$i:log_dir]}/wit1.key.pub,${nvars[$i:log_dir]}/wit2.key.pub
 
 		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
 		nvars[$i:ssrv_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
@@ -289,6 +303,7 @@ function sigsum_start() {
 
 		if [[ $role = primary ]]; then
 			extra_args+=" --sth-file=${nvars[$i:log_dir]}/sth-store"
+			extra_args+=" --policy-file=./tmp/log.policy"
 		else
 			binary=sigsum-log-secondary
 		fi
@@ -385,6 +400,7 @@ function cleanup() {
 
 	info "cleaning up, please wait..."
 
+	witness_stop
 	for var in $nodes; do
 		declare -n cleanup_i=$var # Using unique iterator name, bc leaking
 		node_stop_fe $cleanup_i
@@ -480,17 +496,47 @@ function test_signed_tree_head() {
 		return
 	fi
 
-	if ! keys $pri "size" "root_hash" "signature"; then
+	if ! keys $pri "size" "root_hash" "signature" "cosignature"; then
 		fail "$desc: ascii keys in response $(debug_response $pri)"
 		return
 	fi
+
+	now=$(date +%s)
 
 	if [[ $(value_of $pri "size") != $size ]]; then
 		fail "$desc: size $(value_of $pri "size")"
 		return
 	fi
 
+	while read cs ; do
+		# Check key hash
+		found=""
+		got=$(echo $cs | cut -d' ' -f1)
+		for want in $wit1_key_hash; do
+			if [[ $got == $want ]]; then
+				found=true
+			fi
+		done
+
+		if [[ -z $found ]]; then
+			fail "$desc: missing witness $got"
+			return
+		fi
+
+		# Check timestamp
+		ts=$(echo $cs | cut -d' ' -f2)
+		if [[ $ts -gt $now ]]; then
+			fail "$desc: timestamp $(value_of $pri "timestamp") is too large"
+			return
+		fi
+		if [[ $ts -lt $(( $now - ${nvars[$pri:ssrv_interval]} * 2 )) ]]; then
+			fail "$desc: timestamp $(value_of $pri "timestamp") is too small"
+			return
+		fi
+	done < <(value_of $pri cosignature)
+
 	# TODO: verify tree head signature
+	# TODO: verify tree head cosignatures
 	pass $desc
 }
 
