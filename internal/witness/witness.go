@@ -97,7 +97,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 		go func() {
 			cs, err := w.getCosignature(ctx, sth)
 			if err != nil {
-				log.Error("Querying witness %d failed: %v", i, err)
+				log.Error("querying witness %d failed: %v", i, err)
 				// TODO: Temporarily stop querying this witness?
 			} else {
 				ch <- cs

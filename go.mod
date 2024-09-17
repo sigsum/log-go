@@ -11,7 +11,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/prometheus/client_golang v1.14.0
 	google.golang.org/grpc v1.51.0
-	sigsum.org/sigsum-go v0.7.1
+	sigsum.org/sigsum-go v0.8.1
 )
 
 replace github.com/dchest/safefile => git.glasklar.is/sigsum/dependencies/safefile v1.0.0
