@@ -5,7 +5,6 @@ package primary
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/sigsum-go/pkg/api"
@@ -22,7 +21,7 @@ func (p Primary) AddLeaf(ctx context.Context, req requests.Leaf, t *token.Submit
 	if t != nil && p.TokenVerifier != nil {
 		// TODO: Return more appropriate errors from TokenVerifier?
 		if err := p.TokenVerifier.Verify(ctx, t); err != nil {
-			return false, api.NewError(http.StatusBadRequest, err)
+			return false, api.ErrBadRequest.WithError(err)
 		}
 		domain = &t.Domain
 	}
@@ -30,13 +29,13 @@ func (p Primary) AddLeaf(ctx context.Context, req requests.Leaf, t *token.Submit
 	relax := p.RateLimiter.AccessAllowed(domain, &keyHash)
 	if relax == nil {
 		if domain == nil {
-			return false, api.NewError(http.StatusTooManyRequests, fmt.Errorf("rate-limit for unknown domain exceeded"))
+			return false, api.ErrTooManyRequests.WithError(fmt.Errorf("rate-limit for unknown domain exceeded"))
 		}
-		return false, api.NewError(http.StatusTooManyRequests, fmt.Errorf("rate-limit for domain %q exceeded", *domain))
+		return false, api.ErrTooManyRequests.WithError(fmt.Errorf("rate-limit for domain %q exceeded", *domain))
 	}
 	leaf, err := req.Verify()
 	if err != nil {
-		return false, api.NewError(http.StatusForbidden, err)
+		return false, api.ErrForbidden.WithError(err)
 	}
 
 	sth := p.Stateman.SignedTreeHead()
@@ -61,8 +60,7 @@ func (p Primary) GetConsistencyProof(ctx context.Context, req requests.Consisten
 	log.Debug("handling get-consistency-proof request")
 	curTree := p.Stateman.CosignedTreeHead()
 	if req.NewSize > curTree.TreeHead.Size {
-		// TODO: Would be better with something like api.ErrBadRequest.WithMessage(...)
-		return types.ConsistencyProof{}, api.NewError(http.StatusBadRequest, fmt.Errorf("new_size %d outside of current tree, size %d",
+		return types.ConsistencyProof{}, api.ErrBadRequest.WithError(fmt.Errorf("new_size %d outside of current tree, size %d",
 			req.NewSize, curTree.TreeHead.Size))
 	}
 
@@ -73,7 +71,7 @@ func (p Primary) GetInclusionProof(ctx context.Context, req requests.InclusionPr
 	log.Debug("handling get-inclusion-proof request")
 	curTree := p.Stateman.CosignedTreeHead()
 	if req.Size > curTree.TreeHead.Size {
-		return types.InclusionProof{}, api.NewError(http.StatusBadRequest, fmt.Errorf("tree_size outside of current tree"))
+		return types.InclusionProof{}, api.ErrBadRequest.WithError(fmt.Errorf("tree_size outside of current tree"))
 	}
 
 	proof, err := p.DbClient.GetInclusionProof(ctx, &req)
@@ -91,18 +89,18 @@ func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 	// When invoked via sigsum-go/pkg/server, this error is
 	// already checked for earlier and will not happen here.
 	if req.StartIndex >= req.EndIndex {
-		return nil, api.NewError(http.StatusBadRequest,
+		return nil, api.ErrBadRequest.WithError(
 			fmt.Errorf("start_index(%d) must be less than end_index(%d)",
 				req.StartIndex, req.EndIndex))
 	}
 
 	if req.StartIndex > maxIndex || (strictEnd && req.StartIndex >= maxIndex) {
-		return nil, api.NewError(http.StatusBadRequest,
+		return nil, api.ErrBadRequest.WithError(
 			fmt.Errorf("start_index(%d) outside of current tree", req.StartIndex))
 	}
 	if req.EndIndex > maxIndex {
 		if strictEnd {
-			return nil, api.NewError(http.StatusBadRequest,
+			return nil, api.ErrBadRequest.WithError(
 				fmt.Errorf("end_index(%d) outside of current tree", req.EndIndex))
 		}
 		req.EndIndex = maxIndex
@@ -116,8 +114,7 @@ func (p Primary) getLeavesGeneral(ctx context.Context, req requests.Leaves,
 		if strictEnd {
 			return nil, fmt.Errorf("internal error, empty range")
 		}
-		// TODO: Would be better with api.ErrNotFound.WithMessage(...)
-		return nil, api.NewError(http.StatusNotFound, fmt.Errorf("at end of tree"))
+		return nil, api.ErrNotFound.WithError(fmt.Errorf("at end of tree"))
 	}
 	leaves, err := p.DbClient.GetLeaves(ctx, &req)
 	if err == nil && len(leaves) == 0 {
