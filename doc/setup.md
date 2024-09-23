@@ -69,8 +69,11 @@ trillian_log_server \
   -rpc_endpoint=localhost:6962 \
   -http_endpoint=""
 ```
+
 See Trillian documentation for further configuration, in particular,
-the `-log_dir` option can be used to specify where it stores logs.
+the `-log_dir` option can be used to specify where it stores logs.  If
+you rather get leveled logging output on stderr, use
+`-logtostderr=false -stderrthreshold=WARNING` for WARNING and above.
 
 To start the Trillian sequencer, on primary log node only, run
 ```
