@@ -71,9 +71,9 @@ trillian_log_server \
 ```
 
 See Trillian documentation for further configuration, in particular,
-the `-log_dir` option can be used to specify where it stores logs.  If
-you rather get leveled logging output on stderr, use
-`-logtostderr=false -stderrthreshold=WARNING` for WARNING and above.
+the `-log_dir` option can be used to specify where it stores logs.  To
+limit Trillian's stderr logging to messages with WARNING level or
+above, use `-logtostderr=false -stderrthreshold=WARNING`.
 
 To start the Trillian sequencer, on primary log node only, run
 ```
