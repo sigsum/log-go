@@ -122,7 +122,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity
 }
 
 func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead,
-	getCosignatures func(context.Context, *types.SignedTreeHead) []types.Cosignature) error {
+	getCosignatures func(context.Context, *types.SignedTreeHead) map[crypto.Hash]types.Cosignature) error {
 	nextSTH, err := sm.signTreeHead(nextTH)
 	if err != nil {
 		return err

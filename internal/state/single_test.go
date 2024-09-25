@@ -114,7 +114,8 @@ func TestRotate(t *testing.T) {
 
 	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
 
-	kh := crypto.HashBytes(lPub[:])
+	lKeyHash := crypto.HashBytes(lPub[:])
+	wKeyHash := crypto.HashBytes(wPub[:])
 
 	for _, table := range []struct {
 		desc            string
@@ -162,11 +163,11 @@ func TestRotate(t *testing.T) {
 				return nil
 			},
 		}
-		err := sm.rotate(context.Background(), &nth, func(_ context.Context, sth *types.SignedTreeHead) []types.Cosignature {
+		err := sm.rotate(context.Background(), &nth, func(_ context.Context, sth *types.SignedTreeHead) map[crypto.Hash]types.Cosignature {
 			if !table.withCosignature {
 				return nil
 			}
-			return []types.Cosignature{mustCosign(t, wSigner, &sth.TreeHead, &kh)}
+			return map[crypto.Hash]types.Cosignature{wKeyHash: mustCosign(t, wSigner, &sth.TreeHead, &lKeyHash)}
 		})
 		// Expect error only for signature failures
 		if table.signErr {
@@ -195,11 +196,15 @@ func TestRotate(t *testing.T) {
 				if len(newCth.Cosignatures) != 1 {
 					t.Fatalf("%s: unexpected cth cosignature count, got %d, expected 1", table.desc, len(newCth.Cosignatures))
 				}
-				if !newCth.Cosignatures[0].Verify(&wPub, &kh, &newCth.TreeHead) {
+				cs, ok := newCth.Cosignatures[wKeyHash]
+				if !ok {
+					t.Fatalf("%s: cosignature missing", table.desc)
+				}
+				if !cs.Verify(&wPub, &lKeyHash, &newCth.TreeHead) {
 					t.Errorf("%s: cth cosignature not valid", table.desc)
 				}
-				if newCth.Cosignatures[0].Timestamp != testWitnessTimestamp {
-					t.Errorf("%s: cth cosignature timestamp not as expected, got %d", table.desc, newCth.Cosignatures[0].Timestamp)
+				if cs.Timestamp != testWitnessTimestamp {
+					t.Errorf("%s: cth cosignature timestamp not as expected, got %d", table.desc, cs.Timestamp)
 				}
 			} else {
 				if len(newCth.Cosignatures) > 0 {
