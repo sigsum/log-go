@@ -5,6 +5,8 @@ module sigsum.org/log-go
 go 1.22
 
 require (
+	// A fork of github.com/dchest/safefile
+	git.glasklar.is/sigsum/dependencies/safefile v1.1.0
 	github.com/BurntSushi/toml v1.2.1
 	github.com/golang/mock v1.6.0
 	github.com/google/trillian v1.5.1
@@ -13,10 +15,6 @@ require (
 	google.golang.org/grpc v1.51.0
 	sigsum.org/sigsum-go v0.9.0
 )
-
-replace github.com/dchest/safefile => git.glasklar.is/sigsum/dependencies/safefile v1.0.0
-
-require github.com/dchest/safefile v0.0.0-20151022103144-855e8d98f185
 
 require (
 	bitbucket.org/creachadair/shell v0.0.7 // indirect
@@ -36,6 +34,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.2.19 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/dchest/safefile v0.0.0-20151022103144-855e8d98f185 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
