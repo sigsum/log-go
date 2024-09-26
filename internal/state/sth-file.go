@@ -8,9 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"strings"
-	// Needs extended version with CommitIfNotExists, see
-	// https://git.glasklar.is/sigsum/dependencies/safefile
-	"github.com/dchest/safefile"
+	// Needs extended version with CommitIfNotExists
+	"git.glasklar.is/sigsum/dependencies/safefile"
 
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
