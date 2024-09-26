@@ -1,3 +1,36 @@
+NEWS for log-go v0.15.x
+
+	This release of the Sigsum log server uses a new interoperable
+	protocol [1] for interacting with the log's witnesses. The log
+	protocol, i.e., the protocol for querying a Sigsum log and
+	submitting new entries, is stable and unchanged.
+
+	This release has been tested to work together with:
+
+	* TODO
+
+	New features:
+
+	* Implemented the new witness protocol [1], enabling interop
+	  with witnesses intended to support a diverse set of
+	  transparency log designs.
+
+	Incompatible changes:
+
+	* Support for the previous, interrim, witness protocol has
+	  been removed. Witnesses that interoperated with log-go
+	  v0.14.1 will need updating to support the new protocol.
+
+	Notes on upgrading:
+
+	* Existing logs can be upgraded, with no known issues. An
+	  upgraded log will not be able to obtain and publish any
+	  witness cosignatures until its witnesses have been updated
+	  to support the new protocol.
+
+[1] https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
+[2] https://github.com/transparency-dev/armored-witness
+
 NEWS for log-go v0.14.1
 
 	This release updates the log server to implement the v1 sigsum
