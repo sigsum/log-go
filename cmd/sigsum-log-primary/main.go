@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"sync"
 	"syscall"
 	"time"
@@ -31,12 +32,9 @@ import (
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
-var (
-	gitCommit = "unknown"
-)
-
 func ParseFlags(c *config.Config) {
 	help := false
+	version := false
 	getopt.SetParameters("")
 	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, defines the witnesses to query.")
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
@@ -45,9 +43,14 @@ func ParseFlags(c *config.Config) {
 	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key for secondary node.", "file")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
+	getopt.FlagLong(&version, "version", 0, "Display server version.")
 	getopt.Parse()
 	if help {
 		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
+	if version {
+		fmt.Printf("log-go version: %s\n", getVersion())
 		os.Exit(0)
 	}
 }
@@ -79,7 +82,8 @@ func main() {
 	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
-	log.Info("log-go git-commit %s", gitCommit)
+	version := getVersion()
+	log.Info("log-go version: %s", version)
 
 	witnesses, err := configuredWitnesses(conf.PolicyFile)
 	if err != nil {
@@ -109,13 +113,36 @@ func main() {
 		cancel() // must have state manager running
 	}()
 
+	externalMux := http.NewServeMux()
 	// Register HTTP endpoints.
 	log.Debug("adding external handler under prefix: %s", conf.Prefix)
-	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: server.NewLog(&server.Config{
+
+	var pattern string
+	if conf.Prefix == "" {
+		pattern = "/"
+	} else {
+		pattern = "/" + conf.Prefix + "/"
+	}
+	externalMux.Handle(pattern, server.NewLog(&server.Config{
 		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
 		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
-	}, node)}
+	}, node))
+
+	infoPage := []byte(fmt.Sprintf(`
+<html><head><title>Sigsum log server</title></head><body>
+<h1>This is a Sigsum log server</h1>
+<p>log key hash: %x, url prefix: %q</p>
+<p>Software version: %s"</p>
+</body></html>`[1:],
+		crypto.HashBytes(publicKey[:]), conf.Prefix, getVersion()))
+
+	externalMux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("content-type", "text/html")
+		w.Write(infoPage)
+	})
+	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: externalMux}
+
 	internalMux := http.NewServeMux()
 	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
 	internalMux.Handle("/", server.NewGetLeavesServer(&server.Config{
@@ -234,4 +261,44 @@ func configuredWitnesses(file string) ([]policy.Entity, error) {
 		return nil, err
 	}
 	return policy.GetWitnessesWithUrl(), nil
+}
+
+func getVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+
+	// When built, e.g., using go install .../log-go@vX.Y.Z.
+	version := info.Main.Version
+	if version != "(devel)" {
+		return version
+	}
+
+	// Use git commit, if available. The vcs.* fields are
+	// populated when running "go build" in a git checkout,
+	// *without* listing specific source files on the commandline.
+	m := make(map[string]string)
+	for _, setting := range info.Settings {
+		m[setting.Key] = setting.Value
+	}
+	revision, ok := m["vcs.revision"]
+	if !ok {
+		return version
+	}
+	version = fmt.Sprintf("git %s", revision)
+	if t, ok := m["vcs.time"]; ok {
+		version += " " + t
+	}
+	// Note that any untracked file (if not listed in .gitignore)
+	// counts as a local modification. Which makes sense, since
+	// the go toolchain determines what to do automatically, based
+	// on which files exist. For this flag to be reliable, avoid
+	// adding patterns in .gitignore that could match files that
+	// have meaning to the go toolchain.
+	if m["vcs.modified"] != "false" {
+		version += " (with local changes)"
+	}
+
+	return version
 }

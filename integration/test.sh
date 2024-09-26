@@ -77,6 +77,8 @@ EOF
 
 	get_metrics $loga
 	get_metrics $logb
+	get_infopage $loga
+
 	if [[ $testflavor == extended ]]; then
 		# for tree equality tests later on; FIXME: remove
 		test_signed_tree_head $loga 6
@@ -724,6 +726,19 @@ function get_metrics() {
 		return 0
 	else
 		fail "no $i metrics"
+		return 1
+	fi
+}
+
+function get_infopage() {
+	local i=$1; shift
+	info "Querying info page for $i"
+	curl -s ${nvars[$i:ssrv_endpoint]}/ > ${nvars[$i:log_dir]}/info.html
+	if grep "Software version:" >/dev/null ${nvars[$i:log_dir]}/info.html; then
+		pass "got $i info page"
+		return 0
+	else
+		fail "no $i info page"
 		return 1
 	fi
 }
