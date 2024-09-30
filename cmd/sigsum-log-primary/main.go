@@ -21,6 +21,8 @@ import (
 	"sigsum.org/log-go/internal/node/primary"
 	rateLimit "sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
+	"sigsum.org/log-go/internal/version"
+
 	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
@@ -31,12 +33,9 @@ import (
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
-var (
-	gitCommit = "unknown"
-)
-
 func ParseFlags(c *config.Config) {
 	help := false
+	versionFlag := false
 	getopt.SetParameters("")
 	getopt.FlagLong(&c.Primary.PolicyFile, "policy-file", 0, "Policy, if provided, defines the witnesses to query.")
 	getopt.FlagLong(&c.Primary.RateLimitFile, "rate-limit-file", 0, "Enable rate limiting, based on given config file.", "file")
@@ -45,9 +44,14 @@ func ParseFlags(c *config.Config) {
 	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key for secondary node.", "file")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
+	getopt.FlagLong(&versionFlag, "version", 0, "Display server version.")
 	getopt.Parse()
 	if help {
 		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
+	if versionFlag {
+		fmt.Printf("log-go version: %s\n", version.ModuleVersion())
 		os.Exit(0)
 	}
 }
@@ -79,7 +83,8 @@ func main() {
 	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
-	log.Info("log-go git-commit %s", gitCommit)
+	moduleVersion := version.ModuleVersion()
+	log.Info("log-go version: %s", moduleVersion)
 
 	witnesses, err := configuredWitnesses(conf.PolicyFile)
 	if err != nil {
@@ -109,13 +114,41 @@ func main() {
 		cancel() // must have state manager running
 	}()
 
+	externalMux := http.NewServeMux()
 	// Register HTTP endpoints.
 	log.Debug("adding external handler under prefix: %s", conf.Prefix)
-	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: server.NewLog(&server.Config{
+
+	var pattern string
+	if conf.Prefix == "" {
+		pattern = "/"
+	} else {
+		pattern = "/" + conf.Prefix + "/"
+	}
+	externalMux.Handle(pattern, server.NewLog(&server.Config{
 		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
 		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
-	}, node)}
+	}, node))
+
+	infoPage := []byte(fmt.Sprintf(`
+<html><head><title>Sigsum log server</title></head><body>
+<h1>This is a Sigsum log server</h1>
+<p>log key hash: %x, url prefix: %q</p>
+<p>Software version: %s"</p>
+</body></html>`[1:],
+		crypto.HashBytes(publicKey[:]), conf.Prefix, moduleVersion))
+
+	externalMux.HandleFunc("GET "+pattern+"{$}", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("content-type", "text/html")
+		w.Write(infoPage)
+	})
+	if conf.Prefix != "" {
+		externalMux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, conf.Prefix+"/", http.StatusMovedPermanently)
+		})
+	}
+	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: externalMux}
+
 	internalMux := http.NewServeMux()
 	log.Debug("adding internal handler under prefix: %s", conf.Prefix)
 	internalMux.Handle("/", server.NewGetLeavesServer(&server.Config{

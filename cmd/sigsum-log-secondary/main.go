@@ -19,6 +19,8 @@ import (
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/metrics"
 	"sigsum.org/log-go/internal/node/secondary"
+	"sigsum.org/log-go/internal/version"
+
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -26,18 +28,20 @@ import (
 	"sigsum.org/sigsum-go/pkg/server"
 )
 
-var (
-	gitCommit = "unknown"
-)
-
 func ParseFlags(c *config.Config) {
 	help := false
+	versionFlag := false
 	getopt.SetParameters("")
 	getopt.FlagLong(&c.Secondary.PrimaryURL, "primary-url", 0, "Primary node endpoint for fetching leaves.", "url")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
+	getopt.FlagLong(&versionFlag, "version", 0, "Display server version.")
 	getopt.Parse()
 	if help {
 		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
+	if versionFlag {
+		fmt.Printf("log-go version: %s\n", version.ModuleVersion())
 		os.Exit(0)
 	}
 }
@@ -69,7 +73,7 @@ func main() {
 	if err := log.SetLevelFromString(conf.LogLevel); err != nil {
 		log.Fatal("setup logging: %v", err)
 	}
-	log.Info("log-go git-commit %s", gitCommit)
+	log.Info("log-go version: %s", version.ModuleVersion())
 
 	log.Debug("configuring log-go-secondary")
 	node, publicKey, err := setupSecondaryFromFlags(conf)

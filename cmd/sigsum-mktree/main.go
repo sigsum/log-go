@@ -11,18 +11,25 @@ import (
 
 	"sigsum.org/log-go/internal/config"
 	"sigsum.org/log-go/internal/state"
+	"sigsum.org/log-go/internal/version"
 )
 
 func ParseFlags(c *config.Config) state.StartupMode {
 	mode := "empty"
 	help := false
+	versionFlag := false
 	getopt.SetParameters("")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
 	getopt.FlagLong(&mode, "mode", 0, "Mode of operation, 'empty', 'local-tree', or 'saved' (no change, only check that a saved file exists)", "mode")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
+	getopt.FlagLong(&versionFlag, "version", 0, "Display version.")
 	getopt.Parse()
 	if help {
 		getopt.PrintUsage(os.Stdout)
+		os.Exit(0)
+	}
+	if versionFlag {
+		fmt.Printf("log-go version: %s\n", version.ModuleVersion())
 		os.Exit(0)
 	}
 
