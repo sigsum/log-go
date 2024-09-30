@@ -2,11 +2,10 @@ package witness
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 
 	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/checkpoint"
 	"sigsum.org/sigsum-go/pkg/client"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/log"
@@ -19,22 +18,18 @@ type GetConsistencyProofFunc func(ctx context.Context, req *requests.Consistency
 
 // Not concurrency safe, due to updates of prevSize.
 type witness struct {
-	client              api.Witness
-	logKeyHash          crypto.Hash
-	pubKey              crypto.PublicKey
-	keyHash             crypto.Hash
-	prevSize            uint64
-	getConsistencyProof GetConsistencyProofFunc
+	client    api.Witness
+	publicKey crypto.PublicKey
+	keyHash   crypto.Hash
+	prevSize  uint64
 }
 
-func newWitness(w *policy.Entity, logKeyHash *crypto.Hash, getConsistencyProof GetConsistencyProofFunc) *witness {
+func newWitness(w *policy.Entity) *witness {
 	return &witness{
-		client:              client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
-		logKeyHash:          *logKeyHash,
-		pubKey:              w.PublicKey,
-		keyHash:             crypto.HashBytes(w.PublicKey[:]),
-		prevSize:            0,
-		getConsistencyProof: getConsistencyProof,
+		client:    client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
+		publicKey: w.PublicKey,
+		keyHash:   crypto.HashBytes(w.PublicKey[:]),
+		prevSize:  0,
 	}
 }
 
@@ -44,52 +39,61 @@ type cosignatureItem struct {
 	cs      types.Cosignature
 }
 
-func (w *witness) getCosignature(ctx context.Context, sth *types.SignedTreeHead) (cosignatureItem, error) {
+func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint, getConsistencyProof GetConsistencyProofFunc) (cosignatureItem, error) {
+	freshOldSize := false
 	for {
-		proof, err := w.getConsistencyProof(ctx, &requests.ConsistencyProof{
+		proof, err := getConsistencyProof(ctx, &requests.ConsistencyProof{
 			OldSize: w.prevSize,
-			NewSize: sth.Size,
+			NewSize: cp.TreeHead.Size,
 		})
 		if err != nil {
 			return cosignatureItem{}, err
 		}
-		keyHash, cs, err := w.client.AddTreeHead(ctx, requests.AddTreeHead{
-			KeyHash:  w.logKeyHash,
-			TreeHead: *sth,
-			OldSize:  w.prevSize,
-			Proof:    proof,
+		signatures, err := w.client.AddCheckpoint(ctx, requests.AddCheckpoint{
+			OldSize:    w.prevSize,
+			Proof:      proof,
+			Checkpoint: *cp,
 		})
 		if err == nil {
-			if keyHash != w.keyHash {
-				return cosignatureItem{}, fmt.Errorf("unexpected cosignature keyhash")
+			cs, err := cp.VerifyCosignatureByKey(signatures, &w.publicKey)
+			if err != nil {
+				return cosignatureItem{}, err
 			}
-			if !cs.Verify(&w.pubKey, &w.logKeyHash, &sth.TreeHead) {
-				return cosignatureItem{}, fmt.Errorf("invalid cosignature")
-			}
-			w.prevSize = sth.Size
+			w.prevSize = cp.Size
 			return cosignatureItem{keyHash: w.keyHash, cs: cs}, nil
 		}
-		if !errors.Is(api.ErrConflict, err) {
+		// Retry only once.
+		if freshOldSize {
 			return cosignatureItem{}, err
 		}
-		size, err := w.client.GetTreeSize(ctx, requests.GetTreeSize{KeyHash: w.logKeyHash})
-		if err != nil {
+		if oldSize, ok := api.ErrorConflictOldSize(err); ok {
+			w.prevSize = oldSize
+			freshOldSize = true
+		} else {
 			return cosignatureItem{}, err
 		}
-		w.prevSize = size
 	}
 }
 
 type CosignatureCollector struct {
-	witnesses []*witness
+	origin              string
+	keyId               checkpoint.KeyId
+	getConsistencyProof GetConsistencyProofFunc
+	witnesses           []*witness
 }
 
-func NewCosignatureCollector(logKeyHash *crypto.Hash, witnesses []policy.Entity,
+func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
 	getConsistencyProof GetConsistencyProofFunc) *CosignatureCollector {
-	collector := CosignatureCollector{}
+	origin := types.SigsumCheckpointOrigin(logPublicKey)
+
+	collector := CosignatureCollector{
+		origin:              origin,
+		keyId:               checkpoint.NewLogKeyId(origin, logPublicKey),
+		getConsistencyProof: getConsistencyProof,
+	}
 	for _, w := range witnesses {
 		collector.witnesses = append(collector.witnesses,
-			newWitness(&w, logKeyHash, getConsistencyProof))
+			newWitness(&w))
 	}
 	return &collector
 }
@@ -97,16 +101,21 @@ func NewCosignatureCollector(logKeyHash *crypto.Hash, witnesses []policy.Entity,
 // Queries all witnesses in parallel, blocks until we have result or error from each of them.
 // Must not be concurrently called.
 func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.SignedTreeHead) map[crypto.Hash]types.Cosignature {
+	cp := checkpoint.Checkpoint{
+		SignedTreeHead: *sth,
+		Origin:         c.origin,
+		KeyId:          c.keyId,
+	}
+
 	wg := sync.WaitGroup{}
 
 	ch := make(chan cosignatureItem)
 
 	// Query witnesses in parallel
 	for i, w := range c.witnesses {
-		i, w := i, w // New variables for each round through the loop.
 		wg.Add(1)
-		go func() {
-			cs, err := w.getCosignature(ctx, sth)
+		go func(i int, w *witness) {
+			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
 			if err != nil {
 				log.Error("querying witness %d failed: %v", i, err)
 				// TODO: Temporarily stop querying this witness?
@@ -114,7 +123,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 				ch <- cs
 			}
 			wg.Done()
-		}()
+		}(i, w)
 	}
 	go func() { wg.Wait(); close(ch) }()
 
