@@ -138,10 +138,15 @@ func main() {
 </body></html>`[1:],
 		crypto.HashBytes(publicKey[:]), conf.Prefix, moduleVersion))
 
-	externalMux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
+	externalMux.HandleFunc("GET "+pattern+"{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("content-type", "text/html")
 		w.Write(infoPage)
 	})
+	if conf.Prefix != "" {
+		externalMux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, conf.Prefix+"/", http.StatusMovedPermanently)
+		})
+	}
 	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: externalMux}
 
 	internalMux := http.NewServeMux()

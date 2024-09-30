@@ -733,7 +733,7 @@ function get_metrics() {
 function get_infopage() {
 	local i=$1; shift
 	info "Querying info page for $i"
-	curl -s ${nvars[$i:ssrv_endpoint]}/ > ${nvars[$i:log_dir]}/info.html
+	curl -L -s ${nvars[$i:ssrv_endpoint]}/ > ${nvars[$i:log_dir]}/info.html
 	if grep "Software version:" >/dev/null ${nvars[$i:log_dir]}/info.html; then
 		pass "got $i info page"
 		return 0
