@@ -40,7 +40,7 @@ type cosignatureItem struct {
 }
 
 func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint, getConsistencyProof GetConsistencyProofFunc) (cosignatureItem, error) {
-	// TODO: Limit number of attempts.
+	freshOldSize := false
 	for {
 		proof, err := getConsistencyProof(ctx, &requests.ConsistencyProof{
 			OldSize: w.prevSize,
@@ -62,8 +62,13 @@ func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint,
 			w.prevSize = cp.Size
 			return cosignatureItem{keyHash: w.keyHash, cs: cs}, nil
 		}
+		// Retry only once.
+		if freshOldSize {
+			return cosignatureItem{}, err
+		}
 		if oldSize, ok := api.ErrorConflictOldSize(err); ok {
 			w.prevSize = oldSize
+			freshOldSize = true
 		} else {
 			return cosignatureItem{}, err
 		}
@@ -108,9 +113,8 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 
 	// Query witnesses in parallel
 	for i, w := range c.witnesses {
-		i, w := i, w // New variables for each round through the loop.
 		wg.Add(1)
-		go func() {
+		go func(i int, w *witness) {
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
 			if err != nil {
 				log.Error("querying witness %d failed: %v", i, err)
@@ -119,7 +123,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 				ch <- cs
 			}
 			wg.Done()
-		}()
+		}(i, w)
 	}
 	go func() { wg.Wait(); close(ch) }()
 
