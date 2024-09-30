@@ -7,7 +7,9 @@ NEWS for log-go v0.15.x
 
 	This release has been tested to work together with:
 
-	* TODO
+	* Sigsum tools (most importantly sigsum-submit and
+	  sigsum-verify, as well as sigsum-witness)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tag v0.9.1.
 
 	New features:
 
@@ -15,11 +17,17 @@ NEWS for log-go v0.15.x
 	  with witnesses intended to support a diverse set of
 	  transparency log designs.
 
+	* Added a --version option.
+
 	Incompatible changes:
 
 	* Support for the previous, interrim, witness protocol has
 	  been removed. Witnesses that interoperated with log-go
 	  v0.14.1 will need updating to support the new protocol.
+
+	Miscellaneous:
+
+	* Requires go-1.22 or later for building.
 
 	Notes on upgrading:
 

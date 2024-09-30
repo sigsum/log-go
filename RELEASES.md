@@ -13,10 +13,10 @@ Releases are announced on the [sigsum-announce][] mailing list. The
 changes, the recommended upgrade procedure, and other Sigsum
 components that have been interop-tested with the log server release.
 
-Note that a release is simply a git-tag specified on our mailing list.
-You are expected to build the released tools yourself, e.g., with `go
-install`. There may be intermediate git-tags between two advertised
-releases; those are *not* released and supported.
+Note that a release is simply a signed git-tag specified on our
+mailing list. You are expected to build the released tools yourself,
+e.g., with `go install`. There may be intermediate git-tags between
+two advertised releases; those are *not* released and supported.
 
 The log-go go module is *not* considered released (as signalled by
 the v0 version tag), even though we release the above programs with
@@ -53,17 +53,15 @@ tandem: running nodes on different software releases is not tested.
      which bytes are being signed, and intended meaning, for each type
      of signature. Any breaking changes would have to be considered
      *very carefully* and be *coordinated well in advance*.
-  2. Changes are likely to other operational aspects of the log
+  2. There are no planned changes to the wire protocol between log
+     servers and witnesses. The [tlog-witness protocol][] is used.
+  3. Changes are likely to other operational aspects of the log
      server, e.g., configuration interfaces, available metrics, and
      storage of the log server's state. Such changes, as well as the
      migration procedure, will be documented in the [NEWS file](./NEWS).
-  3. For the wire protocol between log servers and witnesses,
-     substantial changes are planned that affect everything *except*
-     the resulting cosignatures as they are are published to log
-     clients. Such changes will require logs and witnesses to
-     coordinate upgrades, while log clients are completely unaffected.
 
 [sigsum v1 protocol]: https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md
+[tlog-witness prococol]: https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
 
 ## Release cycle
 
