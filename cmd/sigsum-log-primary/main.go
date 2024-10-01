@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"html"
 	"net/http"
 	"os"
 	"os/signal"
@@ -141,7 +142,7 @@ func main() {
 </ul>
 </body></html>
 `[1:],
-		crypto.HashBytes(publicKey[:]), conf.Prefix, moduleVersion))
+		crypto.HashBytes(publicKey[:]), html.EscapeString(conf.Prefix), html.EscapeString(moduleVersion)))
 
 	externalMux.HandleFunc("GET "+pattern+"{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("content-type", "text/html")
