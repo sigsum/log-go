@@ -13,10 +13,10 @@ Releases are announced on the [sigsum-announce][] mailing list. The
 changes, the recommended upgrade procedure, and other Sigsum
 components that have been interop-tested with the log server release.
 
-Note that a release is simply a signed git-tag specified on our
-mailing list. You are expected to build the released tools yourself,
-e.g., with `go install`. There may be intermediate git-tags between
-two advertised releases; those are *not* released and supported.
+Note that a release is simply a git-tag specified on our mailing list.
+You are expected to build the released tools yourself, e.g., with `go
+install`. There may be intermediate git-tags between two advertised
+releases; those are *not* released and supported.
 
 The log-go go module is *not* considered released (as signalled by
 the v0 version tag), even though we release the above programs with
@@ -60,7 +60,7 @@ tandem: running nodes on different software releases is not tested.
      storage of the log server's state. Such changes, as well as the
      migration procedure, will be documented in the [NEWS file](./NEWS).
 
-[sigsum v1 protocol]: https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md
+[sigsum v1 protocol]: https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
 [tlog-witness prococol]: https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
 
 ## Release cycle
