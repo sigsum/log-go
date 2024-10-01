@@ -131,11 +131,16 @@ func main() {
 	}, node))
 
 	infoPage := []byte(fmt.Sprintf(`
+<!DOCTYPE html>
 <html><head><title>Sigsum log server</title></head><body>
 <h1>This is a Sigsum log server</h1>
-<p>log key hash: %x, url prefix: %q</p>
-<p>Software version: %s"</p>
-</body></html>`[1:],
+<ul>
+  <li>Log key hash: %x</li>
+  <li>URL prefix: %q</li>
+  <li>Software version: %s</li>
+</ul>
+</body></html>
+`[1:],
 		crypto.HashBytes(publicKey[:]), conf.Prefix, moduleVersion))
 
 	externalMux.HandleFunc("GET "+pattern+"{$}", func(w http.ResponseWriter, _ *http.Request) {
