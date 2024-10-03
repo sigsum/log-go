@@ -47,6 +47,11 @@ NEWS for log-go v0.15.x
 	  to support the new protocol. There are no other expected
 	  complications on upgrade.
 
+	* When upgrading, you may want to also upgrade the Trillian
+	  daemons used for the log's backend storage. Upgrading
+	  Trillian from v1.5.1 to v1.6.0 (the latest release that
+	  still supports go-1.22) has been tested, with no issues.
+
 [1] https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
 [2] https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
 
