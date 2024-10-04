@@ -15,6 +15,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/checkpoint"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/mocks"
+	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
@@ -23,9 +24,9 @@ func testWitness(t *testing.T, ctrl *gomock.Controller) (crypto.Signer, *mocks.M
 	pub, signer := mustKeyPair(t)
 	client := mocks.NewMockWitness(ctrl)
 	return signer, client, &witness{
-		client:    client,
-		publicKey: pub,
-		keyHash:   crypto.HashBytes(pub[:]),
+		client:  client,
+		entity:  policy.Entity{PublicKey: pub, URL: "test://test"},
+		keyHash: crypto.HashBytes(pub[:]),
 	}
 }
 
