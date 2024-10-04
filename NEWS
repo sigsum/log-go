@@ -1,3 +1,58 @@
+NEWS for log-go v0.15.0
+
+	This release of the Sigsum log server uses a new interoperable
+	protocol [1] for interacting with the log's witnesses. This
+	change affects operators of logs and witnesses. The log
+	protocol itself [2], i.e., the protocol used for querying a Sigsum
+	log and submitting new entries, is stable and unchanged.
+
+	This release has been tested to work together with:
+
+	* Sigsum tools (most importantly sigsum-submit and
+	  sigsum-verify, as well as sigsum-witness)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tag v0.9.1.
+
+	New features:
+
+	* Implemented the new witness protocol [1], agreed together
+	  with other parties interested in witness cosigning of
+	  transparency logs. By using this common protocol, the log-go
+	  server interoperates with witnesses intended to support a
+	  diverse set of transparency log designs.
+
+	* Added a --version option, where the value is populated
+	  automatically at build time based on go module version or
+	  git revision. The old way of setting the gitCommit variable
+	  using linker flags has no effect.
+
+	* The log server now responds to GET requests at / or
+	  /<Prefix>/, providing a basic HTML page with information
+	  about the log server, in particular, the software version
+	  and the hash of the log's public key.
+
+	Incompatible changes:
+
+	* Support for the previous, interrim, witness protocol has
+	  been removed. Witnesses that interoperated with log-go
+	  v0.14.1 will need updating to support the new protocol.
+
+	* The minimum go version required for building is now go-1.22.
+
+	Notes on upgrading:
+
+	* An upgraded log will not be able to obtain and publish any
+	  witness cosignatures until its witnesses have been updated
+	  to support the new protocol. There are no other expected
+	  complications on upgrade.
+
+	* When upgrading, you may want to also upgrade the Trillian
+	  daemons used for the log's backend storage. Upgrading
+	  Trillian from v1.5.1 to v1.6.0 (the latest release that
+	  still supports go-1.22) has been tested, with no issues.
+
+[1] https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
+[2] https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
+
 NEWS for log-go v0.14.1
 
 	This release updates the log server to implement the v1 sigsum
