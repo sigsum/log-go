@@ -18,18 +18,20 @@ type GetConsistencyProofFunc func(ctx context.Context, req *requests.Consistency
 
 // Not concurrency safe, due to updates of prevSize.
 type witness struct {
-	client    api.Witness
-	publicKey crypto.PublicKey
-	keyHash   crypto.Hash
-	prevSize  uint64
+	client   api.Witness
+	entity   policy.Entity
+	keyHash  crypto.Hash
+	prevSize uint64
+	// Error from previous attempt.
+	prevError error
 }
 
 func newWitness(w *policy.Entity) *witness {
 	return &witness{
-		client:    client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
-		publicKey: w.PublicKey,
-		keyHash:   crypto.HashBytes(w.PublicKey[:]),
-		prevSize:  0,
+		client:   client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
+		entity:   *w,
+		keyHash:  crypto.HashBytes(w.PublicKey[:]),
+		prevSize: 0,
 	}
 }
 
@@ -55,7 +57,7 @@ func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint,
 			Checkpoint: *cp,
 		})
 		if err == nil {
-			cs, err := cp.VerifyCosignatureByKey(signatures, &w.publicKey)
+			cs, err := cp.VerifyCosignatureByKey(signatures, &w.entity.PublicKey)
 			if err != nil {
 				return cosignatureItem{}, err
 			}
@@ -116,12 +118,26 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 		wg.Add(1)
 		go func(i int, w *witness) {
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
+			// On logging of errors: api.ErrorStatusCode
+			// returns the explicitly associated status
+			// code, if any, otherwise 500. To reduce
+			// amount of logging at INFO level, log only
+			// errors when there's a change of status
+			// code. Repeated errors are deemed less
+			// interesting, and logged at DEBUG level.
 			if err != nil {
-				log.Debug("querying witness %d failed: %v", i, err)
-				// TODO: Temporarily stop querying this witness?
+				if w.prevError == nil || (api.ErrorStatusCode(err) != api.ErrorStatusCode(w.prevError)) {
+					log.Info("querying witness %q failed: %v", w.entity.URL, err)
+				} else {
+					log.Debug("querying witness %q failed: %v", w.entity.URL, err)
+				}
 			} else {
+				if w.prevError != nil {
+					log.Info("querying witness %q succeeded, previous attempt failed: %v", w.entity.URL, w.prevError)
+				}
 				ch <- cs
 			}
+			w.prevError = err
 			wg.Done()
 		}(i, w)
 	}
