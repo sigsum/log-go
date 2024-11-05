@@ -6,7 +6,7 @@ and a secondary node is included. [Trillian][] and [MariaDB][] are used for
 backing the storage on each node.
 
 [sigsum protocol]: https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
-[tlog-witness prococol]: https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
+[tlog-witness protocol]: https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
 [Trillian]: https://transparency.dev/#trillian
 [MariaDB]: https://mariadb.org/
 
