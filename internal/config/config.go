@@ -114,5 +114,4 @@ func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.Interval, "interval", 0, "Interval used to rotate the log's cosigned tree head.")
 	set.FlagLong(&c.LogFile, "log-file", 0, "File to write logs to, or stderr if unset.", "file")
 	set.FlagLong(&c.LogLevel, "log-level", 0, "Log level (Available options: debug, info, warning, error).", "level")
-	set.FlagLong(&c.MaxRange, "max-range", 0, "Maximum number of leaves that can be retrived in a single request.")
 }
