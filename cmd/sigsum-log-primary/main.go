@@ -44,6 +44,7 @@ func ParseFlags(c *config.Config) {
 	getopt.FlagLong(&c.Primary.SecondaryURL, "secondary-url", 0, "Secondary node endpoint for fetching latest replicated tree head.", "url")
 	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key for secondary node.", "file")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
+	getopt.FlagLong(&c.Primary.MaxRange, "max-range", 0, "Maximum number of leaves that can be retrived in a single request.")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
 	getopt.FlagLong(&versionFlag, "version", 0, "Display server version.")
 	getopt.Parse()
