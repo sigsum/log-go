@@ -1,19 +1,20 @@
 external-endpoint = "localhost:6965"
 internal-endpoint = "localhost:6967"
 trillian-rpc-server = "localhost:6962"
-ephemeral-test-backend = false
 url-prefix = ""
-tree-id-file = "/var/lib/sigsum-log/tree-id"
+backend = "trillian"
+trillian-tree-id-file = "/var/lib/sigsum-log/tree-id"
 timeout = 10s
-key = ""
+key-file = ""
 interval = 30s
 log-file = ""
 log-level = "info"
 
 [primary]
-witnesses = ""
+policy-file = ""
+sth-file = ""
 max-range = 10
-rate-limit-config-file = ""
+rate-limit-file = ""
 allow-test-domain = false
 secondary-url = ""
 secondary-pubkey-file = ""
