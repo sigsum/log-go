@@ -1,9 +1,9 @@
 package config
 
 import (
+	"os"
 	"strings"
 	"testing"
-	"os"
 )
 
 var testConfig = `
@@ -47,7 +47,7 @@ func TestReadConfig(t *testing.T) {
 
 func TestReadExampleConfigFile(t *testing.T) {
 	example_config := "../../doc/config.toml.example"
-	confFile, err := os.Open(example_config);
+	confFile, err := os.Open(example_config)
 	if err != nil {
 		t.Fatalf("Failed to open example_config file")
 	}
