@@ -4,15 +4,14 @@ trillian-rpc-server = "localhost:6962"
 url-prefix = ""
 backend = "trillian"
 trillian-tree-id-file = "/var/lib/sigsum-log/tree-id"
-timeout = 10s
+timeout = "10s"
 key-file = ""
-interval = 30s
+interval = "30s"
 log-file = ""
 log-level = "info"
 
 [primary]
 policy-file = ""
-sth-file = ""
 max-range = 10
 rate-limit-file = ""
 allow-test-domain = false
