@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 	"testing"
+	"os"
 )
 
 var testConfig = `
@@ -41,5 +42,17 @@ func TestReadConfig(t *testing.T) {
 	}
 	if conf.Secondary.PrimaryURL != "http://localhost:9091" {
 		t.Fatalf("Failed to parse primary configuration")
+	}
+}
+
+func TestReadExampleConfigFile(t *testing.T) {
+	example_config := "../../doc/config.toml.example"
+	confFile, err := os.Open(example_config);
+	if err != nil {
+		t.Fatalf("Failed to open example_config file")
+	}
+	_, err = LoadConfig(confFile)
+	if err != nil {
+		t.Fatalf("Failed read configuration: %v", err)
 	}
 }
