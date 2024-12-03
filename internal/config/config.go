@@ -63,7 +63,7 @@ func NewConfig() *Config {
 			SecondaryURL:        "",
 			SecondaryPubkeyFile: "",
 			SthFile:             "/var/lib/sigsum-log/sth",
-			MaxRange:            10,
+			MaxRange:            512,
 		},
 		Secondary: Secondary{
 			PrimaryURL: "",
