@@ -10,10 +10,10 @@ NEWS for log-go v0.15.x
 
 	Incompatible changes:
 
-	* The max-range config flag is now only available for the
-          primary node config. Before this change, there was a
-          max-range option also for the secondary node config but that
-          option had no effect.
+	* The --max-range command-line option is now only available
+	  for the primary node. Before this change, there was a
+	  --max-range command-line option also for the secondary node
+	  but that option had no effect.
 
 	Miscellaneous:
 
