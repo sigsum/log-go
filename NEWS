@@ -8,11 +8,16 @@ NEWS for log-go v0.15.x
 	  In v0.15.0, all errors were logged at DEBUG level, i.e.,
 	  no errors logged by default.
 
+	Incompatible changes:
+
+	* The max-range config flag is now only available for the
+          primary node config. Before this change, there was a
+          max-range option also for the secondary node config but that
+          option had no effect.
+
 	Miscellaneous:
 
-	* Increased max-range default value to 512. Also moved
-          max-range config flag to primary config as that flag is only
-          meaningful for the primary.
+	* Increased max-range default value to 512.
 
 	* Updated config.toml.example file and added a corresponding
           test to help ensure the example config stays up-to-date.
