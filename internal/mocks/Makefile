@@ -1,13 +1,13 @@
 # Makefile to regenerate mock files.
 
-all: db/db.go state/state.go requests/requests.go
+all: db/db.go state/state.go trillian/trillian.go
 .PHONY: all
 
 db/db.go: ../db/client.go
-	mockgen --destination $@ --package db sigsum.org/log-go/internal/db Client 
+	go run github.com/golang/mock/mockgen --destination $@ --package db sigsum.org/log-go/internal/db Client
 
 state/state.go: ../state/state_manager.go
-	mockgen --destination $@ --package state sigsum.org/log-go/internal/state StateManager
+	go run github.com/golang/mock/mockgen --destination $@ --package state sigsum.org/log-go/internal/state StateManager
 
-requests/requests.go:
-	mockgen --destination $@ --package token sigsum.org/log-go/internal/requests TokenVerifier
+trillian/trillian.go: ../../go.mod
+	go run github.com/golang/mock/mockgen --destination $@ --package trillian github.com/google/trillian TrillianLogClient
