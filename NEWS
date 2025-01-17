@@ -1,3 +1,13 @@
+NEWS for log-go v0.15.x
+
+	Improvements:
+
+	* More relevant logging of witness errors. When a witness
+	  starts failing, and when it recovers, the error is logged at
+	  INFO level. Repeated errors are logged at DEBUG level.
+	  In v0.15.0, all errors were logged at DEBUG level, i.e.,
+	  no errors logged by default.
+
 NEWS for log-go v0.15.0
 
 	This release of the Sigsum log server uses a new interoperable
