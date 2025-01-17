@@ -8,6 +8,15 @@ NEWS for log-go v0.15.x
 	  In v0.15.0, all errors were logged at DEBUG level, i.e.,
 	  no errors logged by default.
 
+	Miscellaneous:
+
+	* Increased max-range default value to 512. Also moved
+          max-range config flag to primary config as that flag is only
+          meaningful for the primary.
+
+	* Updated config.toml.example file and added a corresponding
+          test to help ensure the example config stays up-to-date.
+
 NEWS for log-go v0.15.0
 
 	This release of the Sigsum log server uses a new interoperable
