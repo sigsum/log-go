@@ -200,7 +200,7 @@ func TestRotate(t *testing.T) {
 				if !ok {
 					t.Fatalf("%s: cosignature missing", table.desc)
 				}
-				if !cs.VerifyOrigin(&wPub, origin, &newCth.TreeHead) {
+				if !cs.Verify(&wPub, origin, &newCth.TreeHead) {
 					t.Errorf("%s: cth cosignature not valid", table.desc)
 				}
 				if cs.Timestamp != testWitnessTimestamp {
@@ -226,7 +226,7 @@ func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 
 func mustCosign(t *testing.T, s crypto.Signer, th *types.TreeHead, origin string) types.Cosignature {
 	t.Helper()
-	signature, err := th.CosignOrigin(s, origin, testWitnessTimestamp)
+	signature, err := th.Cosign(s, origin, testWitnessTimestamp)
 	if err != nil {
 		t.Fatal(err)
 	}
