@@ -46,7 +46,7 @@ function main() {
 
 	witness_start 7200 "${nvars[$loga:log_dir]}/ssrv.key.pub"
 	cat > ./tmp/log.policy <<EOF
-witness wit1 $(./bin/sigsum-key hex -k ./tmp/wit1.key.pub) http://localhost:7200
+witness wit1 $(./bin/sigsum-key to-hex -k ./tmp/wit1.key.pub) http://localhost:7200
 quorum none
 EOF
 
@@ -121,8 +121,8 @@ function client_setup() {
 	for i in $@; do
 		info "setting up client ($i)"
 		logdir_setup $i
-		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/cli.key
-		nvars[$i:cli_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/cli.key.pub)
+		./bin/sigsum-key generate -o ${nvars[$i:log_dir]}/cli.key
+		nvars[$i:cli_key_hash]=$(./bin/sigsum-key to-hash -k ${nvars[$i:log_dir]}/cli.key.pub)
 	done
 }
 
@@ -254,8 +254,8 @@ function witness_start() {
 	local port=$1; shift
 	local log_key=$1; shift
 
-	./bin/sigsum-key gen -o ./tmp/wit1.key
-	wit1_key_hash=$(./bin/sigsum-key hash -k ./tmp/wit1.key.pub)
+	./bin/sigsum-key generate -o ./tmp/wit1.key
+	wit1_key_hash=$(./bin/sigsum-key to-hash -k ./tmp/wit1.key.pub)
 	./bin/sigsum-witness -k ./tmp/wit1.key --log-key "${log_key}" --state-file ./tmp/wit1.state localhost:${port} 2>./tmp/wit1.log &
 	wit1_pid="$!"
 	info "started wit1 (pid ${wit1_pid})"
@@ -281,8 +281,8 @@ function sigsum_setup() {
 		nvars[$i:int_url]=${nvars[$i:ssrv_internal]}/${nvars[$i:ssrv_prefix]}
 		nvars[$i:metrics_url]=${nvars[$i:ssrv_internal]}/metrics
 
-		./bin/sigsum-key gen -o ${nvars[$i:log_dir]}/ssrv.key
-		nvars[$i:ssrv_key_hash]=$(./bin/sigsum-key hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
+		./bin/sigsum-key generate -o ${nvars[$i:log_dir]}/ssrv.key
+		nvars[$i:ssrv_key_hash]=$(./bin/sigsum-key to-hash -k ${nvars[$i:log_dir]}/ssrv.key.pub)
 		# Use special test.sigsum.org test key to generate token.
 		nvars[$i:token]=$(./bin/sigsum-token create -k <(printf '%064x' 1) --log-key ${nvars[$i:log_dir]}/ssrv.key.pub)
 	done
