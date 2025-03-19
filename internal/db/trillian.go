@@ -93,16 +93,21 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	serialized := leaf.ToBinary()
 
 	log.Debug("queueing leaf request: %x", merkle.HashLeafNode(serialized))
-	_, err := c.logClient.QueueLeaf(ctx, &trillian.QueueLeafRequest{
+	queueLeafResponse, err := c.logClient.QueueLeaf(ctx, &trillian.QueueLeafRequest{
 		LogId: c.treeID,
 		Leaf: &trillian.LogLeaf{
 			LeafValue: serialized,
 		},
 	})
-	var alreadyExists bool
+	queueLeafStatus := queueLeafResponse.QueuedLeaf.Status
+	alreadyExists := false
 	switch status.Code(err) {
 	case codes.OK:
-		alreadyExists = false
+		if queueLeafStatus != nil {
+			if codes.Code(queueLeafStatus.Code) == codes.AlreadyExists {
+				alreadyExists = true
+			}
+		}
 	case codes.AlreadyExists:
 		alreadyExists = true
 	default:
