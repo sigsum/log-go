@@ -102,10 +102,12 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	alreadyExists := false
 	switch status.Code(err) {
 	case codes.OK:
-		queueLeafStatus := queueLeafResponse.QueuedLeaf.Status
-		if queueLeafStatus != nil {
-			if codes.Code(queueLeafStatus.Code) == codes.AlreadyExists {
-				alreadyExists = true
+		if queueLeafResponse != nil {
+			queueLeafStatus := queueLeafResponse.QueuedLeaf.Status
+			if queueLeafStatus != nil {
+				if codes.Code(queueLeafStatus.Code) == codes.AlreadyExists {
+					alreadyExists = true
+				}
 			}
 		}
 	case codes.AlreadyExists:
