@@ -108,10 +108,8 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	} else {
 		// It can happen that queueLeafResponse is nil even when err is nil so we must check that here
 		if queueLeafResponse != nil {
-			if s := queueLeafResponse.QueuedLeaf.Status; s != nil {
-				if codes.Code(s.Code) == codes.AlreadyExists {
-					alreadyExists = true
-				}
+			if s := queueLeafResponse.QueuedLeaf.Status; s != nil && codes.Code(s.Code) == codes.AlreadyExists {
+				alreadyExists = true
 			}
 		}
 	}
