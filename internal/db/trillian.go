@@ -100,20 +100,18 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 		},
 	})
 	alreadyExists := false
-	switch status.Code(err) {
-	case codes.OK:
-		if queueLeafResponse != nil {
-			queueLeafStatus := queueLeafResponse.QueuedLeaf.Status
-			if queueLeafStatus != nil {
-				if codes.Code(queueLeafStatus.Code) == codes.AlreadyExists {
-					alreadyExists = true
-				}
+	if err != nil {
+		if status.Code(err) != codes.AlreadyExists {
+			return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
+		}
+		alreadyExists = true
+	} else {
+		// Assume that queueLeafResponse is available since there was no error
+		if s := queueLeafResponse.QueuedLeaf.Status; s != nil {
+			if codes.Code(s.Code) == codes.AlreadyExists {
+				alreadyExists = true
 			}
 		}
-	case codes.AlreadyExists:
-		alreadyExists = true
-	default:
-		return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
 	}
 	if treeSize == 0 {
 		// Certainly not sequenced, and passing treeSize = 0 to Trillian results in an InvalidArgument response.
