@@ -93,20 +93,25 @@ func (c *TrillianClient) AddLeaf(ctx context.Context, leaf *types.Leaf, treeSize
 	serialized := leaf.ToBinary()
 
 	log.Debug("queueing leaf request: %x", merkle.HashLeafNode(serialized))
-	_, err := c.logClient.QueueLeaf(ctx, &trillian.QueueLeafRequest{
+	queueLeafResponse, err := c.logClient.QueueLeaf(ctx, &trillian.QueueLeafRequest{
 		LogId: c.treeID,
 		Leaf: &trillian.LogLeaf{
 			LeafValue: serialized,
 		},
 	})
-	var alreadyExists bool
-	switch status.Code(err) {
-	case codes.OK:
-		alreadyExists = false
-	case codes.AlreadyExists:
+	alreadyExists := false
+	if err != nil {
+		if status.Code(err) != codes.AlreadyExists {
+			return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
+		}
 		alreadyExists = true
-	default:
-		return AddLeafStatus{}, fmt.Errorf("back-end rpc failure: %v", err)
+	} else {
+		// It can happen that queueLeafResponse is nil even when err is nil so we must check that here
+		if queueLeafResponse != nil {
+			if s := queueLeafResponse.QueuedLeaf.Status; s != nil && codes.Code(s.Code) == codes.AlreadyExists {
+				alreadyExists = true
+			}
+		}
 	}
 	if treeSize == 0 {
 		// Certainly not sequenced, and passing treeSize = 0 to Trillian results in an InvalidArgument response.
