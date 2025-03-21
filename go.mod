@@ -7,7 +7,7 @@ go 1.22.0
 require (
 	// A fork of github.com/dchest/safefile
 	git.glasklar.is/sigsum/dependencies/safefile v1.1.0
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.5.0
 	github.com/golang/mock v1.6.0
 	github.com/google/trillian v1.7.1
 	github.com/pborman/getopt/v2 v2.1.0
