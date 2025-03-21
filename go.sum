@@ -1900,5 +1900,5 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
-sigsum.org/sigsum-go v0.10.1 h1:IHAZCi3XDIL8hzRAgsl+L1T3j7hwK5SgXBiXL8zjHy4=
-sigsum.org/sigsum-go v0.10.1/go.mod h1:pGa/r4QsNYom+RqRMkdhcG5E00ty1nlTmALEizdRWPk=
+sigsum.org/sigsum-go v0.11.2 h1:7HhDPC8gVJzl3wB3gAg3j6gTpO2t0UPHC0ogwhKuNRc=
+sigsum.org/sigsum-go v0.11.2/go.mod h1:pGa/r4QsNYom+RqRMkdhcG5E00ty1nlTmALEizdRWPk=
