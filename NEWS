@@ -1,6 +1,14 @@
 NEWS for log-go v0.15.x
 
+	This is minor release fixing a few issues found since the
+	previous release.
+
 	Improvements:
+
+	* Fixed a bug in the rate-limit logic. The intended behavior
+	  is to only count the first add-leaf requests for a
+	  particular leaf, and not count retries for the same leaf. In
+	  v0.15.0, retries could exhaust the rate limit quota.
 
 	* More relevant logging of witness errors. When a witness
 	  starts failing, and when it recovers, the error is logged at
