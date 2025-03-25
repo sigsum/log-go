@@ -1,7 +1,14 @@
-NEWS for log-go v0.15.x
+NEWS for log-go v0.15.2
 
 	This is minor release fixing a few issues found since the
-	previous release.
+	previous release. Upgrading from the previous release is
+	expected to work with no issues.
+
+	This release has been tested to work together with:
+
+	* Sigsum tools (most importantly sigsum-submit and
+	  sigsum-verify, as well as sigsum-witness)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tag v0.11.2.
 
 	Improvements:
 
