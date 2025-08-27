@@ -36,8 +36,8 @@ integration-default:
   stage: integration
   needs: ["go-test"]
   services:
-  - alias: mysql
-    name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
+  - name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
+    alias: mysql
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script: ./integration/test.sh
