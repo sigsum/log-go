@@ -40,6 +40,9 @@ integration-default:
     alias: mysql
   variables:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
+  before_script:
+    - apt-get update
+    - apt-get install -y iputils-ping
   script: ./integration/test.sh
   artifacts:
     paths: 
