@@ -241,9 +241,12 @@ function trillian_start_sequencer() {
 		info "doing host sigsum.org"
 		host sigsum.org
 		info "after host sigsum.org"
-		info "doing host mysql"
-		host mysql
-		info "after host mysql"
+		#info "doing host mysql77"
+		#host mysql77
+		#info "after host mysql77"
+		info "doing sleep 10"
+		sleep 10
+		info "after sleep 10"
 	done
 }
 
