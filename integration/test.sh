@@ -231,9 +231,13 @@ function trillian_start_sequencer() {
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
 			-http_endpoint=""\
-			-log_dir=${nvars[$i:log_dir]} 2>/dev/null &
+			-log_dir=${nvars[$i:log_dir]} 2>/tmp/test-trillian-stderr &
 		nvars[$i:tseq_pid]=$!
 		info "started Trillian log sequencer (pid ${nvars[$i:tseq_pid]})"
+		sleep 3
+		info "doing cat /tmp/test-trillian-stderr"
+		cat /tmp/test-trillian-stderr
+		info "after cat /tmp/test-trillian-stderr"
 	done
 }
 
