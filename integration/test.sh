@@ -238,12 +238,12 @@ function trillian_start_sequencer() {
 		info "doing cat /tmp/test-trillian-stderr"
 		cat /tmp/test-trillian-stderr
 		info "after cat /tmp/test-trillian-stderr"
-		info "doing ping -c 3 sigsum.org"
-		ping -c 3 sigsum.org
-		info "after ping -c 3 sigsum.org"
-		info "doing ping -c 3 mysql"
-		ping -c 3 mysql
-		info "after ping -c 3 mysql"
+		info "doing host sigsum.org"
+		host sigsum.org
+		info "after host sigsum.org"
+		info "doing host mysql"
+		host mysql
+		info "after host mysql"
 	done
 }
 
