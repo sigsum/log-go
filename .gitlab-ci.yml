@@ -42,7 +42,7 @@ integration-default:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   before_script:
     - apt-get update
-    - apt-get install -y iputils-ping
+    - apt-get install -y iputils-ping bind9-host
   script: ./integration/test.sh
   artifacts:
     paths: 
