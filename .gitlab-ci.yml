@@ -37,9 +37,9 @@ integration-default:
   needs: ["go-test"]
   services:
   - name: git.glasklar.is:5050/sigsum/admin/ci-container-images/trilliandb:latest
-    alias: mysql77
+    alias: mysql
   variables:
-    MYSQL_URI: test:test@tcp(mysql77:3306)/test
+    MYSQL_URI: test:test@tcp(mysql:3306)/test
   before_script:
     - apt-get update
     - apt-get install -y iputils-ping bind9-host
