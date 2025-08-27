@@ -46,3 +46,11 @@ log instance, the following steps are needed:
 
 7. In order for clients to reach the new primary rather than the old
    one, DNS record changes are usually needed as well.
+
+## More detailed failover description and test procedure
+
+For a more detailed failover description and an example of a failover
+test procedure, see the following:
+
+- https://git.glasklar.is/glasklar/services/sigsum-logs/-/blob/main/seasalp-failover-guide.md
+- https://git.glasklar.is/glasklar/admin/-/blob/main/archive/2025-07-failover-test-procedure.md
