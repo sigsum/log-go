@@ -105,10 +105,11 @@ via the `sigsum-token:` header. The suffix list is used to extract the
 the domain, and one additional label.
 
 The given limit is applied per "registered domain", which means that
-total requests allowed by this configuration can be very much higher. It
-is recommended to specify a rather low limit, e.g., 10-100. It is
-deemed impractical for a prospective attacker to get tens of thousands
-of registered domain.
+the total number of requests allowed by this configuration can be very
+much higher.  It is recommended to specify a rather low limit, e.g.,
+288 (which translates to one request every five minutes on average).
+It is deemed impractical for a prospective attacker to get tens of
+thousands of registered domain.
 
 TODO: Also add a limit on the total number of public requests, so one
 could have, e.g., 10 per registered domain but 10000 total for all?
