@@ -244,9 +244,9 @@ function trillian_createtree() {
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
 		local tree_id=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
-		[[ ${tree_id} != "" ]] || die "trillian_createtree failed for $i, tree_id is empty"
 
 		info "provisioned Merkle tree with id ${tree_id}"
+		[[ ${tree_id} != "" ]] || die "trillian_createtree failed for $i, tree_id is empty"
 		echo "tree-id=${tree_id}" > ${nvars[$i:log_dir]}/tree-id
 	done
 }
