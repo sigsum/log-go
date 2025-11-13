@@ -6,7 +6,7 @@ backend = "trillian"
 trillian-tree-id-file = "/var/lib/sigsum-log/tree-id"
 timeout = "10s"
 key-file = ""
-interval = "30s"
+interval = "10s"
 log-file = ""
 log-level = "info"
 
