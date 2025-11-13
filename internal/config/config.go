@@ -53,7 +53,7 @@ func NewConfig() *Config {
 		TrillianTreeIDFile: "/var/lib/sigsum-log/tree-id",
 		Timeout:            time.Second * 10,
 		KeyFile:            "",
-		Interval:           time.Second * 20,
+		Interval:           time.Second * 29,
 		LogFile:            "",
 		LogLevel:           "info",
 		Primary: Primary{
