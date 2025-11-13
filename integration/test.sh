@@ -242,7 +242,6 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		sleep 2
 		local tree_id=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr 2>/dev/null)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
