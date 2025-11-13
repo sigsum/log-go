@@ -68,7 +68,7 @@ EOF
 	node_start $logb
 
 	# Wait a bit to give time to the logs to be ready
-	sleep 10
+	sleep 15
 
 	client_setup $client
 	check_setup $loga $logb
