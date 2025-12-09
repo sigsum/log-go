@@ -14,15 +14,15 @@ import (
 	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/checkpoint"
 	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/mocks"
+	"sigsum.org/sigsum-go/pkg/mocks/mockapi"
 	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-func testWitness(t *testing.T, ctrl *gomock.Controller) (crypto.Signer, *mocks.MockWitness, *witness) {
+func testWitness(t *testing.T, ctrl *gomock.Controller) (crypto.Signer, *mockapi.MockWitness, *witness) {
 	pub, signer := mustKeyPair(t)
-	client := mocks.NewMockWitness(ctrl)
+	client := mockapi.NewMockWitness(ctrl)
 	return signer, client, &witness{
 		client:  client,
 		entity:  policy.Entity{PublicKey: pub, URL: "test://test"},

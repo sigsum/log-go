@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/mocks"
+	"sigsum.org/sigsum-go/pkg/mocks/mockapi"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
@@ -55,7 +55,7 @@ func TestFetchLeavesFromPrimary(t *testing.T) {
 			defer ctrl.Finish()
 
 			fmt.Printf("desc: %s\n", tbl.desc)
-			primaryClient := mocks.NewMockLog(ctrl)
+			primaryClient := mockapi.NewMockLog(ctrl)
 
 			trillianClient := mocksDB.NewMockClient(ctrl)
 			trillianClient.EXPECT().GetTreeHead(gomock.Any()).Return(tbl.trillianTHRet, tbl.trillianTHErr)
