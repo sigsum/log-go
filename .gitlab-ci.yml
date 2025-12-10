@@ -29,7 +29,7 @@ integration-ephemeral:
   needs: ["go-test"]
   before_script:
   - apt-get update
-  - apt-get install -y curl
+  - apt-get install -y curl python3
   script: ./integration/test.sh --ephemeral
   artifacts:
     when: always
@@ -46,7 +46,7 @@ integration-default:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   before_script:
   - apt-get update
-  - apt-get install -y curl
+  - apt-get install -y curl python3
   script: ./integration/test.sh
   artifacts:
     when: always
@@ -63,7 +63,7 @@ integration-extended:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   before_script:
   - apt-get update
-  - apt-get install -y curl
+  - apt-get install -y curl python3
   script: ./integration/test.sh --extended
   artifacts:
     when: always
