@@ -227,14 +227,13 @@ function trillian_start_sequencer() {
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && continue
 
 		info "starting up Trillian sequencer ($i)"
-		# Despite -logtostderr=false and -log_file, writes excessively to stderr on shutdown.
 		./bin/trillian_log_signer\
 			-force_master\
 			-mysql_uri=${mysql_uri}\
 			-rpc_endpoint=${nvars[$i:tseq_rpc]}\
 			-http_endpoint=""\
 			-logtostderr=false\
-			-log_file=${nvars[$i:log_dir]}/trillian_signer.log 2>/dev/null&
+			-log_file=${nvars[$i:log_dir]}/trillian_signer.log 2>>${nvars[$i:log_dir]}/trillian_signer.stderr &
 		nvars[$i:tseq_pid]=$!
 		info "started Trillian log sequencer (pid ${nvars[$i:tseq_pid]})"
 	done
@@ -245,7 +244,7 @@ function trillian_createtree() {
 		local createtree_extra_args=""
 
 		[[ ${nvars[$i:ssrv_role]} == secondary ]] && createtree_extra_args=" -tree_type PREORDERED_LOG"
-		local tree_id=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr=false -log_file=${nvars[$i:log_dir]}/createtree.log)
+		local tree_id=$(./bin/createtree --admin_server ${nvars[$i:tsrv_rpc]} $createtree_extra_args -logtostderr=false -log_file=${nvars[$i:log_dir]}/createtree.log 2>>${nvars[$i:log_dir]}/createtree.stderr)
 		[[ $? -eq 0 ]] || die "must provision a new Merkle tree"
 
 		info "provisioned Merkle tree with id ${tree_id}"
