@@ -29,6 +29,7 @@ integration-ephemeral:
   needs: ["go-test"]
   script: ./integration/test.sh --ephemeral
   artifacts:
+    when: always
     paths: 
     - ./integration/tmp/
 
@@ -42,6 +43,7 @@ integration-default:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script: ./integration/test.sh
   artifacts:
+    when: always
     paths: 
     - ./integration/tmp/
 
@@ -55,5 +57,6 @@ integration-extended:
     MYSQL_URI: test:test@tcp(mysql:3306)/test
   script: ./integration/test.sh --extended
   artifacts:
+    when: always
     paths: 
     - ./integration/tmp/
