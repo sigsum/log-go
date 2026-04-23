@@ -20,6 +20,12 @@ go-test:
   stage: test
   script: go test -v -race ./...
 
+govulncheck:
+  stage: test
+  # Allow failure, since this can fail due to changes outside of our control.
+  allow_failure: true
+  script: go run golang.org/x/vuln/cmd/govulncheck@v1.3.0 -show verbose ./...
+
 # There are three flavors of the integration tests, "default" with
 # primary and secondary, "extended" where secondary is promoted to new
 # primary, and "ephemeral" which runs a simpler backend without mysql
