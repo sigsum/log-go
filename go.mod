@@ -2,7 +2,7 @@ module sigsum.org/log-go
 
 // We don't want to depend on golang version later than is available
 // in debian's stable or backports repos.
-go 1.24.0
+go 1.25.0
 
 require (
 	// A fork of github.com/dchest/safefile
