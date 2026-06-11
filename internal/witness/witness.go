@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/checkpoint"
@@ -20,6 +21,7 @@ import (
 // WitnessMetrics collects /add-checkpoint probing outcomes.
 type WitnessMetrics interface {
 	RecordWitnessProbe(witnessID string, status string)
+	RecordWitnessLatency(witnessID string, d time.Duration)
 }
 
 type GetConsistencyProofFunc func(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error)
@@ -128,7 +130,9 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 	for i, w := range c.witnesses {
 		wg.Add(1)
 		go func(i int, w *witness) {
+			start := time.Now()
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
+			latency := time.Since(start)
 			if c.metrics != nil {
 				witnessID := strings.TrimPrefix(strings.TrimPrefix(w.entity.URL, "https://"), "http://")
 				var status string
@@ -137,6 +141,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 					if cs.retried {
 						status = "200-after-409"
 					}
+					c.metrics.RecordWitnessLatency(witnessID, latency)
 				} else {
 					var apiErr *api.Error
 					if errors.As(err, &apiErr) {
