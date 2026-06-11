@@ -19,6 +19,7 @@ declare -r mysql_uri="${MYSQL_URI:-sigsum_test:zaphod@tcp(127.0.0.1:3306)/sigsum
 
 # Set based on --extended / --ephemeral options
 testflavor=basic
+keep_running=false
 
 function main() {
 	while [[ $# > 0 ]] ; do
@@ -28,6 +29,9 @@ function main() {
 				;;
 			--ephemeral)
 				testflavor=ephemeral
+				;;
+			--keep-running)
+				keep_running=true
 				;;
 			*)
 				die "Unknown option: $1"
@@ -99,6 +103,11 @@ EOF
 
 		check_setup $logb $logc
 		run_tests_extended $logb $logc $client 6 ${nvars[$loga:log_dir]}/last_sth
+	fi
+
+	if [[ $keep_running == true ]]; then
+		info "tests passed and servers are running -- press Enter to exit"
+		read
 	fi
 }
 
