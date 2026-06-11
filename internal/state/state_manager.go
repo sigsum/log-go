@@ -18,5 +18,5 @@ type StateManager interface {
 	CosignedTreeHead() types.CosignedTreeHead
 
 	// Run periodically rotates the node's tree heads and queries witnesses.
-	Run(context.Context, []policy.Entity, time.Duration, witness.WitnessMetrics)
+	Run(context.Context, *policy.Policy, time.Duration, witness.WitnessMetrics)
 }

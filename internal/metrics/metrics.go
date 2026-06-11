@@ -45,8 +45,9 @@ func NewServerMetrics(logID string) server.Metrics {
 }
 
 type witnessMetrics struct {
-	probeCount   monitoring.Counter   // number of cosignature requests (grouped by witness and status)
-	probeLatency monitoring.Histogram // latency of successful cosignature requests (grouped by witness)
+	probeCount    monitoring.Counter   // number of cosignature requests (grouped by witness and status)
+	probeLatency  monitoring.Histogram // latency of successful cosignature requests (grouped by witness)
+	quorumLatency monitoring.Histogram // latency until reaching a witness quorum (if configured)
 }
 
 func (m *witnessMetrics) RecordWitnessProbe(witnessID string, status string) {
@@ -57,6 +58,10 @@ func (m *witnessMetrics) RecordWitnessLatency(witnessID string, d time.Duration)
 	m.probeLatency.Observe(d.Seconds(), witnessID)
 }
 
+func (m *witnessMetrics) RecordWitnessQuorumLatency(d time.Duration) {
+	m.quorumLatency.Observe(d.Seconds())
+}
+
 func NewWitnessMetrics() witness.WitnessMetrics {
 	mf := prometheus.MetricFactory{}
 	// Interval 1ms to 10s, with thresholds roughly a factor
@@ -64,7 +69,8 @@ func NewWitnessMetrics() witness.WitnessMetrics {
 	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
 
 	return &witnessMetrics{
-		probeCount:   mf.NewCounter("witness_probe_total", "number of witness add-checkpoint probes", "witness", "status"),
-		probeLatency: mf.NewHistogramWithBuckets("witness_probe_latency", "witness add-checkpoint latency on success", buckets, "witness"),
+		probeCount:    mf.NewCounter("witness_probe_total", "number of witness add-checkpoint probes", "witness", "status"),
+		probeLatency:  mf.NewHistogramWithBuckets("witness_probe_latency", "witness add-checkpoint latency on success", buckets, "witness"),
+		quorumLatency: mf.NewHistogramWithBuckets("witness_quorum_latency", "witness quorum latency", buckets),
 	}
 }

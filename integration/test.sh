@@ -51,7 +51,7 @@ function main() {
 	witness_start 7200 "${nvars[$loga:log_dir]}/ssrv.key.pub"
 	cat > ./tmp/log.policy <<EOF
 witness wit1 $(./bin/sigsum-key to-hex -k ./tmp/wit1.key.pub) http://localhost:7200
-quorum none
+quorum wit1
 EOF
 
 	# Primary

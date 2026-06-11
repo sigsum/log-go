@@ -3,6 +3,7 @@ package witness
 import (
 	"context"
 	"errors"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,9 +23,11 @@ import (
 type WitnessMetrics interface {
 	RecordWitnessProbe(witnessID string, status string)
 	RecordWitnessLatency(witnessID string, d time.Duration)
+	RecordWitnessQuorumLatency(d time.Duration)
 }
 
 type GetConsistencyProofFunc func(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error)
+type QuorumFunc func(cosignatures map[crypto.Hash]types.Cosignature) bool
 
 // Not concurrency safe, due to updates of prevSize.
 type witness struct {
@@ -49,7 +52,8 @@ func newWitness(w *policy.Entity) *witness {
 type cosignatureItem struct {
 	keyHash crypto.Hash
 	cs      types.Cosignature
-	retried bool // true if a 409 retry occurred
+	retried bool          // true if a 409 retry occurred
+	latency time.Duration // time to collect cosignature (including up to one 409 retry)
 }
 
 func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint, getConsistencyProof GetConsistencyProofFunc) (cosignatureItem, error) {
@@ -93,17 +97,19 @@ type CosignatureCollector struct {
 	keyId               checkpoint.KeyId
 	getConsistencyProof GetConsistencyProofFunc
 	witnesses           []*witness
+	quorum              QuorumFunc
 	metrics             WitnessMetrics
 }
 
 func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
-	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics) *CosignatureCollector {
+	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumFunc) *CosignatureCollector {
 	origin := types.SigsumCheckpointOrigin(logPublicKey)
 
 	collector := CosignatureCollector{
 		origin:              origin,
 		keyId:               checkpoint.NewLogKeyId(origin, logPublicKey),
 		getConsistencyProof: getConsistencyProof,
+		quorum:              quorum,
 		metrics:             metrics,
 	}
 	for _, w := range witnesses {
@@ -132,7 +138,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 		go func(i int, w *witness) {
 			start := time.Now()
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
-			latency := time.Since(start)
+			cs.latency = time.Since(start)
 			if c.metrics != nil {
 				witnessID := strings.TrimPrefix(strings.TrimPrefix(w.entity.URL, "https://"), "http://")
 				var status string
@@ -141,7 +147,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 					if cs.retried {
 						status = "200-after-409"
 					}
-					c.metrics.RecordWitnessLatency(witnessID, latency)
+					c.metrics.RecordWitnessLatency(witnessID, cs.latency)
 				} else {
 					var apiErr *api.Error
 					if errors.As(err, &apiErr) {
@@ -178,9 +184,17 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 	go func() { wg.Wait(); close(ch) }()
 
 	cosignatures := make(map[crypto.Hash]types.Cosignature)
+	recordQuorumLatency := c.metrics != nil && c.quorum != nil
 	for i := range ch {
 		// TODO: Check that cosignature timestamp is reasonable?
 		cosignatures[i.keyHash] = i.cs
+		if recordQuorumLatency && c.quorum(cosignatures) {
+			c.metrics.RecordWitnessQuorumLatency(i.latency)
+			recordQuorumLatency = false
+		}
+	}
+	if recordQuorumLatency {
+		c.metrics.RecordWitnessQuorumLatency(math.MaxInt64)
 	}
 	return cosignatures
 }
