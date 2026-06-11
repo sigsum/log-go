@@ -734,11 +734,21 @@ function get_metrics() {
 	# get-*tree-head request, with latency up to 1s.
 	if grep '^http_latency_bucket{endpoint="get-[^"]*tree-head".*,status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 		pass "got $i metrics"
-		return 0
 	else
 		fail "no $i metrics"
 		return 1
 	fi
+	# Primary nodes query witnesses; verify the probe counter was incremented.
+	if [[ ${nvars[$i:ssrv_role]} == primary ]]; then
+		if grep '^witness_probe_total{status="200".*} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness metrics"
+			return 0
+		else
+			fail "no $i witness metrics"
+			return 1
+		fi
+	fi
+	return 0
 }
 
 function get_infopage() {

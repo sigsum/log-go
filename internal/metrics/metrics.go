@@ -7,6 +7,7 @@ import (
 	"github.com/google/trillian/monitoring"
 	"github.com/google/trillian/monitoring/prometheus"
 
+	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/server"
 )
 
@@ -40,5 +41,20 @@ func NewServerMetrics(logID string) server.Metrics {
 		rspcnt: mf.NewCounter("http_rsp", "number of http requests", "logid", "endpoint", "status"),
 		latency: mf.NewHistogramWithBuckets("http_latency", "http request-response latency",
 			buckets, "logid", "endpoint", "status"),
+	}
+}
+
+type witnessMetrics struct {
+	probeCount monitoring.Counter // number of cosignature requests (grouped by witness and status)
+}
+
+func (m *witnessMetrics) RecordWitnessProbe(witnessID string, status string) {
+	m.probeCount.Inc(witnessID, status)
+}
+
+func NewWitnessMetrics() witness.WitnessMetrics {
+	mf := prometheus.MetricFactory{}
+	return &witnessMetrics{
+		probeCount: mf.NewCounter("witness_probe_total", "number of witness add-checkpoint probes", "witness", "status"),
 	}
 }

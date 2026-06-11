@@ -96,10 +96,10 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration) {
+func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration, metrics witness.WitnessMetrics) {
 	pub := sm.signer.Public()
 	collector := witness.NewCosignatureCollector(&pub, witnesses,
-		sm.replicationState.primary.GetConsistencyProof)
+		sm.replicationState.primary.GetConsistencyProof, metrics)
 
 	for ctx.Err() == nil {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)
