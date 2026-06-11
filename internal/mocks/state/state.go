@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	witness "sigsum.org/log-go/internal/witness"
 	policy "sigsum.org/sigsum-go/pkg/policy"
 	types "sigsum.org/sigsum-go/pkg/types"
 )
@@ -52,15 +53,15 @@ func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration) {
+func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration, arg3 witness.WitnessMetrics) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Run", arg0, arg1, arg2)
+	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3)
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1, arg2, arg3)
 }
 
 // SignedTreeHead mocks base method.
