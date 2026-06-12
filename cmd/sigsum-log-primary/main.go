@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"html"
 	"net/http"
@@ -129,7 +128,7 @@ func main() {
 	externalMux.Handle(pattern, server.NewLog(&server.Config{
 		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
-		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
+		Metrics: metrics.NewServerMetrics(),
 	}, node))
 
 	infoPage := []byte(fmt.Sprintf(`

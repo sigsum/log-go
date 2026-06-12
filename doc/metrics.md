@@ -24,9 +24,7 @@ Counter for incoming HTTP requests.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
-
-2. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
+1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
 ### `sigsum_log_go_http_rsp`
 
@@ -34,11 +32,9 @@ Counter for HTTP responses.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
+1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
-2. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
-
-3. `status`: HTTP response status code.
+2. `status`: HTTP response status code.
 
 ### `sigsum_log_go_http_latency`
 
@@ -46,11 +42,9 @@ Histogram for HTTP request-response latency, in seconds.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
+1. `endpoint`: HTTP endpoint handling the request.
 
-2. `endpoint`: HTTP endpoint handling the request.
-
-3. `status`: HTTP response status code.
+2. `status`: HTTP response status code.
 
 ## Witness metrics
 

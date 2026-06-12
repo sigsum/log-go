@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,7 +75,7 @@ func main() {
 	log.Info("log-go version: %s", version.ModuleVersion())
 
 	log.Debug("configuring log-go-secondary")
-	node, publicKey, err := setupSecondaryFromFlags(conf)
+	node, _, err := setupSecondaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup secondary: %v", err)
 	}
@@ -104,7 +103,7 @@ func main() {
 	internalMux.Handle("/", server.NewSecondary(&server.Config{
 		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
-		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
+		Metrics: metrics.NewServerMetrics(),
 	}, node))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
