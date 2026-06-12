@@ -51,6 +51,8 @@ func NewServerMetrics(logID string) server.Metrics {
 type witnessMetrics struct {
 	checkpointRequests monitoring.Counter   // number of checkpoint requests (grouped by witness and status)
 	checkpointLatency  monitoring.Histogram // latency of successful checkpoint requests (200; 200 after 409 retry)
+	quorum             monitoring.Counter   // number of witness quorum attempts (grouped by success/failure)
+	quorumLatency      monitoring.Histogram // latency to reach quorum (not recorded if quorum is not reached)
 }
 
 func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error, elapsed time.Duration) {
@@ -71,6 +73,13 @@ func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool,
 	}
 }
 
+func (m *witnessMetrics) RecordQuorum(haveQuorum bool, d time.Duration) {
+	m.quorum.Inc(strconv.FormatBool(haveQuorum))
+	if haveQuorum {
+		m.quorumLatency.Observe(d.Seconds())
+	}
+}
+
 func NewWitnessMetrics() witness.WitnessMetrics {
 	mf := prometheus.MetricFactory{}
 	// Interval 1ms to 10s, with thresholds roughly a factor
@@ -80,5 +89,7 @@ func NewWitnessMetrics() witness.WitnessMetrics {
 	return &witnessMetrics{
 		checkpointRequests: mf.NewCounter("witness_checkpoint_requests_total", "number of witness add-checkpoint requests", "witness", "status", "retried"),
 		checkpointLatency:  mf.NewHistogramWithBuckets("witness_checkpoint_request_latency", "witness add-checkpoint latency on success", buckets, "witness"),
+		quorum:             mf.NewCounter("witness_quorum_total", "number of witness quorum attempts", "status"),
+		quorumLatency:      mf.NewHistogramWithBuckets("witness_quorum_latency", "witness quorum latency", buckets),
 	}
 }

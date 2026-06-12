@@ -53,7 +53,7 @@ func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context, arg1 []policy.Entity, arg2 time.Duration, arg3 witness.WitnessMetrics) {
+func (m *MockStateManager) Run(arg0 context.Context, arg1 *policy.Policy, arg2 time.Duration, arg3 witness.WitnessMetrics) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3)
 }

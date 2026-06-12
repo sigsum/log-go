@@ -88,7 +88,7 @@ func main() {
 	moduleVersion := version.ModuleVersion()
 	log.Info("log-go version: %s", moduleVersion)
 
-	witnesses, err := configuredWitnesses(conf.PolicyFile)
+	policy, err := configuredPolicy(conf.PolicyFile)
 	if err != nil {
 		log.Fatal("Failed witness configuration: %v", err)
 	}
@@ -111,7 +111,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		node.Stateman.Run(ctx, witnesses, conf.Interval, metrics.NewWitnessMetrics())
+		node.Stateman.Run(ctx, policy, conf.Interval, metrics.NewWitnessMetrics())
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
@@ -265,13 +265,9 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.Public
 	return &p, publicKey, nil
 }
 
-func configuredWitnesses(file string) ([]policy.Entity, error) {
+func configuredPolicy(file string) (*policy.Policy, error) {
 	if len(file) == 0 {
 		return nil, nil
 	}
-	policy, err := policy.ReadPolicyFile(file)
-	if err != nil {
-		return nil, err
-	}
-	return policy.GetWitnessesWithUrl(), nil
+	return policy.ReadPolicyFile(file)
 }

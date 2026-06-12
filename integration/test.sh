@@ -51,7 +51,7 @@ function main() {
 	witness_start 7200 "${nvars[$loga:log_dir]}/ssrv.key.pub"
 	cat > ./tmp/log.policy <<EOF
 witness wit1 $(./bin/sigsum-key to-hex -k ./tmp/wit1.key.pub) http://localhost:7200
-quorum none
+quorum wit1
 EOF
 
 	# Primary
@@ -741,15 +741,27 @@ function get_metrics() {
 	# Primary nodes query witnesses; verify the probe counter was incremented.
 	if [[ ${nvars[$i:ssrv_role]} == primary ]]; then
 		if grep '^witness_checkpoint_requests_total{.*status="200".*} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
-			pass "got $i witness metrics"
+			pass "got $i witness checkpoint metrics"
 		else
-			fail "no $i witness metrics"
+			fail "no $i witness checkpoint metrics"
 			return 1
 		fi
 		if grep '^witness_checkpoint_request_latency_bucket{.*,le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
-			pass "got $i witness latency metrics"
+			pass "got $i witness checkpoint latency metrics"
 		else
-			fail "no $i witness latency metrics"
+			fail "no $i witness checkpoint latency metrics"
+			return 1
+		fi
+		if grep '^witness_quorum_total{status="true"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness quorum metrics"
+		else
+			fail "no $i witness quorum metrics"
+			return 1
+		fi
+		if grep '^witness_quorum_latency_bucket{le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness quorum latency metrics"
+		else
+			fail "no $i witness quorum latency metrics"
 			return 1
 		fi
 	fi
