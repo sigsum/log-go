@@ -128,6 +128,7 @@ func TestGetCosignatures(t *testing.T) {
 		keyId:               cp.KeyId,
 		getConsistencyProof: log.GetConsistencyProof,
 		witnesses:           []*witness{w1, w2, w3},
+		metrics:             noMetrics{},
 	}
 
 	log.EXPECT().GetConsistencyProof(gomock.Any(), Ptr(gomock.Eq(requests.ConsistencyProof{OldSize: 0, NewSize: 5}))).Return(types.ConsistencyProof{}, nil).AnyTimes()

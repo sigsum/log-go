@@ -14,6 +14,15 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
+// WitnessMetrics collects /add-checkpoint outcomes.
+type WitnessMetrics interface {
+	RecordCheckpointRequest(witnessID string, retried bool, err error)
+}
+
+type noMetrics struct{}
+
+func (_ noMetrics) RecordCheckpointRequest(_ string, _ bool, _ error) {}
+
 type GetConsistencyProofFunc func(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error)
 
 // Not concurrency safe, due to updates of prevSize.
@@ -39,6 +48,7 @@ func newWitness(w *policy.Entity) *witness {
 type cosignatureItem struct {
 	keyHash crypto.Hash
 	cs      types.Cosignature
+	retried bool // true if a 409 retry occurred
 }
 
 func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint, getConsistencyProof GetConsistencyProofFunc) (cosignatureItem, error) {
@@ -49,7 +59,7 @@ func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint,
 			NewSize: cp.TreeHead.Size,
 		})
 		if err != nil {
-			return cosignatureItem{}, err
+			return cosignatureItem{retried: freshOldSize}, err
 		}
 		signatures, err := w.client.AddCheckpoint(ctx, requests.AddCheckpoint{
 			OldSize:    w.prevSize,
@@ -59,14 +69,14 @@ func (w *witness) getCosignature(ctx context.Context, cp *checkpoint.Checkpoint,
 		if err == nil {
 			cs, err := cp.VerifyCosignatureByKey(signatures, &w.entity.PublicKey)
 			if err != nil {
-				return cosignatureItem{}, err
+				return cosignatureItem{retried: freshOldSize}, err
 			}
 			w.prevSize = cp.Size
-			return cosignatureItem{keyHash: w.keyHash, cs: cs}, nil
+			return cosignatureItem{keyHash: w.keyHash, cs: cs, retried: freshOldSize}, nil
 		}
 		// Retry only once.
 		if freshOldSize {
-			return cosignatureItem{}, err
+			return cosignatureItem{retried: true}, err
 		}
 		if oldSize, ok := api.ErrorConflictOldSize(err); ok {
 			w.prevSize = oldSize
@@ -82,16 +92,21 @@ type CosignatureCollector struct {
 	keyId               checkpoint.KeyId
 	getConsistencyProof GetConsistencyProofFunc
 	witnesses           []*witness
+	metrics             WitnessMetrics
 }
 
 func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
-	getConsistencyProof GetConsistencyProofFunc) *CosignatureCollector {
+	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics) *CosignatureCollector {
 	origin := types.SigsumCheckpointOrigin(logPublicKey)
+	if metrics == nil {
+		metrics = noMetrics{}
+	}
 
 	collector := CosignatureCollector{
 		origin:              origin,
 		keyId:               checkpoint.NewLogKeyId(origin, logPublicKey),
 		getConsistencyProof: getConsistencyProof,
+		metrics:             metrics,
 	}
 	for _, w := range witnesses {
 		collector.witnesses = append(collector.witnesses,
@@ -118,6 +133,7 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 		wg.Add(1)
 		go func(i int, w *witness) {
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
+			c.metrics.RecordCheckpointRequest(w.entity.URL, cs.retried, err)
 			// On logging of errors: api.ErrorStatusCode
 			// returns the explicitly associated status
 			// code, if any, otherwise 500. To reduce

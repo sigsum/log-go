@@ -1,12 +1,17 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/trillian/monitoring"
 	"github.com/google/trillian/monitoring/prometheus"
 
+	"sigsum.org/log-go/internal/witness"
+	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/server"
 )
 
@@ -40,5 +45,30 @@ func NewServerMetrics(logID string) server.Metrics {
 		rspcnt: mf.NewCounter("http_rsp", "number of http requests", "logid", "endpoint", "status"),
 		latency: mf.NewHistogramWithBuckets("http_latency", "http request-response latency",
 			buckets, "logid", "endpoint", "status"),
+	}
+}
+
+type witnessMetrics struct {
+	checkpointRequests monitoring.Counter // number of checkpoint requests (grouped by witness and status)
+}
+
+func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error) {
+	name := strings.TrimPrefix(strings.TrimPrefix(witnessID, "https://"), "http://")
+	status := "200"
+	if err != nil {
+		var apiErr *api.Error
+		if errors.As(err, &apiErr) {
+			status = strconv.Itoa(apiErr.StatusCode())
+		} else {
+			status = "other"
+		}
+	}
+	m.checkpointRequests.Inc(name, status, strconv.FormatBool(retried))
+}
+
+func NewWitnessMetrics() witness.WitnessMetrics {
+	mf := prometheus.MetricFactory{}
+	return &witnessMetrics{
+		checkpointRequests: mf.NewCounter("witness_checkpoint_requests_total", "number of witness add-checkpoint requests", "witness", "status", "retried"),
 	}
 }
