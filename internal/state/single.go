@@ -96,10 +96,16 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, witnesses []policy.Entity, interval time.Duration, metrics witness.WitnessMetrics) {
+func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics) {
 	pub := sm.signer.Public()
+	var witnesses []policy.Entity
+	var quorum witness.QuorumPredicate
+	if p != nil {
+		witnesses = p.GetWitnessesWithUrl()
+		quorum = newQuorumFunc(p)
+	}
 	collector := witness.NewCosignatureCollector(&pub, witnesses,
-		sm.replicationState.primary.GetConsistencyProof, metrics)
+		sm.replicationState.primary.GetConsistencyProof, metrics, quorum)
 
 	for ctx.Err() == nil {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)
@@ -139,6 +145,38 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead
 		Cosignatures:   cosignatures,
 	}
 	return nil
+}
+
+func newQuorumFunc(p *policy.Policy) witness.QuorumPredicate {
+	if p.ProcessQuorum(cosignatureQuorumProcessor{}).(bool) {
+		return nil // quorum none
+	}
+	return func(cosignatures map[crypto.Hash]types.Cosignature) bool {
+		processor := cosignatureQuorumProcessor{present: cosignatures}
+		return p.ProcessQuorum(processor).(bool)
+	}
+}
+
+// Implements policy.Processor
+//
+// Note: bool is used in all places where interface methods say 'any'.
+type cosignatureQuorumProcessor struct {
+	present map[crypto.Hash]types.Cosignature
+}
+
+func (p cosignatureQuorumProcessor) ProcessWitness(kh crypto.Hash) any {
+	_, ok := p.present[kh]
+	return ok
+}
+
+func (cosignatureQuorumProcessor) ProcessGroup(k int, members []any) any {
+	c := 0
+	for _, m := range members {
+		if m.(bool) {
+			c++
+		}
+	}
+	return c >= k
 }
 
 func (sm *StateManagerSingle) signTreeHead(nextTH *types.TreeHead) (types.SignedTreeHead, error) {
