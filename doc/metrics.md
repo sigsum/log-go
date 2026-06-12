@@ -18,46 +18,40 @@ are not documented here.
 The following HTTP server metrics are exposed by both primary and
 secondary nodes.
 
-### `http_req`
+### `sigsum_log_go_http_req`
 
 Counter for incoming HTTP requests.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
+1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
-2. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
-
-### `http_rsp`
+### `sigsum_log_go_http_rsp`
 
 Counter for HTTP responses.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
+1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
-2. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
+2. `status`: HTTP response status code.
 
-3. `status`: HTTP response status code.
-
-### `http_latency`
+### `sigsum_log_go_http_latency`
 
 Histogram for HTTP request-response latency, in seconds.
 
 Labels:
 
-1. `logid`: hex-encoded log public key.
+1. `endpoint`: HTTP endpoint handling the request.
 
-2. `endpoint`: HTTP endpoint handling the request.
-
-3. `status`: HTTP response status code.
+2. `status`: HTTP response status code.
 
 ## Witness metrics
 
 The following witness metrics are exposed by the primary node. They are
 recorded while the primary queries witnesses for cosignatures.
 
-### `witness_checkpoint_requests_total`
+### `sigsum_log_go_witness_checkpoint_requests_total`
 
 Counter for witness add-checkpoint requests.
 
@@ -73,7 +67,7 @@ Labels:
 3. `retried`: `true` if the log retried with a new add-checkpoint
    request as a result of seeing HTTP 409 Conflict, otherwise `false`.
 
-### `witness_checkpoint_request_latency`
+### `sigsum_log_go_witness_checkpoint_request_latency`
 
 Histogram for successful witness add-checkpoint request latency, in
 seconds. Failed requests are not recorded in this histogram.
@@ -86,7 +80,7 @@ Labels:
 1. `witness`: witness URL with the `http://` or `https://` prefix
    removed.
 
-### `witness_quorum_total`
+### `sigsum_log_go_witness_quorum_total`
 
 Counter that tracks if the log was able to collect enough cosignatures to
 satisfy the configured quorum (if any).
@@ -96,7 +90,7 @@ Labels:
 1. `status`: `true` if the primary reached witness quorum, otherwise
    `false`.
 
-### `witness_quorum_latency`
+### `sigsum_log_go_witness_quorum_latency`
 
 Histogram for the time needed to reach witness quorum, in seconds. This
 metric is recorded only for successful quorum attempts.

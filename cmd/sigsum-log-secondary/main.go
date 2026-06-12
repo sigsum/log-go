@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,7 +21,6 @@ import (
 	"sigsum.org/log-go/internal/version"
 
 	"sigsum.org/sigsum-go/pkg/client"
-	"sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/server"
@@ -76,7 +74,7 @@ func main() {
 	log.Info("log-go version: %s", version.ModuleVersion())
 
 	log.Debug("configuring log-go-secondary")
-	node, publicKey, err := setupSecondaryFromFlags(conf)
+	node, err := setupSecondaryFromFlags(conf)
 	if err != nil {
 		log.Fatal("setup secondary: %v", err)
 	}
@@ -104,7 +102,7 @@ func main() {
 	internalMux.Handle("/", server.NewSecondary(&server.Config{
 		Prefix:  conf.Prefix,
 		Timeout: conf.Timeout,
-		Metrics: metrics.NewServerMetrics(hex.EncodeToString(publicKey[:])),
+		Metrics: metrics.NewServerMetrics(),
 	}, node))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
 	internalMux.Handle("/metrics", promhttp.Handler())
@@ -146,32 +144,32 @@ func main() {
 }
 
 // setupSecondaryFromFlags() sets up a new sigsum secondary node from flags.
-func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, crypto.PublicKey, error) {
+func setupSecondaryFromFlags(conf *config.Config) (*secondary.Secondary, error) {
 	var s secondary.Secondary
 	var err error
 
 	// Setup logging configuration.
 	s.Signer, err = key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
-		return nil, crypto.PublicKey{}, fmt.Errorf("newLogIdentity: %v", err)
+		return nil, fmt.Errorf("newLogIdentity: %v", err)
 	}
 
 	s.Interval = conf.Interval
 
 	switch conf.Backend {
 	default:
-		return nil, crypto.PublicKey{}, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+		return nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
 	case "ephemeral":
 		s.DbClient = db.NewMemoryDb()
 	case "trillian":
 		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, conf.Timeout, db.SecondaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
-			return nil, crypto.PublicKey{}, err
+			return nil, err
 		}
 		s.DbClient = trillianClient
 	}
 	// Setup primary node configuration.
 	s.Primary = client.New(client.Config{URL: conf.Secondary.PrimaryURL})
 
-	return &s, s.Signer.Public(), nil
+	return &s, nil
 }
