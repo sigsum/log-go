@@ -99,7 +99,7 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics) {
 	pub := sm.signer.Public()
 	var witnesses []policy.Entity
-	var quorum witness.QuorumFunc
+	var quorum witness.QuorumPredicate
 	if p != nil {
 		witnesses = p.GetWitnessesWithUrl()
 		quorum = newQuorumFunc(p)
@@ -147,7 +147,7 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead
 	return nil
 }
 
-func newQuorumFunc(p *policy.Policy) witness.QuorumFunc {
+func newQuorumFunc(p *policy.Policy) witness.QuorumPredicate {
 	if p.ProcessQuorum(cosignatureQuorumProcessor{}).(bool) {
 		return nil // quorum none
 	}

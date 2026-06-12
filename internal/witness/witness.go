@@ -27,7 +27,7 @@ func (_ noMetrics) RecordCheckpointRequest(_ string, _ bool, _ error, _ time.Dur
 func (_ noMetrics) RecordQuorum(_ bool, _ time.Duration)                               {}
 
 type GetConsistencyProofFunc func(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error)
-type QuorumFunc func(cosignatures map[crypto.Hash]types.Cosignature) bool
+type QuorumPredicate func(cosignatures map[crypto.Hash]types.Cosignature) bool
 
 // Not concurrency safe, due to updates of prevSize.
 type witness struct {
@@ -97,12 +97,12 @@ type CosignatureCollector struct {
 	keyId               checkpoint.KeyId
 	getConsistencyProof GetConsistencyProofFunc
 	witnesses           []*witness
-	quorum              QuorumFunc
+	quorum              QuorumPredicate
 	metrics             WitnessMetrics
 }
 
 func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
-	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumFunc) *CosignatureCollector {
+	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumPredicate) *CosignatureCollector {
 	origin := types.SigsumCheckpointOrigin(logPublicKey)
 	if metrics == nil {
 		metrics = noMetrics{}
