@@ -742,9 +742,14 @@ function get_metrics() {
 	if [[ ${nvars[$i:ssrv_role]} == primary ]]; then
 		if grep '^witness_checkpoint_requests_total{.*status="200".*} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 			pass "got $i witness metrics"
-			return 0
 		else
 			fail "no $i witness metrics"
+			return 1
+		fi
+		if grep '^witness_checkpoint_request_latency_bucket{.*,le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness latency metrics"
+		else
+			fail "no $i witness latency metrics"
 			return 1
 		fi
 	fi
