@@ -158,6 +158,8 @@ func newQuorumFunc(p *policy.Policy) witness.QuorumPredicate {
 }
 
 // Implements policy.Processor
+//
+// Note: bool is used in all places where interface methods say 'any'.
 type cosignatureQuorumProcessor struct {
 	present map[crypto.Hash]types.Cosignature
 }
