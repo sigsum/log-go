@@ -102,7 +102,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interva
 	var quorum witness.QuorumFunc
 	if p != nil {
 		witnesses = p.GetWitnessesWithUrl()
-		quorum = makeQuorum(p)
+		quorum = newQuorumFunc(p)
 	}
 	collector := witness.NewCosignatureCollector(&pub, witnesses,
 		sm.replicationState.primary.GetConsistencyProof, metrics, quorum)
@@ -147,7 +147,7 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead
 	return nil
 }
 
-func makeQuorum(p *policy.Policy) witness.QuorumFunc {
+func newQuorumFunc(p *policy.Policy) witness.QuorumFunc {
 	if p.ProcessQuorum(cosignatureQuorumProcessor{}).(bool) {
 		return nil // quorum none
 	}
