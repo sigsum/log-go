@@ -49,10 +49,11 @@ func NewServerMetrics(logID string) server.Metrics {
 }
 
 type witnessMetrics struct {
-	checkpointRequests monitoring.Counter // number of checkpoint requests (grouped by witness and status)
+	checkpointRequests monitoring.Counter   // number of checkpoint requests (grouped by witness and status)
+	checkpointLatency  monitoring.Histogram // latency of successful checkpoint requests (200; 200 after 409 retry)
 }
 
-func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error) {
+func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error, elapsed time.Duration) {
 	name := strings.TrimPrefix(strings.TrimPrefix(witnessID, "https://"), "http://")
 	status := "200"
 	if err != nil {
@@ -63,12 +64,21 @@ func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool,
 			status = "other"
 		}
 	}
+
 	m.checkpointRequests.Inc(name, status, strconv.FormatBool(retried))
+	if err == nil {
+		m.checkpointLatency.Observe(elapsed.Seconds(), name)
+	}
 }
 
 func NewWitnessMetrics() witness.WitnessMetrics {
 	mf := prometheus.MetricFactory{}
+	// Interval 1ms to 10s, with thresholds roughly a factor
+	// 10^{1/4} \appr 1.8 apart.
+	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
+
 	return &witnessMetrics{
 		checkpointRequests: mf.NewCounter("witness_checkpoint_requests_total", "number of witness add-checkpoint requests", "witness", "status", "retried"),
+		checkpointLatency:  mf.NewHistogramWithBuckets("witness_checkpoint_request_latency", "witness add-checkpoint latency on success", buckets, "witness"),
 	}
 }

@@ -3,6 +3,7 @@ package witness
 import (
 	"context"
 	"sync"
+	"time"
 
 	"sigsum.org/sigsum-go/pkg/api"
 	"sigsum.org/sigsum-go/pkg/checkpoint"
@@ -16,12 +17,12 @@ import (
 
 // WitnessMetrics collects /add-checkpoint outcomes.
 type WitnessMetrics interface {
-	RecordCheckpointRequest(witnessID string, retried bool, err error)
+	RecordCheckpointRequest(witnessID string, retried bool, err error, elapsed time.Duration)
 }
 
 type noMetrics struct{}
 
-func (_ noMetrics) RecordCheckpointRequest(_ string, _ bool, _ error) {}
+func (_ noMetrics) RecordCheckpointRequest(_ string, _ bool, _ error, _ time.Duration) {}
 
 type GetConsistencyProofFunc func(ctx context.Context, req *requests.ConsistencyProof) (types.ConsistencyProof, error)
 
@@ -132,8 +133,9 @@ func (c *CosignatureCollector) GetCosignatures(ctx context.Context, sth *types.S
 	for i, w := range c.witnesses {
 		wg.Add(1)
 		go func(i int, w *witness) {
+			start := time.Now()
 			cs, err := w.getCosignature(ctx, &cp, c.getConsistencyProof)
-			c.metrics.RecordCheckpointRequest(w.entity.URL, cs.retried, err)
+			c.metrics.RecordCheckpointRequest(w.entity.URL, cs.retried, err, time.Since(start))
 			// On logging of errors: api.ErrorStatusCode
 			// returns the explicitly associated status
 			// code, if any, otherwise 500. To reduce
