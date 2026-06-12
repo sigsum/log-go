@@ -15,6 +15,12 @@ import (
 	"sigsum.org/sigsum-go/pkg/server"
 )
 
+const metricPrefix = "sigsum_log_go_"
+
+func newMetricFactory() prometheus.MetricFactory {
+	return prometheus.MetricFactory{Prefix: metricPrefix}
+}
+
 type serverMetrics struct {
 	LogID   string
 	reqcnt  monitoring.Counter   // number of incoming http requests
@@ -34,7 +40,7 @@ func (m *serverMetrics) OnResponse(endpoint string, statusCode int, t time.Durat
 }
 
 func NewServerMetrics(logID string) server.Metrics {
-	mf := prometheus.MetricFactory{}
+	mf := newMetricFactory()
 	// Interval 1ms to 10s, with thresholds roughly a factor
 	// 10^{1/4} \appr 1.8 apart.
 	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
@@ -81,7 +87,7 @@ func (m *witnessMetrics) RecordQuorum(haveQuorum bool, d time.Duration) {
 }
 
 func NewWitnessMetrics() witness.WitnessMetrics {
-	mf := prometheus.MetricFactory{}
+	mf := newMetricFactory()
 	// Interval 1ms to 10s, with thresholds roughly a factor
 	// 10^{1/4} \appr 1.8 apart.
 	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
