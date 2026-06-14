@@ -22,9 +22,9 @@ func newMetricFactory() prometheus.MetricFactory {
 }
 
 type serverMetrics struct {
-	reqcnt  monitoring.Counter   // number of incoming http requests
-	rspcnt  monitoring.Counter   // number of valid http responses
-	latency monitoring.Histogram // request-response latency
+	reqcnt   monitoring.Counter   // number of incoming http requests
+	rspcnt   monitoring.Counter   // number of valid http responses
+	duration monitoring.Histogram // request-response duration
 }
 
 func (m *serverMetrics) OnRequest(endpoint string) {
@@ -34,7 +34,7 @@ func (m *serverMetrics) OnRequest(endpoint string) {
 func (m *serverMetrics) OnResponse(endpoint string, statusCode int, t time.Duration) {
 	sc := fmt.Sprintf("%d", statusCode)
 	m.rspcnt.Inc(endpoint, sc)
-	m.latency.Observe(t.Seconds(), endpoint, sc)
+	m.duration.Observe(t.Seconds(), endpoint, sc)
 }
 
 func NewServerMetrics() server.Metrics {
@@ -44,18 +44,18 @@ func NewServerMetrics() server.Metrics {
 	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
 
 	return &serverMetrics{
-		reqcnt: mf.NewCounter("http_req", "number of http requests", "endpoint"),
-		rspcnt: mf.NewCounter("http_rsp", "number of http requests", "endpoint", "status"),
-		latency: mf.NewHistogramWithBuckets("http_latency", "http request-response latency",
+		reqcnt: mf.NewCounter("http_requests_total", "number of http requests", "endpoint"),
+		rspcnt: mf.NewCounter("http_responses_total", "number of http responses", "endpoint", "status"),
+		duration: mf.NewHistogramWithBuckets("http_request_duration_seconds", "http request-response durations",
 			buckets, "endpoint", "status"),
 	}
 }
 
 type witnessMetrics struct {
 	checkpointRequests monitoring.Counter   // number of checkpoint requests (grouped by witness and status)
-	checkpointLatency  monitoring.Histogram // latency of successful checkpoint requests (200; 200 after 409 retry)
+	checkpointDuration monitoring.Histogram // duration of successful checkpoint requests (200; 200 after 409 retry)
 	quorum             monitoring.Counter   // number of witness quorum attempts (grouped by success/failure)
-	quorumLatency      monitoring.Histogram // latency to reach quorum (not recorded if quorum is not reached)
+	quorumDuration     monitoring.Histogram // duration to reach quorum (not recorded if quorum is not reached)
 }
 
 func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error, elapsed time.Duration) {
@@ -72,14 +72,14 @@ func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool,
 
 	m.checkpointRequests.Inc(name, status, strconv.FormatBool(retried))
 	if err == nil {
-		m.checkpointLatency.Observe(elapsed.Seconds(), name)
+		m.checkpointDuration.Observe(elapsed.Seconds(), name)
 	}
 }
 
 func (m *witnessMetrics) RecordQuorum(haveQuorum bool, d time.Duration) {
 	m.quorum.Inc(strconv.FormatBool(haveQuorum))
 	if haveQuorum {
-		m.quorumLatency.Observe(d.Seconds())
+		m.quorumDuration.Observe(d.Seconds())
 	}
 }
 
@@ -91,8 +91,8 @@ func NewWitnessMetrics() witness.WitnessMetrics {
 
 	return &witnessMetrics{
 		checkpointRequests: mf.NewCounter("witness_checkpoint_requests_total", "number of witness add-checkpoint requests", "witness", "status", "retried"),
-		checkpointLatency:  mf.NewHistogramWithBuckets("witness_checkpoint_request_latency", "witness add-checkpoint latency on success", buckets, "witness"),
-		quorum:             mf.NewCounter("witness_quorum_total", "number of witness quorum attempts", "status"),
-		quorumLatency:      mf.NewHistogramWithBuckets("witness_quorum_latency", "witness quorum latency", buckets),
+		checkpointDuration: mf.NewHistogramWithBuckets("witness_checkpoint_request_duration_seconds", "witness add-checkpoint request durations on success", buckets, "witness"),
+		quorum:             mf.NewCounter("witness_quorum_total", "number of witness quorum attempts", "success"),
+		quorumDuration:     mf.NewHistogramWithBuckets("witness_quorum_duration_seconds", "duration to reach witness quorum", buckets),
 	}
 }

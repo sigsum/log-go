@@ -18,7 +18,7 @@ are not documented here.
 The following HTTP server metrics are exposed by both primary and
 secondary nodes.
 
-### `sigsum_log_go_http_req`
+### `sigsum_log_go_http_requests_total`
 
 Counter for incoming HTTP requests.
 
@@ -26,7 +26,7 @@ Labels:
 
 1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
-### `sigsum_log_go_http_rsp`
+### `sigsum_log_go_http_responses_total`
 
 Counter for HTTP responses.
 
@@ -36,9 +36,9 @@ Labels:
 
 2. `status`: HTTP response status code.
 
-### `sigsum_log_go_http_latency`
+### `sigsum_log_go_http_request_duration_seconds`
 
-Histogram for HTTP request-response latency, in seconds.
+Histogram for HTTP request-response durations, in seconds.
 
 Labels:
 
@@ -67,13 +67,14 @@ Labels:
 3. `retried`: `true` if the log retried with a new add-checkpoint
    request as a result of seeing HTTP 409 Conflict, otherwise `false`.
 
-### `sigsum_log_go_witness_checkpoint_request_latency`
+### `sigsum_log_go_witness_checkpoint_request_duration_seconds`
 
-Histogram for successful witness add-checkpoint request latency, in
+Histogram for successful witness add-checkpoint request durations, in
 seconds. Failed requests are not recorded in this histogram.
 
 **Note:** success includes 200 OK responses, but also 200-after-409.
-Latency is end-to-end, i.e., the time to get the actual cosignature.
+Each duration is end-to-end, i.e., the time to get the actual
+cosignature.
 
 Labels:
 
@@ -87,10 +88,10 @@ satisfy the configured quorum (if any).
 
 Labels:
 
-1. `status`: `true` if the primary reached witness quorum, otherwise
+1. `success`: `true` if the primary reached witness quorum, otherwise
    `false`.
 
-### `sigsum_log_go_witness_quorum_latency`
+### `sigsum_log_go_witness_quorum_duration_seconds`
 
-Histogram for the time needed to reach witness quorum, in seconds. This
-metric is recorded only for successful quorum attempts.
+Histogram of durations needed to reach witness quorum, in seconds. This metric
+is recorded only for successful quorum attempts.

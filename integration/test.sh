@@ -731,8 +731,8 @@ function get_metrics() {
 	info "Querying metrics for $i"
 	curl -s ${nvars[$i:metrics_url]} > ${nvars[$i:log_dir]}/metrics
 	# Check that metrics include measurement of at least one
-	# get-*tree-head request, with latency up to 1s.
-	if grep '^sigsum_log_go_http_latency_bucket{endpoint="get-[^"]*tree-head",status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+	# get-*tree-head request, with duration up to 1s.
+	if grep '^sigsum_log_go_http_request_duration_seconds_bucket{endpoint="get-[^"]*tree-head",status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 		pass "got $i metrics"
 	else
 		fail "no $i metrics"
@@ -746,22 +746,22 @@ function get_metrics() {
 			fail "no $i witness checkpoint metrics"
 			return 1
 		fi
-		if grep '^sigsum_log_go_witness_checkpoint_request_latency_bucket{.*,le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
-			pass "got $i witness checkpoint latency metrics"
+		if grep '^sigsum_log_go_witness_checkpoint_request_duration_seconds_bucket{.*,le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness checkpoint duration metrics"
 		else
-			fail "no $i witness checkpoint latency metrics"
+			fail "no $i witness checkpoint duration metrics"
 			return 1
 		fi
-		if grep '^sigsum_log_go_witness_quorum_total{status="true"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+		if grep '^sigsum_log_go_witness_quorum_total{success="true"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 			pass "got $i witness quorum metrics"
 		else
 			fail "no $i witness quorum metrics"
 			return 1
 		fi
-		if grep '^sigsum_log_go_witness_quorum_latency_bucket{le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
-			pass "got $i witness quorum latency metrics"
+		if grep '^sigsum_log_go_witness_quorum_duration_seconds_bucket{le="10"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i witness quorum duration metrics"
 		else
-			fail "no $i witness quorum latency metrics"
+			fail "no $i witness quorum duration metrics"
 			return 1
 		fi
 	fi
