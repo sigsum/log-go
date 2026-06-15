@@ -764,6 +764,14 @@ function get_metrics() {
 			fail "no $i witness quorum duration metrics"
 			return 1
 		fi
+
+		# Also check that the primary's metric endpoint labels don't have a trailing "/"
+		if grep '^sigsum_log_go_http_request_duration_seconds_bucket{endpoint="get-consistency-proof",status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+			pass "got $i metrics get-consistency-proof without trailing slash"
+		else
+			fail "no $i metrics get-consistency-proof without trailing slash"
+			return 1
+		fi
 	fi
 	return 0
 }

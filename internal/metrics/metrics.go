@@ -28,13 +28,18 @@ type serverMetrics struct {
 }
 
 func (m *serverMetrics) OnRequest(endpoint string) {
-	m.reqcnt.Inc(endpoint)
+	m.reqcnt.Inc(endpointLabel(endpoint))
 }
 
 func (m *serverMetrics) OnResponse(endpoint string, statusCode int, t time.Duration) {
 	sc := fmt.Sprintf("%d", statusCode)
-	m.rspcnt.Inc(endpoint, sc)
-	m.duration.Observe(t.Seconds(), endpoint, sc)
+	el := endpointLabel(endpoint)
+	m.rspcnt.Inc(el, sc)
+	m.duration.Observe(t.Seconds(), el, sc)
+}
+
+func endpointLabel(endpoint string) string {
+	return strings.TrimSuffix(endpoint, "/")
 }
 
 func NewServerMetrics() server.Metrics {
