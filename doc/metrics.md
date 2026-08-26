@@ -18,23 +18,19 @@ are not documented here.
 The following HTTP server metrics are exposed by both primary and
 secondary nodes.
 
+### `sigsum_log_go_http_in_flight_requests`
+
+Gauge of the current number of HTTP requests being served.
+
 ### `sigsum_log_go_http_requests_total`
 
 Counter for incoming HTTP requests.
 
 Labels:
 
-1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
+1. `code`: HTTP response status code.
 
-### `sigsum_log_go_http_responses_total`
-
-Counter for HTTP responses.
-
-Labels:
-
-1. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
-
-2. `status`: HTTP response status code.
+2. `endpoint`: HTTP endpoint handling the request, e.g., "get-tree-head".
 
 ### `sigsum_log_go_http_request_duration_seconds`
 
@@ -42,9 +38,9 @@ Histogram for HTTP request-response durations, in seconds.
 
 Labels:
 
-1. `endpoint`: HTTP endpoint handling the request.
+1. `code`: HTTP response status code.
 
-2. `status`: HTTP response status code.
+2. `endpoint`: HTTP endpoint handling the request.
 
 ## Witness metrics
 

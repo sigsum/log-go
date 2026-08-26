@@ -2,65 +2,105 @@ package metrics
 
 import (
 	"errors"
-	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/trillian/monitoring"
-	"github.com/google/trillian/monitoring/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/witness"
 	"sigsum.org/sigsum-go/pkg/api"
-	"sigsum.org/sigsum-go/pkg/server"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
-const metricPrefix = "sigsum_log_go_"
-
-func newMetricFactory() prometheus.MetricFactory {
-	return prometheus.MetricFactory{Prefix: metricPrefix}
+type ServerMetrics struct {
+	reqInFlight prometheus.Gauge
+	reqCount    *prometheus.CounterVec
+	reqDuration *prometheus.HistogramVec
 }
 
-type serverMetrics struct {
-	reqcnt   monitoring.Counter   // number of incoming http requests
-	rspcnt   monitoring.Counter   // number of valid http responses
-	duration monitoring.Histogram // request-response duration
-}
-
-func (m *serverMetrics) OnRequest(endpoint string) {
-	m.reqcnt.Inc(endpointLabel(endpoint))
-}
-
-func (m *serverMetrics) OnResponse(endpoint string, statusCode int, t time.Duration) {
-	sc := fmt.Sprintf("%d", statusCode)
-	el := endpointLabel(endpoint)
-	m.rspcnt.Inc(el, sc)
-	m.duration.Observe(t.Seconds(), el, sc)
-}
-
-func endpointLabel(endpoint string) string {
-	return strings.TrimSuffix(endpoint, "/")
-}
-
-func NewServerMetrics() server.Metrics {
-	mf := newMetricFactory()
-	// Interval 1ms to 10s, with thresholds roughly a factor
-	// 10^{1/4} \appr 1.8 apart.
-	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
-
-	return &serverMetrics{
-		reqcnt: mf.NewCounter("http_requests_total", "number of http requests", "endpoint"),
-		rspcnt: mf.NewCounter("http_responses_total", "number of http responses", "endpoint", "status"),
-		duration: mf.NewHistogramWithBuckets("http_request_duration_seconds", "http request-response durations",
-			buckets, "endpoint", "status"),
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		reqInFlight: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "http_in_flight_requests",
+				Help: "Current number of HTTP requests being served.",
+			},
+		),
+		reqCount: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total number of HTTP requests served.",
+			},
+			[]string{"endpoint", "code"},
+		),
+		reqDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "HTTP request serving latencies in seconds.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"endpoint", "code"},
+		),
 	}
+	reg.MustRegister(m.reqInFlight, m.reqCount, m.reqDuration)
+
+	return m
+}
+
+func (m *ServerMetrics) Decorator(next http.Handler, endpoint types.Endpoint) http.Handler {
+	labels := prometheus.Labels{"endpoint": strings.TrimSuffix(string(endpoint), "/")}
+	chain := next
+	chain = promhttp.InstrumentHandlerCounter(m.reqCount.MustCurryWith(labels), chain)
+	chain = promhttp.InstrumentHandlerDuration(m.reqDuration.MustCurryWith(labels), chain)
+	chain = promhttp.InstrumentHandlerInFlight(m.reqInFlight, chain)
+	return chain
 }
 
 type witnessMetrics struct {
-	checkpointRequests monitoring.Counter   // number of checkpoint requests (grouped by witness and status)
-	checkpointDuration monitoring.Histogram // duration of successful checkpoint requests (200; 200 after 409 retry)
-	quorum             monitoring.Counter   // number of witness quorum attempts (grouped by success/failure)
-	quorumDuration     monitoring.Histogram // duration to reach quorum (not recorded if quorum is not reached)
+	checkpointRequests *prometheus.CounterVec   // number of checkpoint requests (grouped by witness and status)
+	checkpointDuration *prometheus.HistogramVec // duration of successful checkpoint requests (200; 200 after 409 retry)
+	quorum             *prometheus.CounterVec   // number of witness quorum attempts (grouped by success/failure)
+	quorumDuration     prometheus.Histogram     // duration to reach quorum (not recorded if quorum is not reached)
+}
+
+func NewWitnessMetrics(reg prometheus.Registerer) witness.WitnessMetrics {
+	m := &witnessMetrics{
+		checkpointRequests: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "witness_checkpoint_requests_total",
+				Help: "Total number of witness add-checkpoint requests.",
+			},
+			[]string{"witness", "status", "retried"},
+		),
+		checkpointDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "witness_checkpoint_request_duration_seconds",
+				Help:    "Witness add-checkpoint request durations on success.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"witness"},
+		),
+		quorum: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "witness_quorum_total",
+				Help: "Total number of witness quorum attempts.",
+			},
+			[]string{"success"},
+		),
+		quorumDuration: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Name:    "witness_quorum_duration_seconds",
+				Help:    "Duration to reach witness quorum.",
+				Buckets: prometheus.DefBuckets,
+			},
+		),
+	}
+	reg.MustRegister(m.checkpointRequests, m.checkpointDuration, m.quorum, m.quorumDuration)
+
+	return m
 }
 
 func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool, err error, elapsed time.Duration) {
@@ -75,29 +115,15 @@ func (m *witnessMetrics) RecordCheckpointRequest(witnessID string, retried bool,
 		}
 	}
 
-	m.checkpointRequests.Inc(name, status, strconv.FormatBool(retried))
+	m.checkpointRequests.WithLabelValues(name, status, strconv.FormatBool(retried)).Inc()
 	if err == nil {
-		m.checkpointDuration.Observe(elapsed.Seconds(), name)
+		m.checkpointDuration.WithLabelValues(name).Observe(elapsed.Seconds())
 	}
 }
 
 func (m *witnessMetrics) RecordQuorum(haveQuorum bool, d time.Duration) {
-	m.quorum.Inc(strconv.FormatBool(haveQuorum))
+	m.quorum.WithLabelValues(strconv.FormatBool(haveQuorum)).Inc()
 	if haveQuorum {
 		m.quorumDuration.Observe(d.Seconds())
-	}
-}
-
-func NewWitnessMetrics() witness.WitnessMetrics {
-	mf := newMetricFactory()
-	// Interval 1ms to 10s, with thresholds roughly a factor
-	// 10^{1/4} \appr 1.8 apart.
-	buckets := []float64{1e-3, 2e-3, 3e-3, 6e-3, 10e-3, 20e-3, 30e-3, 60e-3, 0.1, 0.2, 0.3, 0.6, 1, 2, 3, 6, 10}
-
-	return &witnessMetrics{
-		checkpointRequests: mf.NewCounter("witness_checkpoint_requests_total", "number of witness add-checkpoint requests", "witness", "status", "retried"),
-		checkpointDuration: mf.NewHistogramWithBuckets("witness_checkpoint_request_duration_seconds", "witness add-checkpoint request durations on success", buckets, "witness"),
-		quorum:             mf.NewCounter("witness_quorum_total", "number of witness quorum attempts", "success"),
-		quorumDuration:     mf.NewHistogramWithBuckets("witness_quorum_duration_seconds", "duration to reach witness quorum", buckets),
 	}
 }

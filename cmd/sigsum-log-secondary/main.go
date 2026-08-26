@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/pborman/getopt/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/config"
@@ -25,6 +27,8 @@ import (
 	"sigsum.org/sigsum-go/pkg/log"
 	"sigsum.org/sigsum-go/pkg/server"
 )
+
+const metricPrefix = "sigsum_log_go_"
 
 func ParseFlags(c *config.Config) {
 	help := false
@@ -79,6 +83,11 @@ func main() {
 		log.Fatal("setup secondary: %v", err)
 	}
 
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	reg.MustRegister(collectors.NewGoCollector())
+	sigsumReg := prometheus.WrapRegistererWithPrefix(metricPrefix, reg)
+
 	// wait for clean-up before exit
 	var wg sync.WaitGroup
 	defer wg.Wait()
@@ -95,17 +104,19 @@ func main() {
 		cancel() // must have periodic running
 	}()
 
+	srvMetrics := metrics.NewServerMetrics(sigsumReg)
+
 	// No external endpoints but we want to return 404.
 	extserver := &http.Server{Addr: conf.ExternalEndpoint, Handler: http.NewServeMux()}
 	// Register HTTP endpoints.
 	internalMux := http.NewServeMux()
 	internalMux.Handle("/", server.NewSecondary(&server.Config{
-		Prefix:  conf.Prefix,
-		Timeout: conf.Timeout,
-		Metrics: metrics.NewServerMetrics(),
+		Prefix:           conf.Prefix,
+		Timeout:          conf.Timeout,
+		HandlerDecorator: srvMetrics.Decorator,
 	}, node))
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
-	internalMux.Handle("/metrics", promhttp.Handler())
+	internalMux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
 
 	wg.Add(1)

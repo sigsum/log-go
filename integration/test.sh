@@ -732,7 +732,7 @@ function get_metrics() {
 	curl -s ${nvars[$i:metrics_url]} > ${nvars[$i:log_dir]}/metrics
 	# Check that metrics include measurement of at least one
 	# get-*tree-head request, with duration up to 1s.
-	if grep '^sigsum_log_go_http_request_duration_seconds_bucket{endpoint="get-[^"]*tree-head",status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+	if grep '^sigsum_log_go_http_request_duration_seconds_bucket{code="200",endpoint="get-[^"]*tree-head",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 		pass "got $i metrics"
 	else
 		fail "no $i metrics"
@@ -766,7 +766,7 @@ function get_metrics() {
 		fi
 
 		# Also check that the primary's metric endpoint labels don't have a trailing "/"
-		if grep '^sigsum_log_go_http_request_duration_seconds_bucket{endpoint="get-consistency-proof",status="200",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
+		if grep '^sigsum_log_go_http_request_duration_seconds_bucket{code="200",endpoint="get-consistency-proof",le="1"} [1-9][0-9]*$' >/dev/null ${nvars[$i:log_dir]}/metrics; then
 			pass "got $i metrics get-consistency-proof without trailing slash"
 		else
 			fail "no $i metrics get-consistency-proof without trailing slash"
