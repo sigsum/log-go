@@ -52,11 +52,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 func (m *ServerMetrics) Decorator(next http.Handler, endpoint types.Endpoint) http.Handler {
 	labels := prometheus.Labels{"endpoint": strings.TrimSuffix(string(endpoint), "/")}
-	chain := next
-	chain = promhttp.InstrumentHandlerCounter(m.reqCount.MustCurryWith(labels), chain)
-	chain = promhttp.InstrumentHandlerDuration(m.reqDuration.MustCurryWith(labels), chain)
-	chain = promhttp.InstrumentHandlerInFlight(m.reqInFlight, chain)
-	return chain
+	next = promhttp.InstrumentHandlerCounter(m.reqCount.MustCurryWith(labels), next)
+	next = promhttp.InstrumentHandlerDuration(m.reqDuration.MustCurryWith(labels), next)
+	return promhttp.InstrumentHandlerInFlight(m.reqInFlight, next)
 }
 
 type witnessMetrics struct {
