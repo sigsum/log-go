@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/pborman/getopt/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/config"
@@ -32,6 +34,8 @@ import (
 	"sigsum.org/sigsum-go/pkg/server"
 	token "sigsum.org/sigsum-go/pkg/submit-token"
 )
+
+const metricPrefix = "sigsum_log_go_"
 
 func ParseFlags(c *config.Config) {
 	help := false
@@ -87,6 +91,11 @@ func main() {
 	moduleVersion := version.ModuleVersion()
 	log.Info("log-go version: %s", moduleVersion)
 
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	reg.MustRegister(collectors.NewGoCollector())
+	sigsumReg := prometheus.WrapRegistererWithPrefix(metricPrefix, reg)
+
 	policy, err := configuredPolicy(conf.PolicyFile)
 	if err != nil {
 		log.Fatal("Failed witness configuration: %v", err)
@@ -110,10 +119,12 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		node.Stateman.Run(ctx, policy, conf.Interval, metrics.NewWitnessMetrics())
+		node.Stateman.Run(ctx, policy, conf.Interval, metrics.NewWitnessMetrics(sigsumReg))
 		log.Debug("state manager shutdown")
 		cancel() // must have state manager running
 	}()
+
+	srvMetrics := metrics.NewServerMetrics(sigsumReg)
 
 	externalMux := http.NewServeMux()
 	// Register HTTP endpoints.
@@ -126,9 +137,9 @@ func main() {
 		pattern = "/" + conf.Prefix + "/"
 	}
 	externalMux.Handle(pattern, server.NewLog(&server.Config{
-		Prefix:  conf.Prefix,
-		Timeout: conf.Timeout,
-		Metrics: metrics.NewServerMetrics(),
+		Prefix:           conf.Prefix,
+		Timeout:          conf.Timeout,
+		HandlerDecorator: srvMetrics.Decorator,
 	}, node))
 
 	infoPage := []byte(fmt.Sprintf(`
@@ -167,7 +178,7 @@ func main() {
 		node.GetLeavesInternal))
 
 	log.Debug("adding prometheus handler to internal mux, on path: /metrics")
-	internalMux.Handle("/metrics", promhttp.Handler())
+	internalMux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	intserver := &http.Server{Addr: conf.InternalEndpoint, Handler: internalMux}
 
 	wg.Add(1)
