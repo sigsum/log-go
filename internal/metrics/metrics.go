@@ -21,6 +21,8 @@ type ServerMetrics struct {
 	reqDuration *prometheus.HistogramVec
 }
 
+// NewServerMetrics creates and registers server metrics.
+// It panics if any metric is already registered with reg.
 func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	m := &ServerMetrics{
 		reqInFlight: prometheus.NewGauge(
@@ -64,6 +66,8 @@ type witnessMetrics struct {
 	quorumDuration     prometheus.Histogram     // duration to reach quorum (not recorded if quorum is not reached)
 }
 
+// NewWitnessMetrics creates and registers witness metrics.
+// It panics if any metric is already registered with reg.
 func NewWitnessMetrics(reg prometheus.Registerer) witness.WitnessMetrics {
 	m := &witnessMetrics{
 		checkpointRequests: prometheus.NewCounterVec(
