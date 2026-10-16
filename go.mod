@@ -2,7 +2,7 @@ module sigsum.org/log-go
 
 // We don't want to depend on golang version later than is available
 // in debian's stable or backports repos.
-go 1.25.0
+go 1.27
 
 require (
 	// A fork of github.com/dchest/safefile
@@ -10,12 +10,12 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/google/trillian v1.7.3
-	github.com/pborman/getopt/v2 v2.1.0
+	github.com/pborman/getopt/v2 v2.2.0
 	github.com/prometheus/client_golang v1.23.2
 	// Note that GRPC releases don't follow semantic versioning.
 	// It has to be updated carefully in sync with trillian.
 	google.golang.org/grpc v1.79.3
-	sigsum.org/sigsum-go v0.15.0-dev.0
+	sigsum.org/sigsum-go v1.0.0
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	cloud.google.com/go/spanner v1.89.0 // indirect
 	cloud.google.com/go/trace v1.11.7 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14 // indirect
-	filippo.io/edwards25519 v1.1.1 // indirect
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.6.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.5 // indirect
@@ -109,16 +109,16 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/mod v0.38.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.48.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/api v0.272.0 // indirect
 	google.golang.org/genproto v0.0.0-20260217215200-42d3e9bedb6d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5 // indirect
