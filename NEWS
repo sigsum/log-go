@@ -1,3 +1,27 @@
+NEWS for log-go v0.16.0
+
+	This release of the Sigsum log server fixes a log-poisoning
+	issue, and overhauls the available metrics.
+
+	Security improvement:
+
+	* The log server now rejects add-leaf request where the
+	  submitter's public key is of low-order. This makes
+	  log-poisoning harder, since with a low-order key it's easy
+	  to generate a signature with 32 arbitrary chosen bytes in
+	  the signature.
+
+	Incompatible changes:
+
+	* Requires go-1.27 or later.
+
+	* Extended and reworked prometheus metrics. See doc/metrics.md
+	  for available metrics.
+
+	Miscellaneous:
+
+	* Reduced the default publishing interval from 30s to 10s.
+
 NEWS for log-go v0.15.2
 
 	This is minor release fixing a few issues found since the
