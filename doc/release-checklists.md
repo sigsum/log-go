@@ -11,8 +11,9 @@ log-go software.
   - [ ] Check that the README, RELEASES.md and MAINTAINERS files are
         up-to-date.
   - [ ] After finalizing the release documentation, in particular, the
-      NEWS file, create a new tag, usually incrementing the third
-      number from what was used for release candidates being tested.
+        NEWS file, create a new tag, usually dropping the -dev.X
+        suffix from the tag(s) used for release candidates being
+        tested.
 
 ## NEWS file checklist
 

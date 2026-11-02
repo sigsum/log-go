@@ -47,21 +47,27 @@ tandem: running nodes on different software releases is not tested.
 
 ## Expected changes in upcoming releases
 
-  1. There are no planned changes to the wire protocol between log
-     clients and log servers. The [sigsum v1 protocol][] is used. This
-     also fully specifies the cryptographic details, such as precisely
-     which bytes are being signed, and intended meaning, for each type
-     of signature. Any breaking changes would have to be considered
-     *very carefully* and be *coordinated well in advance*.
+  1. There are no planned breaking changes to the [sigsum v1
+     protocol][] between log clients and log servers. This also fully
+     specifies the cryptographic details, such as precisely which
+     bytes are being signed, and intended meaning, for each type of
+     signature. Any breaking changes would have to be considered *very
+     carefully* and be *coordinated well in advance*. However,
+     extensions to support publication of checkpoint files, including
+     mldsa witness cosignatures, are under consideration.
   2. There are no planned changes to the wire protocol between log
      servers and witnesses. The [tlog-witness protocol][] is used.
   3. Changes are likely to other operational aspects of the log
      server, e.g., configuration interfaces, available metrics, and
      storage of the log server's state. Such changes, as well as the
      migration procedure, will be documented in the [NEWS file](./NEWS).
+  4. Protocols for Sigsum v2 are in development. When implemented, the
+     Sigsum v2 log server will likely use a new incompatible format
+     for log entries, with no upgrade path for existing Sigsum v1 log
+     servers.
 
 [sigsum v1 protocol]: https://git.glasklar.is/sigsum/project/documentation/-/blob/log.md-release-v1.0.0/log.md
-[tlog-witness prococol]: https://github.com/C2SP/C2SP/blob/tlog-checkpoint/v1.0.0-rc.1/tlog-witness.md.
+[tlog-witness protocol]: https://c2sp.org/tlog-witness@v1.0.0
 
 ## Release cycle
 
