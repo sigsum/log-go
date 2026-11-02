@@ -48,6 +48,8 @@ func ParseFlags(c *config.Config) {
 	getopt.FlagLong(&c.Primary.SecondaryPubkeyFile, "secondary-pubkey-file", 0, "Public key for secondary node.", "file")
 	getopt.FlagLong(&c.Primary.SthFile, "sth-file", 0, "File where latest published STH is being stored.", "file")
 	getopt.FlagLong(&c.Primary.MaxRange, "max-range", 0, "Maximum number of leaves that can be retrieved in a single request.")
+	getopt.FlagLong(&c.Primary.MTLSCertFile, "mtls-cert", 0, "mTLS certificate chain for outgoing HTTPS witness requests (PEM).", "file")
+	getopt.FlagLong(&c.Primary.MTLSKeyFile, "mtls-key", 0, "mTLS private key for outgoing HTTPS witness requests (PEM).", "file")
 	getopt.FlagLong(&help, "help", '?', "Display help.")
 	getopt.FlagLong(&versionFlag, "version", 0, "Display server version.")
 	getopt.Parse()
@@ -218,6 +220,10 @@ func main() {
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
 func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.PublicKey, error) {
 	var p primary.Primary
+	httpClient, err := conf.Primary.HTTPClient()
+	if err != nil {
+		return nil, crypto.PublicKey{}, err
+	}
 
 	// Setup logging configuration.
 	signer, err := key.ReadPrivateKeyFile(conf.KeyFile)
@@ -253,7 +259,7 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.Public
 
 	// Setup state manager.
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, conf.Timeout,
-		secondary, &secondaryPub, conf.Primary.SthFile)
+		secondary, &secondaryPub, conf.Primary.SthFile, httpClient)
 	if err != nil {
 		return nil, crypto.PublicKey{}, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}

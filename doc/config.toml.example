@@ -19,5 +19,11 @@ secondary-url = ""
 secondary-pubkey-file = ""
 sth-file = "/var/lib/sigsum-log/sth"
 
+# Optional mTLS configuration in PEM format for HTTPS witness requests.
+# Note: only supplied to witnesses that request mTLS in the TLS handshake.
+# Note: if cert is a chain, keep it ordered with the leaf first in the file.
+mtls-cert = ""
+mtls-key = ""
+
 [secondary]
 primary-url = ""
