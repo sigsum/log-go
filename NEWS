@@ -3,6 +3,13 @@ NEWS for log-go v0.16.0
 	This release of the Sigsum log server fixes a log-poisoning
 	issue, and overhauls the available metrics.
 
+	This release has been tested to work together with:
+
+	* Sigsum tools (most importantly sigsum-submit and
+	  sigsum-verify, as well as sigsum-witness)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tags v1.0.0
+	  as well as v0.14.1.
+
 	Security improvement:
 
 	* The log server now rejects add-leaf request where the
