@@ -25,3 +25,10 @@ There are three modes of running the tests, basic mode `./test.sh`,
 extensive mode testing failover, `./test.sh --extended`, and ephemeral
 mode which doesn't store any data to disk and doesn't use trillian,
 `./test.sh --ephemeral`.
+
+There's also a separate mTLS test that only needs the Go things in this
+repository and OpenSSL (for various cert generation), run as follows:
+
+```sh
+./test-mtls.sh
+```
