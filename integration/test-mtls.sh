@@ -23,17 +23,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+GOBIN=$(pwd)/bin go install ../cmd/sigsum-log-primary
+GOBIN=$(pwd)/bin go install ../cmd/sigsum-mktree
+GOBIN=$(pwd)/bin go install sigsum.org/sigsum-go/cmd/sigsum-key
+GOBIN=$(pwd)/bin go install ./mtls-witness
+
 rm -rf tmp
 mkdir tmp
 cd tmp
 
-go build -o ../bin/primary ../../cmd/sigsum-log-primary
-go build -o ../bin/mktree ../../cmd/sigsum-mktree
-go build -o ../bin/sigsum-key sigsum.org/sigsum-go/cmd/sigsum-key
-go -C ../mtls-witness build -o ../bin/mtls-witness .
-
 ../bin/sigsum-key generate -o log.key
-../bin/mktree --sth-file=sth
+../bin/sigsum-mktree --sth-file=sth
 
 # Witness key is not used, so it's hardcoded to a dummy value
 cat >policy <<EOF
@@ -82,7 +82,7 @@ openssl x509 -req -in server.csr \
 witness_pid=$!
 
 # Start primary which will POST /add-checkpoint to our mock witness with mTLS
-SSL_CERT_FILE=root.crt ../bin/primary \
+SSL_CERT_FILE=root.crt ../bin/sigsum-log-primary \
     --backend=ephemeral \
     --key-file=log.key \
     --sth-file=sth \
