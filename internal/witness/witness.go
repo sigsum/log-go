@@ -2,6 +2,7 @@ package witness
 
 import (
 	"context"
+	"net/http"
 	"sync"
 	"time"
 
@@ -39,9 +40,9 @@ type witness struct {
 	prevError error
 }
 
-func newWitness(w *policy.Entity) *witness {
+func newWitness(w *policy.Entity, httpClient *http.Client) *witness {
 	return &witness{
-		client:   client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server"}),
+		client:   client.New(client.Config{URL: w.URL, UserAgent: "Sigsum log-go server", HTTPClient: httpClient}),
 		entity:   *w,
 		keyHash:  crypto.HashBytes(w.PublicKey[:]),
 		prevSize: 0,
@@ -102,7 +103,7 @@ type CosignatureCollector struct {
 }
 
 func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
-	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumPredicate) *CosignatureCollector {
+	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumPredicate, httpClient *http.Client) *CosignatureCollector {
 	origin := types.SigsumCheckpointOrigin(logPublicKey)
 	if metrics == nil {
 		metrics = noMetrics{}
@@ -117,7 +118,7 @@ func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.
 	}
 	for _, w := range witnesses {
 		collector.witnesses = append(collector.witnesses,
-			newWitness(&w))
+			newWitness(&w, httpClient))
 	}
 	return &collector
 }

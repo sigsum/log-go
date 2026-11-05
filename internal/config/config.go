@@ -1,8 +1,10 @@
 package config
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"time"
 
@@ -19,6 +21,8 @@ type Primary struct {
 	SecondaryPubkeyFile string `toml:"secondary-pubkey-file"`
 	SthFile             string `toml:"sth-file"`
 	MaxRange            int    `toml:"max-range"`
+	MTLSCertFile        string `toml:"mtls-cert"`
+	MTLSKeyFile         string `toml:"mtls-key"`
 }
 
 // Secondary Config
@@ -114,4 +118,23 @@ func (c *Config) ServerFlags(set *getopt.Set) {
 	set.FlagLong(&c.Interval, "interval", 0, "Interval used to rotate the log's cosigned tree head.")
 	set.FlagLong(&c.LogFile, "log-file", 0, "File to write logs to, or stderr if unset.", "file")
 	set.FlagLong(&c.LogLevel, "log-level", 0, "Log level (Available options: debug, info, warning, error).", "level")
+}
+
+// HTTPClient configures optional client authentication for HTTPS witness requests.
+func (c *Primary) HTTPClient() (*http.Client, error) {
+	if c.MTLSCertFile == "" && c.MTLSKeyFile == "" {
+		return nil, nil
+	}
+	if c.MTLSCertFile == "" || c.MTLSKeyFile == "" {
+		return nil, fmt.Errorf("mtls-cert and mtls-key must both be set")
+	}
+	cert, err := tls.LoadX509KeyPair(c.MTLSCertFile, c.MTLSKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("loading TLS client certificate: %w", err)
+	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	return &http.Client{Transport: transport}, nil
 }

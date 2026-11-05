@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -96,7 +97,7 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics) {
+func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics, httpClient *http.Client) {
 	pub := sm.signer.Public()
 	var witnesses []policy.Entity
 	var quorum witness.QuorumPredicate
@@ -105,7 +106,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interva
 		quorum = newQuorumFunc(p)
 	}
 	collector := witness.NewCosignatureCollector(&pub, witnesses,
-		sm.replicationState.primary.GetConsistencyProof, metrics, quorum)
+		sm.replicationState.primary.GetConsistencyProof, metrics, quorum, httpClient)
 
 	for ctx.Err() == nil {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)

@@ -42,6 +42,19 @@ integration-ephemeral:
     paths: 
     - ./integration/tmp/
 
+integration-mtls:
+  stage: integration
+  needs: ["go-test"]
+  before_script:
+  - apt-get update
+  - apt-get install -y openssl
+  script: ./integration/test-mtls.sh
+  artifacts:
+    when: always
+    paths:
+    - ./integration/tmp/primary.log
+    - ./integration/tmp/witness.log
+
 integration-default:
   stage: integration
   needs: ["go-test"]
