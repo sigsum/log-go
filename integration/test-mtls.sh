@@ -9,16 +9,11 @@ set -euo pipefail
 cd "$(dirname "$0")"
 export SIGSUM_LOGSERVER_CONFIG=/dev/null
 primary_pid=
-witness_pid=
 
 cleanup() {
     if [[ -n "$primary_pid" ]]; then
         kill "$primary_pid" 2>/dev/null || true
         wait "$primary_pid" 2>/dev/null || true
-    fi
-    if [[ -n "$witness_pid" ]]; then
-        kill "$witness_pid" 2>/dev/null || true
-        wait "$witness_pid" 2>/dev/null || true
     fi
 }
 trap cleanup EXIT
@@ -77,10 +72,6 @@ openssl x509 -req -in server.csr \
     -CAcreateserial -days 1 -copy_extensions copy \
     -out server.crt
 
-# Start mock witness that requires mTLS for incoming add-checkpoint requests
-../bin/mtls-witness -cert server.crt -key server.key -ca root.crt 2>witness.log &
-witness_pid=$!
-
 # Start primary which will POST /add-checkpoint to our mock witness with mTLS
 SSL_CERT_FILE=root.crt ../bin/sigsum-log-primary \
     --backend=ephemeral \
@@ -93,12 +84,11 @@ SSL_CERT_FILE=root.crt ../bin/sigsum-log-primary \
     >primary.log 2>&1 &
 primary_pid=$!
 
-if ! wait "$witness_pid"; then
-    witness_pid=
+# Start mock witness that requires mTLS for incoming add-checkpoint requests
+if ! ../bin/mtls-witness -cert server.crt -key server.key -ca root.crt 2>witness.log; then
     cat primary.log witness.log >&2
     echo "FAIL: mTLS checkpoint request" >&2
     exit 1
 fi
-witness_pid=
 
 echo "PASS: mTLS checkpoint request"
