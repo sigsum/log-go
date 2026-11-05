@@ -20,7 +20,6 @@ type StateManagerSingle struct {
 	signer           crypto.Signer
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
-	httpClient       *http.Client
 
 	// Lock-protected access to tree heads. All endpoints are readers.
 	sync.RWMutex
@@ -32,7 +31,7 @@ type StateManagerSingle struct {
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
 func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
-	secondary api.Secondary, secondaryPub *crypto.PublicKey, sthFileName string, httpClient *http.Client) (*StateManagerSingle, error) {
+	secondary api.Secondary, secondaryPub *crypto.PublicKey, sthFileName string) (*StateManagerSingle, error) {
 	pub := signer.Public()
 	sthFile := sthFile{name: sthFileName}
 	startupMode, err := sthFile.Startup()
@@ -72,9 +71,8 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		panic(fmt.Sprintf("internal error, unknown startup mode %d", startupMode))
 	}
 	return &StateManagerSingle{
-		signer:     signer,
-		storeSth:   sthFile.Store,
-		httpClient: httpClient,
+		signer:   signer,
+		storeSth: sthFile.Store,
 		replicationState: ReplicationState{
 			primary:      primary,
 			secondary:    secondary,
@@ -99,7 +97,7 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 	return sm.cosignedTreeHead
 }
 
-func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics) {
+func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics, httpClient *http.Client) {
 	pub := sm.signer.Public()
 	var witnesses []policy.Entity
 	var quorum witness.QuorumPredicate
@@ -108,7 +106,7 @@ func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interva
 		quorum = newQuorumFunc(p)
 	}
 	collector := witness.NewCosignatureCollector(&pub, witnesses,
-		sm.replicationState.primary.GetConsistencyProof, metrics, quorum, sm.httpClient)
+		sm.replicationState.primary.GetConsistencyProof, metrics, quorum, httpClient)
 
 	for ctx.Err() == nil {
 		rotateCtx, _ := context.WithTimeout(ctx, interval)

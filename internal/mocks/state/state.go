@@ -6,6 +6,7 @@ package state
 
 import (
 	context "context"
+	http "net/http"
 	reflect "reflect"
 	time "time"
 
@@ -53,15 +54,15 @@ func (mr *MockStateManagerMockRecorder) CosignedTreeHead() *gomock.Call {
 }
 
 // Run mocks base method.
-func (m *MockStateManager) Run(arg0 context.Context, arg1 *policy.Policy, arg2 time.Duration, arg3 witness.WitnessMetrics) {
+func (m *MockStateManager) Run(arg0 context.Context, arg1 *policy.Policy, arg2 time.Duration, arg3 witness.WitnessMetrics, arg4 *http.Client) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3)
+	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4)
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockStateManagerMockRecorder) Run(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockStateManager)(nil).Run), arg0, arg1, arg2, arg3, arg4)
 }
 
 // SignedTreeHead mocks base method.
