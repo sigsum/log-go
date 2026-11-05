@@ -123,7 +123,7 @@ func (c *Config) ServerFlags(set *getopt.Set) {
 // HTTPClient configures optional client authentication for HTTPS witness requests.
 func (c *Primary) HTTPClient() (*http.Client, error) {
 	if c.MTLSCertFile == "" && c.MTLSKeyFile == "" {
-		return &http.Client{}, nil
+		return nil, nil
 	}
 	if c.MTLSCertFile == "" || c.MTLSKeyFile == "" {
 		return nil, fmt.Errorf("mtls-cert and mtls-key must both be set")
