@@ -27,15 +27,6 @@ rm -rf tmp
 mkdir tmp
 cd tmp
 
-../bin/sigsum-key generate -o log.key
-../bin/sigsum-mktree --sth-file=sth
-
-# Witness key is not used, so it's hardcoded to a dummy value
-cat >policy <<EOF
-witness test d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a https://127.0.0.1:7777
-quorum test
-EOF
-
 # Root CA (both for mTLS client cert and witness HTTPS cert)
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out root.key
 openssl req -new -x509 -sha256 -key root.key -out root.crt \
@@ -71,6 +62,15 @@ openssl x509 -req -in server.csr \
     -CA root.crt -CAkey root.key \
     -CAcreateserial -days 1 -copy_extensions copy \
     -out server.crt
+
+# Witness key is not used, so it's hardcoded to a dummy value
+cat >policy <<EOF
+witness test d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a https://127.0.0.1:7777
+quorum test
+EOF
+
+../bin/sigsum-key generate -o log.key
+../bin/sigsum-mktree --sth-file=sth
 
 # Start primary which will POST /add-checkpoint to our mock witness with mTLS
 SSL_CERT_FILE=root.crt ../bin/sigsum-log-primary \
