@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/submit-token"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/submit-token"
 )
 
 // This domain has the following registered rate limit key pair

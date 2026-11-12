@@ -6,11 +6,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/merkle"
-	"sigsum.org/sigsum-go/pkg/mocks/mockapi"
-	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/merkle"
+	"sigsum.org/sigsum-go/v2/pkg/mocks/mockapi"
+	"sigsum.org/sigsum-go/v2/pkg/requests"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
 func TestGetPrimaryTreeHead(t *testing.T) {
@@ -49,7 +49,7 @@ func TestGetSecondaryTreeHead(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pub, signer, err := crypto.NewKeyPair()
+	pub, signer, err := crypto.NewEd25519KeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}

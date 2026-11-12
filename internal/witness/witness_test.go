@@ -11,16 +11,16 @@ import (
 
 	"sigsum.org/log-go/internal/mocks/db"
 
-	"sigsum.org/sigsum-go/pkg/api"
-	"sigsum.org/sigsum-go/pkg/checkpoint"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/mocks/mockapi"
-	"sigsum.org/sigsum-go/pkg/policy"
-	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/api"
+	"sigsum.org/sigsum-go/v2/pkg/checkpoint"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/mocks/mockapi"
+	"sigsum.org/sigsum-go/v2/pkg/policy"
+	"sigsum.org/sigsum-go/v2/pkg/requests"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
-func testWitness(t *testing.T, ctrl *gomock.Controller) (crypto.Signer, *mockapi.MockWitness, *witness) {
+func testWitness(t *testing.T, ctrl *gomock.Controller) (*crypto.Ed25519Signer, *mockapi.MockWitness, *witness) {
 	pub, signer := mustKeyPair(t)
 	client := mockapi.NewMockWitness(ctrl)
 	return signer, client, &witness{
@@ -176,22 +176,22 @@ func TestGetCosignatures(t *testing.T) {
 	}
 }
 
-func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
+func mustKeyPair(t *testing.T) (crypto.Ed25519PublicKey, *crypto.Ed25519Signer) {
 	t.Helper()
-	pub, signer, err := crypto.NewKeyPair()
+	pub, signer, err := crypto.NewEd25519KeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
 	return pub, signer
 }
 
-func mustCosign(t *testing.T, s crypto.Signer, cp *checkpoint.Checkpoint, timestamp uint64) []checkpoint.CosignatureLine {
+func mustCosign(t *testing.T, s *crypto.Ed25519Signer, cp *checkpoint.Checkpoint, timestamp uint64) []checkpoint.CosignatureLine {
 	t.Helper()
 	cs, err := cp.Cosign(s, timestamp)
 	if err != nil {
 		t.Fatal(err)
 	}
-	publicKey := s.Public()
+	publicKey := s.Ed25519Public()
 	keyName := "example.org/witness"
 
 	return []checkpoint.CosignatureLine{
@@ -207,14 +207,14 @@ func mustCosign(t *testing.T, s crypto.Signer, cp *checkpoint.Checkpoint, timest
 }
 
 func mustSignTreehead(t *testing.T,
-	signer crypto.Signer, size uint64) checkpoint.Checkpoint {
+	signer *crypto.Ed25519Signer, size uint64) checkpoint.Checkpoint {
 	t.Helper()
 	th := types.TreeHead{Size: size}
 	sth, err := th.Sign(signer)
 	if err != nil {
 		t.Fatal(err)
 	}
-	pub := signer.Public()
+	pub := signer.Ed25519Public()
 	origin := types.SigsumCheckpointOrigin(&pub)
 
 	return checkpoint.Checkpoint{

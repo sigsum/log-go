@@ -8,16 +8,17 @@ import (
 	"time"
 
 	"sigsum.org/log-go/internal/witness"
-	"sigsum.org/sigsum-go/pkg/api"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/policy"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/api"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/log"
+	"sigsum.org/sigsum-go/v2/pkg/policy"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
 // StateManagerSingle implements a single-instance StateManagerPrimary for primary nodes
 type StateManagerSingle struct {
 	signer           crypto.Signer
+	publicKey        crypto.Ed25519PublicKey
 	storeSth         func(sth *types.SignedTreeHead) error
 	replicationState ReplicationState
 
@@ -31,8 +32,11 @@ type StateManagerSingle struct {
 // signedTreeHead.  An optional secondary node can be used to ensure that
 // a newer primary tree is not signed unless it has been replicated.
 func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout time.Duration,
-	secondary api.Secondary, secondaryPub *crypto.PublicKey, sthFileName string) (*StateManagerSingle, error) {
-	pub := signer.Public()
+	secondary api.Secondary, secondaryPub *crypto.Ed25519PublicKey, sthFileName string) (*StateManagerSingle, error) {
+	publicKey, ok := signer.Public().(*crypto.Ed25519PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("unexpected public key type: %T", signer.Public())
+	}
 	sthFile := sthFile{name: sthFileName}
 	startupMode, err := sthFile.Startup()
 	if err != nil {
@@ -42,7 +46,7 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 	var sth types.SignedTreeHead
 	switch startupMode {
 	case StartupSaved:
-		sth, err = sthFile.Load(&pub)
+		sth, err = sthFile.Load(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -71,8 +75,9 @@ func NewStateManagerSingle(primary PrimaryTree, signer crypto.Signer, timeout ti
 		panic(fmt.Sprintf("internal error, unknown startup mode %d", startupMode))
 	}
 	return &StateManagerSingle{
-		signer:   signer,
-		storeSth: sthFile.Store,
+		signer:    signer,
+		publicKey: *publicKey,
+		storeSth:  sthFile.Store,
 		replicationState: ReplicationState{
 			primary:      primary,
 			secondary:    secondary,
@@ -98,14 +103,13 @@ func (sm *StateManagerSingle) CosignedTreeHead() types.CosignedTreeHead {
 }
 
 func (sm *StateManagerSingle) Run(ctx context.Context, p *policy.Policy, interval time.Duration, metrics witness.WitnessMetrics, httpClient *http.Client) {
-	pub := sm.signer.Public()
 	var witnesses []policy.Entity
 	var quorum witness.QuorumPredicate
 	if p != nil {
 		witnesses = p.GetWitnessesWithUrl()
 		quorum = newQuorumFunc(p)
 	}
-	collector := witness.NewCosignatureCollector(&pub, witnesses,
+	collector := witness.NewCosignatureCollector(&sm.publicKey, witnesses,
 		sm.replicationState.primary.GetConsistencyProof, metrics, quorum, httpClient)
 
 	for ctx.Err() == nil {

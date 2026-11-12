@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	mocksTrillian "sigsum.org/log-go/internal/mocks/trillian"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/requests"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
 // TODO: Add TestAddSequencedLeaves
@@ -23,7 +23,7 @@ import (
 func TestAddLeaf(t *testing.T) {
 	leaf := &types.Leaf{
 		Checksum:  crypto.Hash{},
-		Signature: crypto.Signature{},
+		Signature: crypto.Ed25519Signature{},
 		KeyHash:   crypto.Hash{},
 	}
 	for _, table := range []struct {
@@ -392,12 +392,12 @@ func TestGetLeaves(t *testing.T) {
 	}
 	firstLeaf := &types.Leaf{
 		Checksum:  crypto.Hash{},
-		Signature: crypto.Signature{},
+		Signature: crypto.Ed25519Signature{},
 		KeyHash:   crypto.Hash{},
 	}
 	secondLeaf := &types.Leaf{
 		Checksum:  crypto.Hash{},
-		Signature: crypto.Signature{},
+		Signature: crypto.Ed25519Signature{},
 		KeyHash:   crypto.Hash{},
 	}
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/pkg/mocks/mockapi"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/mocks/mockapi"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
 func TestFetchLeavesFromPrimary(t *testing.T) {
