@@ -16,6 +16,7 @@ require (
 	// It has to be updated carefully in sync with trillian.
 	google.golang.org/grpc v1.83.2
 	sigsum.org/sigsum-go v1.0.0
+	sigsum.org/sigsum-go/v2 v2.0.0-dev.1
 )
 
 require (

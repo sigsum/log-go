@@ -13,12 +13,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"sigsum.org/sigsum-go/pkg/ascii"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/merkle"
-	"sigsum.org/sigsum-go/pkg/requests"
-	"sigsum.org/sigsum-go/pkg/types"
+	"sigsum.org/sigsum-go/v2/pkg/ascii"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/log"
+	"sigsum.org/sigsum-go/v2/pkg/merkle"
+	"sigsum.org/sigsum-go/v2/pkg/requests"
+	"sigsum.org/sigsum-go/v2/pkg/types"
 )
 
 // TrillianClient implements the Client interface for Trillian's gRPC backend

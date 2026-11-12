@@ -25,14 +25,14 @@ import (
 	"sigsum.org/log-go/internal/state"
 	"sigsum.org/log-go/internal/version"
 
-	"sigsum.org/sigsum-go/pkg/api"
-	"sigsum.org/sigsum-go/pkg/client"
-	"sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/key"
-	"sigsum.org/sigsum-go/pkg/log"
-	"sigsum.org/sigsum-go/pkg/policy"
-	"sigsum.org/sigsum-go/pkg/server"
-	token "sigsum.org/sigsum-go/pkg/submit-token"
+	"sigsum.org/sigsum-go/v2/pkg/api"
+	"sigsum.org/sigsum-go/v2/pkg/client"
+	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/v2/pkg/key"
+	"sigsum.org/sigsum-go/v2/pkg/log"
+	"sigsum.org/sigsum-go/v2/pkg/policy"
+	"sigsum.org/sigsum-go/v2/pkg/server"
+	token "sigsum.org/sigsum-go/v2/pkg/submit-token"
 )
 
 const metricPrefix = "sigsum_log_go_"
@@ -218,37 +218,41 @@ func main() {
 }
 
 // setupPrimaryFromFlags() sets up a new sigsum primary node from flags.
-func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.PublicKey, *http.Client, error) {
+func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.Ed25519PublicKey, *http.Client, error) {
 	var p primary.Primary
 
 	// Setup logging configuration.
 	signer, err := key.ReadPrivateKeyFile(conf.KeyFile)
 	if err != nil {
-		return nil, crypto.PublicKey{}, nil, fmt.Errorf("failed reading private key: %v", err)
+		return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("failed reading private key: %v", err)
 	}
 	publicKey := signer.Public()
+	publicEd25519, ok := publicKey.(*crypto.Ed25519PublicKey)
+	if !ok {
+		return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("unexpected key type: %T", publicKey)
+	}
 	p.MaxRange = conf.MaxRange
 
 	switch conf.Backend {
 	default:
-		return nil, crypto.PublicKey{}, nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
+		return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("unknown backend %q, must be \"trillian\" (default) or \"ephemeral\"", conf.Backend)
 	case "ephemeral":
 		p.DbClient = db.NewMemoryDb()
 	case "trillian":
 		trillianClient, err := db.DialTrillian(conf.TrillianRpcServer, conf.Timeout, db.PrimaryTree, conf.TrillianTreeIDFile)
 		if err != nil {
-			return nil, crypto.PublicKey{}, nil, err
+			return nil, crypto.Ed25519PublicKey{}, nil, err
 		}
 		p.DbClient = trillianClient
 	}
 	// Setup secondary node configuration.
 	var secondary api.Secondary
-	var secondaryPub crypto.PublicKey
+	var secondaryPub crypto.Ed25519PublicKey
 	if conf.Primary.SecondaryURL != "" && conf.Primary.SecondaryPubkeyFile != "" {
 		var err error
 		secondaryPub, err = key.ReadPublicKeyFile(conf.Primary.SecondaryPubkeyFile)
 		if err != nil {
-			return nil, crypto.PublicKey{}, nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
+			return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("failed to read secondary node pubkey: %v", err)
 		}
 		secondary = client.New(client.Config{URL: conf.Primary.SecondaryURL})
 	}
@@ -257,25 +261,25 @@ func setupPrimaryFromFlags(conf *config.Config) (*primary.Primary, crypto.Public
 	p.Stateman, err = state.NewStateManagerSingle(p.DbClient, signer, conf.Timeout,
 		secondary, &secondaryPub, conf.Primary.SthFile)
 	if err != nil {
-		return nil, crypto.PublicKey{}, nil, fmt.Errorf("NewStateManagerSingle: %v", err)
+		return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("NewStateManagerSingle: %v", err)
 	}
 
-	p.TokenVerifier = token.NewDnsVerifier(&publicKey)
+	p.TokenVerifier = token.NewDnsVerifier(publicEd25519)
 	if len(conf.Primary.RateLimitFile) > 0 {
 		f, err := os.Open(conf.Primary.RateLimitFile)
 		if err != nil {
-			return nil, crypto.PublicKey{}, nil, fmt.Errorf("opening rate limit config file failed: %v", err)
+			return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("opening rate limit config file failed: %v", err)
 		}
 		p.RateLimiter, err = rateLimit.NewLimiter(f, conf.Primary.AllowTestDomain)
 		if err != nil {
-			return nil, crypto.PublicKey{}, nil, fmt.Errorf("initializing rate limiter failed: %v", err)
+			return nil, crypto.Ed25519PublicKey{}, nil, fmt.Errorf("initializing rate limiter failed: %v", err)
 		}
 	} else {
 		p.RateLimiter = rateLimit.NoLimit{}
 	}
 
 	httpClient, err := conf.Primary.HTTPClient()
-	return &p, publicKey, httpClient, err
+	return &p, *publicEd25519, httpClient, err
 }
 
 func configuredPolicy(file string) (*policy.Policy, error) {

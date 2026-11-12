@@ -4,7 +4,7 @@ import (
 	"sigsum.org/log-go/internal/db"
 	"sigsum.org/log-go/internal/rate-limit"
 	"sigsum.org/log-go/internal/state"
-	"sigsum.org/sigsum-go/pkg/submit-token"
+	"sigsum.org/sigsum-go/v2/pkg/submit-token"
 )
 
 // Primary is an instance of the log's primary node
