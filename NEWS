@@ -1,3 +1,24 @@
+NEWS for log-go v0.17.0
+
+	This release of the Sigsum log server adds support for TLS
+	client certificates. Upgrading from the previous release is
+	expected to work with no issues.
+
+	New features:
+
+	* Support for using a TLS client certificate and corresponding
+	  key when connecting to witnesses, also known as mTLS. See
+	  doc/config.toml.example for how to configure this.
+
+	This release has been tested to work together with:
+
+	* Sigsum tools (most importantly sigsum-submit and
+	  sigsum-verify, as well as sigsum-witness)
+	  https://git.glasklar.is/sigsum/core/sigsum-go, tags v1.0.0.
+
+	* The new mTLS support has been tested against Apache HTTP
+	  Server 2.4.71.
+
 NEWS for log-go v0.16.0
 
 	This release of the Sigsum log server fixes a log-poisoning
