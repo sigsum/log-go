@@ -153,31 +153,29 @@ func (sm *StateManagerSingle) rotate(ctx context.Context, nextTH *types.TreeHead
 }
 
 func newQuorumFunc(p *policy.Policy) witness.QuorumPredicate {
-	if p.ProcessQuorum(cosignatureQuorumProcessor{}).(bool) {
+	if p.ProcessQuorum(cosignatureQuorumProcessor{}) {
 		return nil // quorum none
 	}
 	return func(cosignatures map[crypto.Hash]types.Cosignature) bool {
 		processor := cosignatureQuorumProcessor{present: cosignatures}
-		return p.ProcessQuorum(processor).(bool)
+		return p.ProcessQuorum(processor)
 	}
 }
 
-// Implements policy.Processor
-//
-// Note: bool is used in all places where interface methods say 'any'.
+// Implements policy.Processor[bool]
 type cosignatureQuorumProcessor struct {
 	present map[crypto.Hash]types.Cosignature
 }
 
-func (p cosignatureQuorumProcessor) ProcessWitness(kh crypto.Hash) any {
+func (p cosignatureQuorumProcessor) ProcessWitness(kh crypto.Hash) bool {
 	_, ok := p.present[kh]
 	return ok
 }
 
-func (cosignatureQuorumProcessor) ProcessGroup(k int, members []any) any {
+func (cosignatureQuorumProcessor) ProcessGroup(k int, members []bool) bool {
 	c := 0
 	for _, m := range members {
-		if m.(bool) {
+		if m {
 			c++
 		}
 	}
