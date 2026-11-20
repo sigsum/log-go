@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/crypto"
 )
 
 type fakeClock struct {

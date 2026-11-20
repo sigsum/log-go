@@ -11,8 +11,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // TestSigner implements the signer interface.  It can be used to mock
@@ -20,23 +20,23 @@ import (
 // signature, and error.
 // NOTE: Code duplication with internal/node/secondary/endpoint_internal_test.go
 type TestSigner struct {
-	PublicKey crypto.Ed25519PublicKey
-	Signature crypto.Ed25519Signature
+	PublicKey crypto.PublicKey
+	Signature crypto.Signature
 	Error     error
 }
 
 func (ts *TestSigner) Public() crypto.PublicKey {
-	return &ts.PublicKey
+	return ts.PublicKey
 }
 
 func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
-	return ts.Signature[:], ts.Error
+	return ts.Signature, ts.Error
 }
 
 const testWitnessTimestamp = 1234
 
 func TestNewStateManagerSingle(t *testing.T) {
-	_, signer, err := crypto.NewEd25519KeyPair()
+	_, signer, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestNewStateManagerSingle(t *testing.T) {
 				t.Fatal(err)
 			}
 			// This test uses no secondary.
-			sm, err := NewStateManagerSingle(trillianClient, signer, time.Duration(0), nil, &crypto.Ed25519PublicKey{}, tmpFile.Name())
+			sm, err := NewStateManagerSingle(trillianClient, signer, time.Duration(0), nil, &crypto.PublicKey{}, tmpFile.Name())
 			if got, want := err != nil, table.description != "valid"; got != want {
 				t.Errorf("got error %v but wanted %v in test %q: %v", got, want, table.description, err)
 			}
@@ -112,7 +112,7 @@ func TestRotate(t *testing.T) {
 	lPub, lSigner := mustKeyPair(t)
 	wPub, wSigner := mustKeyPair(t)
 
-	signerErr := TestSigner{lPub, crypto.Ed25519Signature{}, fmt.Errorf("err")}
+	signerErr := TestSigner{lPub, crypto.Signature{}, fmt.Errorf("err")}
 
 	wKeyHash := crypto.HashBytes(wPub[:])
 	origin := types.SigsumCheckpointOrigin(&lPub)
@@ -215,9 +215,9 @@ func TestRotate(t *testing.T) {
 	}
 }
 
-func mustKeyPair(t *testing.T) (crypto.Ed25519PublicKey, *crypto.Ed25519Signer) {
+func mustKeyPair(t *testing.T) (crypto.PublicKey, crypto.Signer) {
 	t.Helper()
-	pub, signer, err := crypto.NewEd25519KeyPair()
+	pub, signer, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}

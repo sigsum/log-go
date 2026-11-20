@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // TestSigner implements the signer interface.  It can be used to mock
@@ -20,16 +20,15 @@ type TestSigner struct {
 }
 
 func (ts *TestSigner) Public() crypto.PublicKey {
-	return &crypto.Ed25519PublicKey{}
+	return crypto.PublicKey{}
 }
 
 func (ts *TestSigner) Sign(_ []byte) (crypto.Signature, error) {
-	sig := crypto.Ed25519Signature{}
-	return sig[:], ts.Error
+	return crypto.Signature{}, ts.Error
 }
 
 func TestGetSecondaryTreeHead(t *testing.T) {
-	publicKey, signer, err := crypto.NewEd25519KeyPair()
+	publicKey, signer, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}

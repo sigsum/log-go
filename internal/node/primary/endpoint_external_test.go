@@ -11,10 +11,10 @@ import (
 	mocksDB "sigsum.org/log-go/internal/mocks/db"
 	mocksState "sigsum.org/log-go/internal/mocks/state"
 	"sigsum.org/log-go/internal/rate-limit"
-	"sigsum.org/sigsum-go/v2/pkg/api"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func TestAddLeaf(t *testing.T) {
@@ -309,7 +309,7 @@ func TestGetLeaves(t *testing.T) {
 						for i := 0; i < count; i++ {
 							list = append(list, types.Leaf{
 								Checksum:  crypto.Hash{},
-								Signature: crypto.Ed25519Signature{},
+								Signature: crypto.Signature{},
 								KeyHash:   crypto.Hash{},
 							})
 						}
@@ -339,7 +339,7 @@ func TestGetLeaves(t *testing.T) {
 func mustLeaf(t *testing.T, msg crypto.Hash, wantSig bool) requests.Leaf {
 	t.Helper()
 
-	vk, sk, err := crypto.NewEd25519KeyPair()
+	vk, sk, err := crypto.NewKeyPair()
 	if err != nil {
 		t.Fatalf("must generate ed25519 keys: %v", err)
 	}

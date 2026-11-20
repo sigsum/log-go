@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"sigsum.org/sigsum-go/v2/pkg/api"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/log"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // Subset of the db/client interface.
@@ -22,7 +22,7 @@ type ReplicationState struct {
 	// Timeout for interaction with primary and secondary.
 	timeout      time.Duration
 	primary      PrimaryTree
-	secondaryPub crypto.Ed25519PublicKey
+	secondaryPub crypto.PublicKey
 	secondary    api.Secondary
 }
 

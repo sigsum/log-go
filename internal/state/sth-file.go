@@ -11,8 +11,9 @@ import (
 	// Needs extended version with CommitIfNotExists
 	"git.glasklar.is/sigsum/dependencies/safefile"
 
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type sthFile struct {
@@ -78,7 +79,7 @@ func (s sthFile) Startup() (StartupMode, error) {
 	return parseStartupFile(f)
 }
 
-func (s sthFile) Load(pub *crypto.Ed25519PublicKey) (types.SignedTreeHead, error) {
+func (s sthFile) Load(pub *crypto.PublicKey) (types.SignedTreeHead, error) {
 	f, err := os.Open(s.name)
 	if err != nil {
 		return types.SignedTreeHead{}, err
@@ -89,7 +90,11 @@ func (s sthFile) Load(pub *crypto.Ed25519PublicKey) (types.SignedTreeHead, error
 		return types.SignedTreeHead{}, err
 	}
 	if !sth.Verify(pub) {
-		return types.SignedTreeHead{}, fmt.Errorf("invalid signature in file %q", s.name)
+		// Accept version 0 signature, to support upgrades.
+		if !sth.VerifyVersion0(pub) {
+			return types.SignedTreeHead{}, fmt.Errorf("invalid signature in file %q", s.name)
+		}
+		log.Info("Loading sth file %q with version 0 tree head signature")
 	}
 	return sth, nil
 }

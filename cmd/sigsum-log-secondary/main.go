@@ -22,10 +22,10 @@ import (
 	"sigsum.org/log-go/internal/node/secondary"
 	"sigsum.org/log-go/internal/version"
 
-	"sigsum.org/sigsum-go/v2/pkg/client"
-	"sigsum.org/sigsum-go/v2/pkg/key"
-	"sigsum.org/sigsum-go/v2/pkg/log"
-	"sigsum.org/sigsum-go/v2/pkg/server"
+	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/key"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/server"
 )
 
 const metricPrefix = "sigsum_log_go_"

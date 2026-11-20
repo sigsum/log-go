@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"sigsum.org/sigsum-go/v2/pkg/api"
-	"sigsum.org/sigsum-go/v2/pkg/checkpoint"
-	"sigsum.org/sigsum-go/v2/pkg/client"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/log"
-	"sigsum.org/sigsum-go/v2/pkg/policy"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/checkpoint"
+	"sigsum.org/sigsum-go/pkg/client"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/policy"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // WitnessMetrics collects /add-checkpoint outcomes.
@@ -102,7 +102,7 @@ type CosignatureCollector struct {
 	metrics             WitnessMetrics
 }
 
-func NewCosignatureCollector(logPublicKey *crypto.Ed25519PublicKey, witnesses []policy.Entity,
+func NewCosignatureCollector(logPublicKey *crypto.PublicKey, witnesses []policy.Entity,
 	getConsistencyProof GetConsistencyProofFunc, metrics WitnessMetrics, quorum QuorumPredicate, httpClient *http.Client) *CosignatureCollector {
 	origin := types.SigsumCheckpointOrigin(logPublicKey)
 	if metrics == nil {

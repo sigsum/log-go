@@ -12,8 +12,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	witness "sigsum.org/log-go/internal/witness"
-	policy "sigsum.org/sigsum-go/v2/pkg/policy"
-	types "sigsum.org/sigsum-go/v2/pkg/types"
+	policy "sigsum.org/sigsum-go/pkg/policy"
+	types "sigsum.org/sigsum-go/pkg/types"
 )
 
 // MockStateManager is a mock of StateManager interface.

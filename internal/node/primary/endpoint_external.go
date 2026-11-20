@@ -7,12 +7,12 @@ import (
 	"fmt"
 
 	"sigsum.org/log-go/internal/db"
-	"sigsum.org/sigsum-go/v2/pkg/api"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/log"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/submit-token"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/submit-token"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func (p Primary) AddLeaf(ctx context.Context, req requests.Leaf, t *token.SubmitHeader) (bool, error) {

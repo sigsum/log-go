@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/crypto"
 )
 
 func parseConfigString(s string) (Config, error) {

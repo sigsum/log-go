@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type AddLeafStatus struct {

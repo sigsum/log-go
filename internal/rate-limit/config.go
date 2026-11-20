@@ -8,7 +8,7 @@ import (
 	"io"
 	"strconv"
 
-	submitToken "sigsum.org/sigsum-go/v2/pkg/submit-token"
+	submitToken "sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 type Config struct {

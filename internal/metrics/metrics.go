@@ -11,8 +11,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"sigsum.org/log-go/internal/witness"
-	"sigsum.org/sigsum-go/v2/pkg/api"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/api"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 type ServerMetrics struct {

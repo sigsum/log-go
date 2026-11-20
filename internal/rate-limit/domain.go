@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"sigsum.org/sigsum-go/v2/pkg/submit-token"
+	"sigsum.org/sigsum-go/pkg/submit-token"
 )
 
 type DomainDb struct {

@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"sigsum.org/log-go/internal/mocks/db"
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func TestInternalGetLeaves(t *testing.T) {
@@ -88,7 +88,7 @@ func TestInternalGetLeaves(t *testing.T) {
 						for i := 0; i < count; i++ {
 							list = append(list, types.Leaf{
 								Checksum:  crypto.Hash{},
-								Signature: crypto.Ed25519Signature{},
+								Signature: crypto.Signature{},
 								KeyHash:   crypto.Hash{},
 							})
 						}

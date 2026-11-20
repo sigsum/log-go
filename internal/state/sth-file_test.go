@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"sigsum.org/sigsum-go/v2/pkg/crypto"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func TestParseStartup(t *testing.T) {
@@ -69,8 +69,8 @@ func TestStartupNoFile(t *testing.T) {
 func TestStore(t *testing.T) {
 	withTmpDir(t, func(dir string) {
 		sthFile := sthFile{dir + "foo"}
-		signer := crypto.NewEd25519Signer(&crypto.Ed25519PrivateKey{7})
-		pub := signer.Ed25519Public()
+		signer := crypto.NewEd25519Signer(&crypto.PrivateKey{7})
+		pub := signer.Public()
 		sth0 := mustSignTh(t, &types.TreeHead{}, signer)
 		sth1 := mustSignTh(t, &types.TreeHead{Size: 1}, signer)
 		invalidSth := sth1
@@ -113,8 +113,8 @@ func TestCreate(t *testing.T) {
 		if _, err := os.ReadFile(startupFileName); err != nil {
 			t.Fatalf("reading startup file %q failed: %v", startupFileName, err)
 		}
-		signer := crypto.NewEd25519Signer(&crypto.Ed25519PrivateKey{7})
-		pub := signer.Ed25519Public()
+		signer := crypto.NewEd25519Signer(&crypto.PrivateKey{7})
+		pub := signer.Public()
 		sth0 := mustSignTh(t, &types.TreeHead{}, signer)
 		sth1 := mustSignTh(t, &types.TreeHead{Size: 1}, signer)
 		if err := sthFile.Create(&sth0); err != nil {

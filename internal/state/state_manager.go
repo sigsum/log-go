@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"sigsum.org/log-go/internal/witness"
-	"sigsum.org/sigsum-go/v2/pkg/policy"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/policy"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 // StateManager coordinates access to a nodes tree heads and (co)signatures.

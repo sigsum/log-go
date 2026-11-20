@@ -14,9 +14,9 @@ import (
 	"os"
 	"time"
 
-	"sigsum.org/sigsum-go/v2/pkg/checkpoint"
-	"sigsum.org/sigsum-go/v2/pkg/requests"
-	"sigsum.org/sigsum-go/v2/pkg/server"
+	"sigsum.org/sigsum-go/pkg/checkpoint"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/server"
 )
 
 type witness struct {

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"sigsum.org/sigsum-go/v2/pkg/log"
-	"sigsum.org/sigsum-go/v2/pkg/types"
+	"sigsum.org/sigsum-go/pkg/log"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 func (s Secondary) GetSecondaryTreeHead(ctx context.Context) (types.SignedTreeHead, error) {

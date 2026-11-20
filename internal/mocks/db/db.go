@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	db "sigsum.org/log-go/internal/db"
-	requests "sigsum.org/sigsum-go/v2/pkg/requests"
-	types "sigsum.org/sigsum-go/v2/pkg/types"
+	requests "sigsum.org/sigsum-go/pkg/requests"
+	types "sigsum.org/sigsum-go/pkg/types"
 )
 
 // MockClient is a mock of Client interface.
